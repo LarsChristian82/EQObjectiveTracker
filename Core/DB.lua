@@ -36,6 +36,17 @@ DB.defaults = {
             lineSpacing          = 0,
             headerSpacing        = 0,
 
+            blockLayout          = "classic",
+            cardColor            = { r = 0.09, g = 0.10, b = 0.12, a = 0.73 },
+            cardBorderColor      = { r = 0.00, g = 0.00, b = 0.00, a = 0.45 },
+            cardBorderSize       = 1,
+            cardPadding          = 6,
+            cardTintByType       = false,
+            cardTintCampaign     = { r = 0.20, g = 0.14, b = 0.04, a = 0.80 },
+            cardTintLegendary    = { r = 0.24, g = 0.12, b = 0.01, a = 0.80 },
+            cardTintDungeon      = { r = 0.02, g = 0.11, b = 0.20, a = 0.80 },
+            cardTintRaid         = { r = 0.02, g = 0.15, b = 0.03, a = 0.80 },
+
             showBackground     = false,
             backgroundColor    = { r = 0, g = 0, b = 0, a = 0.6 },
             showBorder         = false,

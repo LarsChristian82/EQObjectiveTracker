@@ -3,6 +3,7 @@ local _, ns = ...
 local Options = ns:GetModule("Options")
 
 local OUTLINES = { "None", "OUTLINE", "THICKOUTLINE" }
+local LAYOUTS  = { "Plain", "Card" }
 
 local function pct(v) return ("%d%%"):format(math.floor(v * 100 + 0.5)) end
 local function px(v)  return ("%dpx"):format(math.floor(v + 0.5)) end
@@ -120,6 +121,59 @@ Options:RegisterTab({
             function() return DB().headerSpacing or 0 end,
             function(v) restyle("headerSpacing", v) end,
             "Gap between an entry's title and its first objective line.", signed)
+
+        self:CreateHeading(content, "Entry rows")
+
+        self:CreateDropdown(content, "Row layout",
+            function() return LAYOUTS end,
+            function() return DB().blockLayout == "card" and "Card" or "Plain" end,
+            function(v) restyle("blockLayout", v == "Card" and "card" or "classic") end,
+            "Plain draws text straight on the tracker background. Card gives every entry its own panel, which makes long lists easier to tell apart.")
+
+        self:CreateColorPicker(content, "Card background color",
+            function() return DB().cardColor end,
+            function(v) restyle("cardColor", v) end,
+            "Fill behind each card. Only used while Row layout is Card.", true)
+
+        self:CreateColorPicker(content, "Card border color",
+            function() return DB().cardBorderColor end,
+            function(v) restyle("cardBorderColor", v) end,
+            "Outline around each card. Only used while Row layout is Card.", true)
+
+        self:CreateSlider(content, "Card border thickness", 0, 4, 1,
+            function() return DB().cardBorderSize or 1 end,
+            function(v) restyle("cardBorderSize", v) end,
+            "0 hides the outline and leaves just the fill.", px)
+
+        self:CreateSlider(content, "Card padding", 2, 14, 1,
+            function() return DB().cardPadding or 6 end,
+            function(v) restyle("cardPadding", v) end,
+            "Breathing room between a card's edge and the text inside it. Larger values make taller cards.", px)
+
+        self:CreateCheckbox(content, "Tint cards by type",
+            function() return DB().cardTintByType end,
+            function(v) restyle("cardTintByType", v) end,
+            "Gives campaign, legendary, dungeon and raid entries their own card color. Anything else uses the plain background color above.")
+
+        self:CreateColorPicker(content, "Campaign tint",
+            function() return DB().cardTintCampaign end,
+            function(v) restyle("cardTintCampaign", v) end,
+            "Card color for campaign entries. Needs Tint cards by type switched on.", true)
+
+        self:CreateColorPicker(content, "Legendary tint",
+            function() return DB().cardTintLegendary end,
+            function(v) restyle("cardTintLegendary", v) end,
+            "Card color for legendary entries. Needs Tint cards by type switched on.", true)
+
+        self:CreateColorPicker(content, "Dungeon tint",
+            function() return DB().cardTintDungeon end,
+            function(v) restyle("cardTintDungeon", v) end,
+            "Card color for dungeon entries. Needs Tint cards by type switched on.", true)
+
+        self:CreateColorPicker(content, "Raid tint",
+            function() return DB().cardTintRaid end,
+            function(v) restyle("cardTintRaid", v) end,
+            "Card color for raid entries. Needs Tint cards by type switched on.", true)
 
         self:CreateHeading(content, "Section headers")
 

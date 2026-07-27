@@ -231,7 +231,8 @@ function Tracker:Render()
     Sections:HideAll()
 
     local byGroup  = Feed:Build()
-    local gap      = math.max(0, (cfg and cfg.blockSpacing) or 2)
+    local Card     = ns:GetModule("Card")
+    local gap      = Card:Gap(math.max(0, (cfg and cfg.blockSpacing) or 2), (Card:State(cfg)))
     local y        = 0
     local hasTimed = false
 

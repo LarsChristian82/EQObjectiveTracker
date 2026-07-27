@@ -38,6 +38,7 @@ Data\Providers\Achievements.lua
 # Display layer. Operates on frames, never on a quest API.
 UI\Blizzard.lua
 UI\RowPool.lua
+UI\Card.lua
 UI\Row.lua
 UI\Sections.lua
 UI\Tracker.lua

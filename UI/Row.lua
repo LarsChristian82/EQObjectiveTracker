@@ -239,7 +239,8 @@ function Row:Reset(row)
     row._entry, row._providerID = nil, nil
     row._sTitle, row._sSub, row._sState  = nil, nil, nil
     row._sFocus, row._sWidth, row._sText = nil, nil, nil
-    row._sTime, row._sGen = nil, nil
+    row._sTime, row._sGen, row._sCardBg  = nil, nil, nil
+    ns:GetModule("Card"):Clear(row)
 end
 
 Row.generation = 0
@@ -261,6 +262,16 @@ function Row:Render(row, entry, width, cfg)
         if timeMins > 0 then timeText = Util.TimeShort(timeMins) end
     end
 
+    local Card = ns:GetModule("Card")
+    local cardOn, cardPad, cardBorderSize = Card:State(cfg)
+    local cardBg, cardBorder
+    if cardOn then
+        cardBg, cardBorder = Card:Colors(cfg)
+        if cfg and cfg.cardTintByType then cardBg = Card:TintFor(cfg, entry) or cardBg end
+    end
+
+    -- The resolved colour is compared by table identity, which is stable per option and
+    -- changes whenever a setter assigns a new one, so tint swaps repaint without a bump.
     local unchanged =
            row._sTitle == entry.title
        and row._sSub   == subtitle
@@ -269,10 +280,21 @@ function Row:Render(row, entry, width, cfg)
        and row._sWidth == width
        and row._sText  == lineText
        and row._sTime  == timeText
+       and row._sCardBg == cardBg
        and row._sGen   == self.generation
     if unchanged then return row:GetHeight() end
 
     applyIcon(row, entry)
+
+    local padX = cardOn and cardPad or PAD_X
+    local padY = cardOn and cardPad or PAD_Y
+
+    -- Zero inset: the row frame already carries the card's padding, so the card tracks it
+    if cardOn then
+        Card:Draw(row, nil, 0, cardBorderSize, cardBg, cardBorder)
+    else
+        Card:Clear(row)
+    end
 
     local Media = ns:GetModule("Media")
     Media:ApplyTitleFont(row.title)
@@ -283,10 +305,10 @@ function Row:Render(row, entry, width, cfg)
 
     local gutter = self:Gutter()
     row.iconHolder:ClearAllPoints()
-    row.iconHolder:SetPoint("TOPLEFT", row, "TOPLEFT", PAD_X + gutter, -PAD_Y)
+    row.iconHolder:SetPoint("TOPLEFT", row, "TOPLEFT", padX + gutter, -padY)
 
     row.timer:ClearAllPoints()
-    row.timer:SetPoint("TOPRIGHT", row, "TOPRIGHT", -PAD_X, -PAD_Y)
+    row.timer:SetPoint("TOPRIGHT", row, "TOPRIGHT", -padX, -padY)
     local timerW = 0
     if timeText then
         row.timer:SetText(timeText)
@@ -341,7 +363,7 @@ function Row:Render(row, entry, width, cfg)
 
     -- Without an explicit SetWidth, GetStringHeight returns stale values after a
     -- width change and rows overlap
-    local textW = width - (ICON_SIZE + ICON_GAP + PAD_X * 2 + gutter)
+    local textW = width - (ICON_SIZE + ICON_GAP + padX * 2 + gutter)
     if textW > 0 then
         row.title:SetWidth(math.max(1, textW - timerW))
         row.lines:SetWidth(textW)
@@ -351,13 +373,14 @@ function Row:Render(row, entry, width, cfg)
     local titleH = math.max(row.title:GetStringHeight(), ICON_SIZE)
     local subH   = row.subtitle:IsShown() and (TITLE_TO_SUB + row.subtitle:GetStringHeight()) or 0
     local linesH = (lineText ~= "") and (subGap + row.lines:GetStringHeight()) or 0
-    local h      = titleH + subH + linesH + PAD_Y * 2
+    local h      = titleH + subH + linesH + padY * 2
 
     row:SetHeight(math.max(1, h))
 
     row._sTitle, row._sSub, row._sState = entry.title, subtitle, entry.state
     row._sFocus, row._sWidth, row._sText = entry.isFocused, width, lineText
     row._sTime = timeText
+    row._sCardBg = cardBg
     row._sGen = self.generation
 
     return row:GetHeight()
