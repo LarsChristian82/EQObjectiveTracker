@@ -1,0 +1,14 @@
+package-as: EQObjectiveTracker
+
+# There is deliberately NO externals block. Libs/ is vendored and committed.
+# Externals are fetched at build time, which would leave a fresh git checkout with
+# TOC lines pointing at files that are not on disk - and the AddOns directory
+# junction would fail to load in-game. Vendoring is what makes the zero-build-step
+# workflow real. Update the six Ace3 files by hand when needed.
+
+ignore:
+  - .github
+  - .luacheckrc
+  - docs
+
+manual-changelog: CHANGELOG.md

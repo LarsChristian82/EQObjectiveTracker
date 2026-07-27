@@ -1,0 +1,52 @@
+## Interface: 120100, 120007, 120005
+## Title: EQ Objective Tracker
+## Notes: Standalone replacement for the default objective tracker.
+## Author: Wheelbarrel00
+## Version: 0.1.0
+## SavedVariables: EQObjectiveTrackerDB
+## X-Curse-Project-ID:
+## X-Website: https://github.com/wheelbarrel00/EQObjectiveTracker
+## Category: Quests & Leveling
+
+# Libraries (vendored, never .pkgmeta externals - a fresh checkout must load as-is)
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\AceDB-3.0\AceDB-3.0.xml
+Libs\LibSharedMedia-3.0\lib.xml
+
+# Core. Init defines RegisterModule and must load first, Compat second.
+Core\Init.lua
+Core\Compat.lua
+Core\Events.lua
+Core\Util.lua
+Core\Media.lua
+Core\DB.lua
+Core\Migrate.lua
+
+# Data layer. Operates on normalized entries and game APIs, never on frames.
+Data\Entry.lua
+Data\Registry.lua
+Data\Filter.lua
+Data\Sort.lua
+Data\Feed.lua
+
+# Providers. THE ONLY FLAVOR-VARYING SECTION OF THIS FILE.
+Data\Providers\Quests.lua
+Data\Providers\WorldQuests.lua
+Data\Providers\Achievements.lua
+
+# Display layer. Operates on frames, never on a quest API.
+UI\Blizzard.lua
+UI\RowPool.lua
+UI\Row.lua
+UI\Sections.lua
+UI\Tracker.lua
+
+# Options. Frame.lua defines RegisterTab and must load before any Tab file.
+Options\Frame.lua
+Options\TabGeneral.lua
+Options\TabSections.lua
+Options\TabAppearance.lua
+Options\TabAbout.lua
+
+UI\Commands.lua

@@ -1,0 +1,52 @@
+name: Package and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # full history so the packager can read all tags
+
+      - name: Check TOC coverage
+        run: python3 docs/check_toc.py
+
+      - name: Lint
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lua-check
+          luacheck .
+
+      - name: Show tag info
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # actions/checkout peels an annotated tag into a lightweight local ref, so a
+          # naive cat-file would report 'commit' and falsely warn alpha on every
+          # release. Re-fetch the real tag objects first.
+          git fetch --force --tags origin >/dev/null 2>&1 || true
+          TYPE=$(git cat-file -t "$TAG" 2>/dev/null || echo "unknown")
+          echo "Tag: $TAG  (object type: $TYPE)"
+          if [ "$TYPE" != "tag" ]; then
+            echo "::warning::'$TAG' is a lightweight tag - the packager will treat this as an ALPHA build. For a stable release use: git tag -a $TAG -m \"$TAG\""
+          fi
+
+      - name: Build per-release changelog
+        run: awk '/^## / { if (seen) exit; seen=1 } seen' CHANGELOG.md > .release_changelog.md
+
+      - name: Package and release
+        uses: BigWigsMods/packager@v2
+        env:
+          # CurseForge project ID is read from '## X-Curse-Project-ID:' in the TOC,
+          # NOT from .pkgmeta. Blank means GitHub release only.
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
