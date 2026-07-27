@@ -54,6 +54,29 @@ function Util.TimeColor(mins)
     return 0.50, 1.00, 0.50
 end
 
+local playerClassColor
+function Util.GetPlayerClassColor()
+    if playerClassColor == nil then
+        local classFile = UnitClass and select(2, UnitClass("player"))
+        local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        playerClassColor = c and { c.r, c.g, c.b } or false
+    end
+    if playerClassColor then
+        return playerClassColor[1], playerClassColor[2], playerClassColor[3]
+    end
+end
+
+-- Returns nothing when neither source is set, which is what lets callers fall through to
+-- difficulty colouring. Class colour deliberately beats the explicit override.
+function Util.EffectiveTitleColor(cfg)
+    if cfg and cfg.titleColorUseClass then
+        local r, g, b = Util.GetPlayerClassColor()
+        if r then return r, g, b end
+    end
+    local ov = cfg and cfg.titleColorOverride
+    if ov and ov.r then return ov.r, ov.g, ov.b end
+end
+
 local _atlasOK = {}
 function Util.AtlasExists(atlas)
     if not atlas or atlas == "" then return false end

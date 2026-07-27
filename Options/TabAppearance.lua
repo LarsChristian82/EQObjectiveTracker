@@ -70,6 +70,30 @@ Options:RegisterTab({
             function(v) restyle("textShadowStrength", v) end,
             "How far the shadow is offset from the text.", px)
 
+        self:CreateHeading(content, "Title colors")
+
+        self:CreateCheckbox(content, "Color titles by difficulty",
+            function() return DB().colorByDifficulty ~= false end,
+            function(v) restyle("colorByDifficulty", v) end,
+            "Tints each title by how hard the quest is for your level, the same way the quest log does. Turn it off for plain gold titles.")
+
+        self:CreateColorPicker(content, "Title color override",
+            function() return DB().titleColorOverride end,
+            function(v) restyle("titleColorOverride", v) end,
+            "Forces every title to one color. Clear it to go back to difficulty coloring, or to plain gold when that is off.",
+            false,
+            function() restyle("titleColorOverride", nil) end)
+
+        self:CreateCheckbox(content, "Use class color for titles",
+            function() return DB().titleColorUseClass end,
+            function(v) restyle("titleColorUseClass", v) end,
+            "Colors titles with the class color of the character you are logged in on. Wins over the override above while it is on.")
+
+        self:CreateCheckbox(content, "Use title color when complete",
+            function() return DB().overrideCompleteGreen ~= false end,
+            function(v) restyle("overrideCompleteGreen", v) end,
+            "Completed entries and finished objectives use your title color instead of green. Does nothing until a color override or class color is set, since it needs a color to use.")
+
         self:CreateHeading(content, "Size and spacing")
 
         self:CreateSlider(content, "Tracker scale", 0.5, 2.0, 0.05,
@@ -103,6 +127,11 @@ Options:RegisterTab({
             function() return DB().headerColor end,
             function(v) relayout("headerColor", v) end,
             "Color of the Quests, Campaign and World Quests headings.")
+
+        self:CreateCheckbox(content, "Use class color for headers",
+            function() return DB().headerColorUseClass end,
+            function(v) relayout("headerColorUseClass", v) end,
+            "Colors the section headings with your character's class color. Wins over the header color above while it is on.")
 
         self:CreateColorPicker(content, "Header divider color",
             function() return DB().headerDividerColor end,

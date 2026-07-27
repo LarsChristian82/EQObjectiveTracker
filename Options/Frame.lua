@@ -273,7 +273,7 @@ function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange)
     end
 end
 
-function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasAlpha)
+function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasAlpha, onClear)
     local holder = CreateFrame("Frame", nil, content)
     holder:SetSize(320, 22)
 
@@ -292,9 +292,31 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
     text:SetPoint("LEFT", swatch, "RIGHT", 6, 0)
     text:SetText(label)
 
+    local clear
     local function refresh()
-        local c = getter() or {}
-        tex:SetColorTexture(c.r or 1, c.g or 1, c.b or 1, 1)
+        local c = getter()
+        local isSet = (c and c.r ~= nil) and true or false
+        if isSet then
+            tex:SetColorTexture(c.r, c.g or 0, c.b or 0, 1)
+        else
+            tex:SetColorTexture(0.22, 0.22, 0.22, 1)
+        end
+        if clear then clear:SetShown(isSet) end
+    end
+
+    -- Only clearable pickers get the button, so an unset swatch stays distinguishable
+    -- from a deliberately black one.
+    if onClear then
+        clear = CreateFrame("Button", nil, holder, "UIPanelButtonTemplate")
+        clear:SetSize(54, 18)
+        clear:SetPoint("LEFT", text, "RIGHT", 8, 0)
+        clear:SetText("Clear")
+        clear:SetScript("OnClick", function()
+            onClear()
+            refresh()
+            local T = ns:GetModule("Tracker")
+            if T then T:Render() end
+        end)
     end
     refresh()
 

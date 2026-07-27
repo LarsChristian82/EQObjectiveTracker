@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Sections = ns:RegisterModule("Sections", {})
+local Util     = ns.Util
 
 local HEADER_H     = 26
 local HEADER_COLOR = { 0.93, 0.32, 0.10 }
@@ -155,8 +156,12 @@ function Sections:ApplyStyle(header)
     Media:ApplyFont(header.count, delta - 4 - 2)
     Media:ApplyFont(header.collapse, delta)
 
-    local c = cfg.headerColor or {}
-    local r, g, b = c.r or HEADER_COLOR[1], c.g or HEADER_COLOR[2], c.b or HEADER_COLOR[3]
+    local r, g, b
+    if cfg.headerColorUseClass then r, g, b = Util.GetPlayerClassColor() end
+    if not r then
+        local c = cfg.headerColor or {}
+        r, g, b = c.r or HEADER_COLOR[1], c.g or HEADER_COLOR[2], c.b or HEADER_COLOR[3]
+    end
     header.text:SetTextColor(r, g, b)
     header.count:SetTextColor(r, g, b)
     header.collapse:SetTextColor(r, g, b)

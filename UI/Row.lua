@@ -105,8 +105,9 @@ local function applyIcon(row, entry)
 end
 
 local function doneHex(cfg)
-    local ov = cfg and cfg.overrideCompleteGreen ~= false and cfg.titleColorOverride
-    if ov and ov.r then return Util.Hex(ov.r, ov.g, ov.b) end
+    if not cfg or cfg.overrideCompleteGreen == false then return DEFAULT_DONE_HEX end
+    local r, g, b = Util.EffectiveTitleColor(cfg)
+    if r then return Util.Hex(r, g, b) end
     return DEFAULT_DONE_HEX
 end
 
@@ -308,11 +309,17 @@ function Row:Render(row, entry, width, cfg)
     row.subtitle:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -TITLE_TO_SUB)
 
     row.title:SetText(entry.title or "")
-    if entry.state == STATE.COMPLETE then
-        row.title:SetTextColor(0.27, 0.85, 0.27)
-    elseif entry.state == STATE.FAILED then
+    local ovR, ovG, ovB = Util.EffectiveTitleColor(cfg)
+    -- Recolouring completed entries needs a colour to recolour them TO, so the toggle is
+    -- inert until an override or class colour is set.
+    local recolorComplete = ovR and (not cfg or cfg.overrideCompleteGreen ~= false)
+    if entry.state == STATE.FAILED then
         row.title:SetTextColor(0.85, 0.27, 0.27)
-    elseif entry.level and GetQuestDifficultyColor then
+    elseif entry.state == STATE.COMPLETE and not recolorComplete then
+        row.title:SetTextColor(0.27, 0.85, 0.27)
+    elseif ovR then
+        row.title:SetTextColor(ovR, ovG, ovB)
+    elseif (not cfg or cfg.colorByDifficulty ~= false) and entry.level and GetQuestDifficultyColor then
         local c = GetQuestDifficultyColor(entry.level)
         row.title:SetTextColor(c.r, c.g, c.b)
     else

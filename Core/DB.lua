@@ -45,10 +45,15 @@ DB.defaults = {
             headerColor        = { r = 0.93, g = 0.32, b = 0.10, a = 1 },
             headerDividerColor = { r = 0.92, g = 0.72, b = 0.02, a = 0.85 },
             headerSizeDelta    = 4,
+            headerColorUseClass = false,
             showZoneTag          = false,
             showObjectiveNumbers = true,
             showQuestTotal       = true,
+            colorByDifficulty     = true,
+            titleColorUseClass    = false,
             overrideCompleteGreen = true,
+            -- Left unset on purpose: nil is what makes titles fall through to difficulty
+            -- colouring, so AceDB must not seed a default the Clear button cannot restore.
             titleColorOverride    = nil,
 
             filters = {
