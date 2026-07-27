@@ -57,6 +57,13 @@ DB.defaults = {
             headerDividerColor = { r = 0.92, g = 0.72, b = 0.02, a = 0.85 },
             headerSizeDelta    = 4,
             headerColorUseClass = false,
+
+            headerBar            = false,
+            headerBarColor       = { r = 0.80, g = 0.60, b = 0.20, a = 0.85 },
+            headerBarHeight      = 22,
+            headerBarStyle       = 1,
+            headerBarSoftEdges   = false,
+            headerBarSoftEdgeStrength = 10,
             showZoneTag          = false,
             showObjectiveNumbers = true,
             showQuestTotal       = true,

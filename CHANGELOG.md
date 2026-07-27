@@ -5,6 +5,31 @@ All notable changes to EQ Objective Tracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Three appearance ports from Everything Quests, bringing the tracker closer to the
+parity needed before EQ can drop its own tracker and depend on this one.
+
+### New Features
+
+- Title colors: difficulty coloring can now be turned off, titles take an explicit
+  color override with a Clear button to undo it, and either titles or section
+  headings can use your character's class color.
+- Completed entries can use the title color instead of green. This applies to
+  finished objective lines as well as titles, so quests, world quests and
+  achievements all follow the same setting.
+- Card row layout: each entry is drawn on its own bordered panel, with separate
+  background and border colors, adjustable border thickness and padding.
+- Cards can be tinted by type, giving campaign, legendary, dungeon and raid entries
+  their own color. Instance types take priority over storyline ones.
+- Section header bars: an optional gradient bar behind each heading, in horizontal
+  or vertical style, with its own color, height, and feathered edges.
+
+### Notes
+
+- Entry spacing has a 4px floor while the card layout is on. Below that, adjacent
+  card borders touch and a list reads as one merged card.
+
 ## [0.1.0] - 2026-07-26
 
 First milestone. Not yet released.
@@ -24,6 +49,10 @@ First milestone. Not yet released.
 - Filter by quest type: campaign, daily, weekly, normal, and this zone only.
 - Sort by zone, title, status, level, or recently added.
 - Shift-click a row to hide it from the tracker.
+- Appearance options for text and frame: font through LibSharedMedia with 41 bundled
+  fonts, size, outline, title and header size offsets, text shadow with its own color
+  and distance, tracker scale, line and header spacing, section header and divider
+  colors, and a background and border with colors and thickness.
 - Every option carries a mouseover description.
 
 ### Notes
@@ -32,5 +61,4 @@ First milestone. Not yet released.
   Classic support is additive.
 - World quests render as an ordinary section. The capped, separately placed region
   from Everything Quests is not in this milestone.
-- Professions, scenarios, quest-item buttons, and the appearance options are not in
-  this milestone.
+- Professions, scenarios and quest-item buttons are not in this milestone.

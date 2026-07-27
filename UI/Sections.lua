@@ -6,6 +6,9 @@ local Util     = ns.Util
 local HEADER_H     = 26
 local HEADER_COLOR = { 0.93, 0.32, 0.10 }
 local HAIRLINE     = { 0.92, 0.72, 0.02, 0.85 }
+local BAR_COLOR    = { 0.80, 0.60, 0.20, 0.85 }
+local BAR_DARKEN   = 0.4
+local SOFT_MASK    = "Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\headerbar-softmask.tga"
 
 -- Titles are display-side because a group is a display concept. A provider that
 -- declares a group nobody has titled still renders, under its raw id.
@@ -108,6 +111,20 @@ local function build(parent, groupID, title)
     h:SetHeight(HEADER_H)
     h:RegisterForClicks("LeftButtonUp")
 
+    -- White base so ApplyBar can tint it, and BACKGROUND keeps it under the hairline and the label
+    h.bar = h:CreateTexture(nil, "BACKGROUND")
+    h.bar:SetColorTexture(1, 1, 1, 1)
+    h.bar:SetPoint("LEFT",  h, "LEFT",  0, 0)
+    h.bar:SetPoint("RIGHT", h, "RIGHT", 0, 0)
+    h.bar:Hide()
+
+    -- The mask affects the bar's alpha only, so the gradient survives it
+    if h.CreateMaskTexture then
+        h.barMask = h:CreateMaskTexture(nil, "BACKGROUND")
+        h.barMask:SetTexture(SOFT_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        h.barMask:SetAllPoints(h.bar)
+    end
+
     h.hairline = h:CreateTexture(nil, "ARTWORK")
     h.hairline:SetColorTexture(HAIRLINE[1], HAIRLINE[2], HAIRLINE[3], HAIRLINE[4])
     h.hairline:SetHeight(2)
@@ -144,12 +161,62 @@ function Sections:Acquire(parent, groupID)
     return h
 end
 
+function Sections:ApplyBar(header, cfg)
+    local bar = header.bar
+    if not bar then return end
+    if not (cfg and cfg.headerBar) then
+        bar:Hide()
+        return
+    end
+
+    local c = cfg.headerBarColor or {}
+    local r, g, b, a = c.r or BAR_COLOR[1], c.g or BAR_COLOR[2], c.b or BAR_COLOR[3], c.a or BAR_COLOR[4]
+    bar:SetHeight(cfg.headerBarHeight or 22)
+
+    if bar.SetGradient then
+        local k = BAR_DARKEN
+        -- Cached ColorMixins so dragging a slider does not churn GC
+        if header._barC1 then header._barC1:SetRGBA(r, g, b, a) else header._barC1 = CreateColor(r, g, b, a) end
+        if header._barC2 then header._barC2:SetRGBA(r * k, g * k, b * k, a) else header._barC2 = CreateColor(r * k, g * k, b * k, a) end
+        -- VERTICAL takes min=bottom then max=top, so the darker shade goes first
+        if (cfg.headerBarStyle or 1) == 2 then
+            bar:SetGradient("VERTICAL", header._barC2, header._barC1)
+        else
+            bar:SetGradient("HORIZONTAL", header._barC1, header._barC2)
+        end
+    end
+
+    if header.barMask then
+        if cfg.headerBarSoftEdges then
+            -- Strength is inverted - lower values oversize the mask so the bar samples its
+            -- solid interior, and the bottom stays flush so that edge never feathers.
+            local s    = cfg.headerBarSoftEdgeStrength or 10
+            local extX = 30 * (10 - s) / 9
+            local extY = 8  * (10 - s) / 9
+            header.barMask:ClearAllPoints()
+            header.barMask:SetPoint("TOPLEFT",     bar, "TOPLEFT",     -extX, extY)
+            header.barMask:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT",  extX, 0)
+            if not header._barMasked then
+                bar:AddMaskTexture(header.barMask)
+                header._barMasked = true
+            end
+        elseif header._barMasked then
+            bar:RemoveMaskTexture(header.barMask)
+            header._barMasked = false
+        end
+    end
+
+    bar:Show()
+end
+
 -- Applied per section per render rather than cached: there are only a handful of
 -- headers, and it means every appearance option lands without a separate invalidate.
 function Sections:ApplyStyle(header)
     local cfg   = ns:GetModule("DB"):Tracker()
     local Media = ns:GetModule("Media")
     if not cfg then return end
+
+    self:ApplyBar(header, cfg)
 
     local delta = cfg.headerSizeDelta or 4
     Media:ApplyFont(header.text, delta)

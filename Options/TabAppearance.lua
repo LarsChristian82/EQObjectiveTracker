@@ -2,8 +2,9 @@ local _, ns = ...
 
 local Options = ns:GetModule("Options")
 
-local OUTLINES = { "None", "OUTLINE", "THICKOUTLINE" }
-local LAYOUTS  = { "Plain", "Card" }
+local OUTLINES   = { "None", "OUTLINE", "THICKOUTLINE" }
+local LAYOUTS    = { "Plain", "Card" }
+local BAR_STYLES = { "Horizontal", "Vertical" }
 
 local function pct(v) return ("%d%%"):format(math.floor(v * 100 + 0.5)) end
 local function px(v)  return ("%dpx"):format(math.floor(v + 0.5)) end
@@ -196,6 +197,37 @@ Options:RegisterTab({
             function() return DB().headerSizeDelta or 4 end,
             function(v) relayout("headerSizeDelta", v) end,
             "Size difference between section headings and objective text.", signed)
+
+        self:CreateCheckbox(content, "Header bar",
+            function() return DB().headerBar end,
+            function(v) relayout("headerBar", v) end,
+            "Draws a colored gradient bar behind each section heading, for a look closer to the default Blizzard tracker.")
+
+        self:CreateColorPicker(content, "Bar color",
+            function() return DB().headerBarColor end,
+            function(v) relayout("headerBarColor", v) end,
+            "Brightest end of the bar gradient. The other end is the same color darkened.", true)
+
+        self:CreateDropdown(content, "Bar style",
+            function() return BAR_STYLES end,
+            function() return (DB().headerBarStyle or 1) == 2 and "Vertical" or "Horizontal" end,
+            function(v) relayout("headerBarStyle", v == "Vertical" and 2 or 1) end,
+            "Horizontal runs bright on the left to dark on the right. Vertical runs bright at the top to dark at the bottom.")
+
+        self:CreateSlider(content, "Bar height", 6, 26, 1,
+            function() return DB().headerBarHeight or 22 end,
+            function(v) relayout("headerBarHeight", v) end,
+            "The bar is centered on the heading row, so larger values fill more of it.", px)
+
+        self:CreateCheckbox(content, "Soft bar edges",
+            function() return DB().headerBarSoftEdges end,
+            function(v) relayout("headerBarSoftEdges", v) end,
+            "Feathers the top, left and right edges so the bar blends into the UI instead of sitting in a hard box. The bottom stays flush with the divider line.")
+
+        self:CreateSlider(content, "Edge softness", 1, 10, 1,
+            function() return DB().headerBarSoftEdgeStrength or 10 end,
+            function(v) relayout("headerBarSoftEdgeStrength", v) end,
+            "Higher is softer. Only applies while Soft bar edges is on.")
 
         self:CreateHeading(content, "Frame")
 
