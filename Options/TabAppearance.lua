@@ -229,6 +229,43 @@ Options:RegisterTab({
             function(v) relayout("headerBarSoftEdgeStrength", v) end,
             "Higher is softer. Only applies while Soft bar edges is on.")
 
+        self:CreateHeading(content, "Scroll bar")
+
+        self:CreateCheckbox(content, "Hide scroll bar",
+            function() return DB().hideScrollBar end,
+            function(v) relayout("hideScrollBar", v) end,
+            "Removes the scroll bar entirely and gives its gutter back to the text. The tracker still scrolls with the mouse wheel.")
+
+        self:CreateCheckbox(content, "Scroll bar background",
+            function() return DB().scrollBarBg ~= false end,
+            function(v) relayout("scrollBarBg", v) end,
+            "Draws a track behind the scroll bar so it stays visible over bright terrain.")
+
+        self:CreateColorPicker(content, "Scroll bar color",
+            function() return DB().scrollBarBgColor end,
+            function(v) relayout("scrollBarBgColor", v) end,
+            "Color and opacity of the scroll bar track.", true)
+
+        self:CreateCheckbox(content, "Solid color thumb",
+            function() return DB().skinScrollBar end,
+            function(v) relayout("skinScrollBar", v) end,
+            "Replaces the textured draggable block with a flat single color one. Turning this off restores the stock Blizzard look.")
+
+        self:CreateColorPicker(content, "Thumb color",
+            function() return DB().scrollBarThumbColor end,
+            function(v) relayout("scrollBarThumbColor", v) end,
+            "Color and opacity of the draggable block. Only used while Solid color thumb is on.", true)
+
+        self:CreateSlider(content, "Thumb width", 4, 16, 1,
+            function() return DB().scrollBarThumbWidth or 8 end,
+            function(v) relayout("scrollBarThumbWidth", v) end,
+            "How wide the draggable block is. Only used while Solid color thumb is on.", px)
+
+        self:CreateCheckbox(content, "Hide scroll bar arrows",
+            function() return DB().hideScrollArrows end,
+            function(v) relayout("hideScrollArrows", v) end,
+            "Hides the up and down buttons at the ends of the bar. It still scrolls by dragging the thumb or using the mouse wheel.")
+
         self:CreateHeading(content, "Frame")
 
         self:CreateCheckbox(content, "Show background",

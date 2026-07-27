@@ -69,6 +69,9 @@ handlers.status = function()
 
     local active, free = RowPool:Count()
     ns:Print(("rows: %d active, %d pooled"):format(active, free))
+
+    local T = tracker()
+    if T and T.DebugScroll then ns:Print("scroll: " .. T:DebugScroll()) end
 end
 
 function Commands:OnEnable()

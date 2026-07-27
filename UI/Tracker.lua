@@ -7,6 +7,13 @@ local SCROLLBAR_GUTTER = 26
 local DRAG_HANDLE_H    = 14
 local GRIP_SIZE        = 14
 local REFRESH_THROTTLE = 0.25
+
+-- Hiding the bar reclaims its gutter for text, so the inset is a function of the
+-- setting rather than a constant.
+local function scrollGutter(cfg)
+    if cfg and cfg.hideScrollBar == true then return CONTENT_PAD * 2 end
+    return SCROLLBAR_GUTTER
+end
 local MIN_W, MIN_H     = 200, 100
 local MAX_W, MAX_H     = 600, 2000
 
@@ -141,10 +148,10 @@ function Tracker:BuildFrame()
 
     local scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", CONTENT_PAD, -DRAG_HANDLE_H)
-    scroll:SetPoint("BOTTOMRIGHT", -SCROLLBAR_GUTTER, GRIP_SIZE + 2)
+    scroll:SetPoint("BOTTOMRIGHT", -scrollGutter(cfg), GRIP_SIZE + 2)
 
     local content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(math.max(1, cfg.width - SCROLLBAR_GUTTER), 1)
+    content:SetSize(math.max(1, cfg.width - scrollGutter(cfg)), 1)
     scroll:SetScrollChild(content)
 
     scroll:EnableMouseWheel(true)
@@ -155,10 +162,129 @@ function Tracker:BuildFrame()
         sf:SetVerticalScroll(math.max(0, math.min(new, range)))
     end)
 
+    -- Anchored to the bar itself when the template exposes one, so it tracks the bar's
+    -- real width rather than assuming the gutter constant matches it.
+    local sbBG = f:CreateTexture(nil, "BORDER")
+    local sBar = scroll.ScrollBar or scroll.scrollBar
+    if sBar then
+        sbBG:SetPoint("TOPLEFT",     sBar, "TOPLEFT",    -1, 0)
+        sbBG:SetPoint("BOTTOMRIGHT", sBar, "BOTTOMRIGHT", 1, 0)
+    else
+        sbBG:SetPoint("TOPLEFT",     scroll, "TOPRIGHT",     0, 1)
+        sbBG:SetPoint("BOTTOMRIGHT", bg,     "BOTTOMRIGHT", -2, GRIP_SIZE + 2)
+    end
+    sbBG:Hide()
+    f.scrollBarBG = sbBG
+
     f:SetScript("OnSizeChanged", function() Tracker:Refresh() end)
 
     f.drag, f.grip, f.scroll, f.content = drag, grip, scroll, content
     self:ApplyLockState()
+end
+
+-- Blizzard re-shows the bar whenever the scroll range changes, so this needs a
+-- persistent hook rather than a one-shot Hide.
+local function setScrollBarHidden(sf, hidden)
+    if not sf then return end
+    local bar = sf.ScrollBar or sf.scrollBar
+    if not bar then return end
+    bar._eqotHidden = hidden
+    if not bar._eqotShowHook then
+        bar._eqotShowHook = true
+        bar:HookScript("OnShow", function(b) if b._eqotHidden then b:Hide() end end)
+    end
+    if hidden then
+        if bar:IsShown() then bar:Hide() end
+    else
+        bar:SetShown((sf:GetVerticalScrollRange() or 0) > 0.5)
+    end
+end
+
+local function scrollArrowButtons(bar)
+    local name = bar.GetName and bar:GetName()
+    local up = bar.ScrollUpButton or bar.Back
+        or (name and _G[name .. "ScrollUpButton"])
+    local down = bar.ScrollDownButton or bar.Forward
+        or (name and _G[name .. "ScrollDownButton"])
+    return up, down
+end
+
+-- Blizzard re-shows the arrows whenever the scroll range changes, so hiding needs a
+-- persistent hook rather than a one-shot Hide.
+local function setArrowHidden(btn, hidden)
+    if not btn then return end
+    btn._eqotArrowHidden = hidden
+    if not btn._eqotArrowHook then
+        btn._eqotArrowHook = true
+        btn:HookScript("OnShow", function(b) if b._eqotArrowHidden then b:Hide() end end)
+    end
+    if hidden then
+        if btn:IsShown() then btn:Hide() end
+    elseif not btn:IsShown() then
+        btn:Show()
+    end
+end
+
+-- The thumb is a texture on the old slider-based bar and a frame on the newer one, so
+-- both shapes are handled. The stock look is captured before the first skin so turning
+-- it back off restores rather than guesses.
+local function applyScrollBarSkin(sf, cfg)
+    if not (sf and cfg) then return end
+    local bar = sf.ScrollBar or sf.scrollBar
+    if not bar then return end
+    local on = cfg.skinScrollBar == true
+    local c  = cfg.scrollBarThumbColor or {}
+    local r, g, b, a = c.r or 0.60, c.g or 0.60, c.b or 0.65, c.a or 0.90
+    local w  = cfg.scrollBarThumbWidth
+
+    local thumbTex = bar.GetThumbTexture and bar:GetThumbTexture()
+    if thumbTex then
+        -- Capture the plain texture as well as the atlas. A stock thumb that is not
+        -- atlas-based leaves the atlas nil, and restoring on that alone strands the
+        -- solid colour permanently, since the skinned flag is cleared either way.
+        if not bar._eqotThumbCaptured then
+            bar._eqotThumbCaptured = true
+            bar._eqotThumbAtlas   = thumbTex.GetAtlas and thumbTex:GetAtlas() or nil
+            bar._eqotThumbTexture = thumbTex.GetTexture and thumbTex:GetTexture() or nil
+            bar._eqotThumbW       = thumbTex:GetWidth()
+        end
+        if on then
+            thumbTex:SetTexture(nil)
+            thumbTex:SetColorTexture(r, g, b, a)
+            if w and w > 0 then thumbTex:SetWidth(w) end
+        elseif bar._eqotThumbSkinned then
+            if bar._eqotThumbAtlas then
+                thumbTex:SetAtlas(bar._eqotThumbAtlas, true)
+            else
+                thumbTex:SetTexture(bar._eqotThumbTexture)
+            end
+            if bar._eqotThumbW and bar._eqotThumbW > 0 then thumbTex:SetWidth(bar._eqotThumbW) end
+        end
+        bar._eqotThumbSkinned = on
+    else
+        local tf = bar.Thumb or (bar.Track and bar.Track.Thumb)
+        if tf then
+            local skin = tf._eqotSkinTex
+            if not tf._eqotW then tf._eqotW = tf:GetWidth() end
+            if on then
+                if not skin then
+                    skin = tf:CreateTexture(nil, "OVERLAY")
+                    skin:SetAllPoints(tf)
+                    tf._eqotSkinTex = skin
+                end
+                skin:SetColorTexture(r, g, b, a)
+                skin:Show()
+                if w and w > 0 then tf:SetWidth(w) end
+            elseif skin then
+                skin:Hide()
+                if tf._eqotW > 0 then tf:SetWidth(tf._eqotW) end
+            end
+        end
+    end
+
+    local up, down = scrollArrowButtons(bar)
+    setArrowHidden(up,   cfg.hideScrollArrows == true)
+    setArrowHidden(down, cfg.hideScrollArrows == true)
 end
 
 function Tracker:ApplyFrameSkin(cfg)
@@ -187,6 +313,65 @@ function Tracker:ApplyFrameSkin(cfg)
     else
         f.bgFrame:SetBackdropBorderColor(0, 0, 0, 0)
     end
+
+    local gutter = scrollGutter(cfg)
+    if f._scrollGutter ~= gutter then
+        f._scrollGutter = gutter
+        f.scroll:SetPoint("BOTTOMRIGHT", -gutter, GRIP_SIZE + 2)
+    end
+
+    local hideBar = cfg.hideScrollBar == true
+    if f.scrollBarBG then
+        if cfg.scrollBarBg ~= false and not hideBar then
+            local s = cfg.scrollBarBgColor or {}
+            f.scrollBarBG:SetColorTexture(s.r or 0.60, s.g or 0.60, s.b or 0.65, s.a or 0.25)
+            f.scrollBarBG:Show()
+        else
+            f.scrollBarBG:Hide()
+        end
+    end
+
+    setScrollBarHidden(f.scroll, hideBar)
+    applyScrollBarSkin(f.scroll, cfg)
+end
+
+-- Scroll widgets differ between flavors and between the old slider bar and the newer
+-- one, so report what is actually on screen rather than what the template should give.
+function Tracker:DebugScroll()
+    local f = self.frame
+    if not (f and f.scroll) then return "no frame" end
+    local cfg = ns:GetModule("DB"):Tracker() or {}
+    local sf  = f.scroll
+    local bar = sf.ScrollBar or sf.scrollBar
+    local out = {}
+
+    local function shown(o) return o and (o:IsShown() and "shown" or "hidden") or "none" end
+
+    out[#out + 1] = ("gutter %s range %.0f bgTex %s"):format(
+        tostring(f._scrollGutter), sf:GetVerticalScrollRange() or 0, shown(f.scrollBarBG))
+
+    if not bar then
+        out[#out + 1] = "bar none"
+    else
+        out[#out + 1] = ("bar %s %.0fx%.0f"):format(shown(bar), bar:GetWidth() or 0, bar:GetHeight() or 0)
+        local t = bar.GetThumbTexture and bar:GetThumbTexture()
+        if t then
+            out[#out + 1] = ("thumbTex %s tex=%s atlas=%s w=%.0f"):format(shown(t),
+                tostring(t:GetTexture()), tostring(t.GetAtlas and t:GetAtlas()), t:GetWidth() or 0)
+        else
+            local tf = bar.Thumb or (bar.Track and bar.Track.Thumb)
+            out[#out + 1] = tf and ("thumbFrame %s w=%.0f"):format(shown(tf), tf:GetWidth() or 0)
+                or "thumb none"
+        end
+        local up, down = scrollArrowButtons(bar)
+        out[#out + 1] = ("arrows %s/%s"):format(shown(up), shown(down))
+    end
+
+    out[#out + 1] = ("cfg hide=%s bg=%s skin=%s noArrows=%s"):format(
+        tostring(cfg.hideScrollBar), tostring(cfg.scrollBarBg),
+        tostring(cfg.skinScrollBar), tostring(cfg.hideScrollArrows))
+
+    return table.concat(out, " | ")
 end
 
 function Tracker:Refresh()
@@ -222,7 +407,7 @@ function Tracker:Render()
 
     self:ApplyFrameSkin(cfg)
 
-    local width = math.max(1, math.floor((f:GetWidth() or 0) + 0.5) - SCROLLBAR_GUTTER)
+    local width = math.max(1, math.floor((f:GetWidth() or 0) + 0.5) - scrollGutter(cfg))
     if math.floor((content:GetWidth() or 0) + 0.5) ~= width then
         content:SetWidth(width)
     end

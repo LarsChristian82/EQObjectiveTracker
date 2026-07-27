@@ -24,11 +24,19 @@ parity needed before EQ can drop its own tracker and depend on this one.
   their own color. Instance types take priority over storyline ones.
 - Section header bars: an optional gradient bar behind each heading, in horizontal
   or vertical style, with its own color, height, and feathered edges.
+- Scroll bar skinning: a track background with its own color, a flat single color
+  thumb with adjustable color and width, and options to hide the end arrows or the
+  scroll bar entirely. Hiding the bar gives its gutter back to the text.
+- `/eqot status` now reports the scroll bar's live state, including which thumb
+  widget the current client actually uses.
 
 ### Notes
 
 - Entry spacing has a 4px floor while the card layout is on. Below that, adjacent
   card borders touch and a list reads as one merged card.
+- Turning the solid color thumb back off restores the original scroll bar thumb.
+  Everything Quests only restores an atlas-based thumb, so where the stock thumb is a
+  plain texture it stays stuck as a solid block until the UI is reloaded.
 
 ## [0.1.0] - 2026-07-26
 
