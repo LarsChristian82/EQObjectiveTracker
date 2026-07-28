@@ -54,6 +54,21 @@ Options:RegisterTab({
             end,
             "Show only the first unfinished objective on each entry instead of the full list.")
 
+        -- Stored per section behind the scenes, but only the achievements toggle is
+        -- exposed - that is the one Everything Quests has, under the same label.
+        self:CreateCheckbox(content, "Simplify tracked achievements",
+            function()
+                local t = DB:Tracker()
+                return (t.simplifyGroups and t.simplifyGroups.achievements) and true or false
+            end,
+            function(v)
+                local t = DB:Tracker()
+                t.simplifyGroups = t.simplifyGroups or {}
+                t.simplifyGroups.achievements = v or nil
+                ns:GetModule("Row"):Invalidate()
+            end,
+            "Show only incomplete criteria for tracked achievements.")
+
         self:CreateCheckbox(content, "Show zone under title",
             function() return DB:Tracker().showZoneTag end,
             function(v)

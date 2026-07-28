@@ -12,12 +12,18 @@ Entry.LINE = {
     OBJECTIVE   = "objective",
     PROGRESSBAR = "progressbar",
     NOTE        = "note",
+    -- Distinct from PROGRESSBAR: current is already a percentage rather than a count,
+    -- which is what lets a renderer fill a fixed 0-100 bar from it.
+    WEIGHTED    = "weighted",
 }
 
 Entry.ICON = {
     NONE     = "none",
     TEXTURE  = "texture",
     QUESTPOI = "questPOI",
+    -- A POI ring with the quest-type atlas centred on it. Two layers, so it cannot be
+    -- expressed as a plain TEXTURE, and the ring changes when the entry is super-tracked.
+    WORLDQUEST = "worldQuest",
 }
 
 local VALID_STATE, VALID_LINE, VALID_ICON = {}, {}, {}

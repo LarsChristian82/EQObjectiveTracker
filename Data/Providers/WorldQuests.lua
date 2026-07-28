@@ -19,12 +19,11 @@ local WorldQuests = {
 }
 
 local FALLBACK_ATLAS = "Worldquest-icon"
-local ICON_CROP      = { 0.08, 0.92, 0.08, 0.92 }
 local MAP_DEPTH      = 5
 
 local store = Entry.NewStore({
     groupID   = "worldquests",
-    icon      = { kind = ICON.TEXTURE },
+    icon      = { kind = ICON.WORLDQUEST },
     tags      = {},
     isTracked = true,
 })
@@ -156,39 +155,35 @@ local function title(questID)
     return nil
 end
 
-local rewardCache = {}
+local atlasCache = {}
 
-local function classifyReward(questID)
-    local money = GetQuestLogRewardMoney and GetQuestLogRewardMoney(questID) or 0
-    if money > 0 then
-        return { texture = "Interface\\MoneyFrame\\UI-MoneyIcons", texCoord = { 0, 0.25, 0, 1 } }
+-- The icon is the quest TYPE, not its reward: a pet battle, a profession, a pvp marker.
+-- Only a resolved atlas is memoized - tag info streams in late, and caching the fallback
+-- would freeze every row on the generic marker for the session.
+local function typeAtlas(questID)
+    local cached = atlasCache[questID]
+    if cached then return cached end
+    if not (QuestUtil and QuestUtil.GetWorldQuestAtlasInfo and ns.Has.QuestTagInfo) then
+        return FALLBACK_ATLAS
     end
-
-    local numItems = GetNumQuestLogRewards and GetNumQuestLogRewards(questID) or 0
-    if numItems > 0 then
-        local _, texture = GetQuestLogRewardInfo(1, questID)
-        if texture then return { texture = texture, texCoord = ICON_CROP } end
-    end
-
-    local currencies = C_QuestLog.GetQuestRewardCurrencies
-                       and C_QuestLog.GetQuestRewardCurrencies(questID)
-    if currencies and currencies[1] and currencies[1].texture then
-        return { texture = currencies[1].texture, texCoord = ICON_CROP }
-    end
-
-    return nil
+    local tagInfo = C_QuestLog.GetQuestTagInfo(questID)
+    if not tagInfo then return FALLBACK_ATLAS end
+    local atlas = QuestUtil.GetWorldQuestAtlasInfo(questID, tagInfo, false)
+    if not atlas then return FALLBACK_ATLAS end
+    atlasCache[questID] = atlas
+    return atlas
 end
 
--- Never memoize a miss - reward data streams in late, and a cached fallback would
--- freeze the row on the generic marker forever.
-local function reward(questID)
-    local cached = rewardCache[questID]
-    if cached then return cached end
-    local r = classifyReward(questID)
-    if r and (not HaveQuestRewardData or HaveQuestRewardData(questID)) then
-        rewardCache[questID] = r
+-- CanCreateQuestGroup, never GetActivityIDForQuestID - the latter returns truthy for
+-- ordinary world quests too, which would put the eye on every row.
+local function canCreateGroup(questID)
+    if QuestUtil and QuestUtil.CanCreateQuestGroup then
+        return QuestUtil.CanCreateQuestGroup(questID) and true or false
     end
-    return r
+    if C_LFGList and C_LFGList.CanCreateQuestGroup then
+        return C_LFGList.CanCreateQuestGroup(questID) and true or false
+    end
+    return false
 end
 
 local function fillLines(e, questID, complete)
@@ -259,10 +254,8 @@ function WorldQuests:GetEntries()
             wipe(e.tags)
             if wq then e.tags.worldquest = true else e.tags.bonus = true end
 
-            local r = reward(qid)
-            e.icon.texture  = r and r.texture or nil
-            e.icon.texCoord = r and r.texCoord or nil
-            e.icon.atlas    = (not r) and FALLBACK_ATLAS or nil
+            e.icon.atlas = typeAtlas(qid)
+            e.canGroup   = canCreateGroup(qid)
 
             fillLines(e, qid, complete)
         end
@@ -291,13 +284,17 @@ function WorldQuests:OnEntryTooltip(entry, tooltip)
     tooltip:AddLine("Left-click to super-track, right-click to untrack.", 0.5, 0.5, 0.5)
 end
 
+function WorldQuests:OnEntryGroupFinder(entry)
+    if LFGListUtil_FindQuestGroup then LFGListUtil_FindQuestGroup(entry.id) end
+end
+
 function WorldQuests:Enable(notifyDirty)
     local Events = ns:GetModule("Events")
 
-    -- Quest IDs get recycled, so drop the reward or the next quest under that ID
+    -- Quest IDs get recycled, so drop the atlas or the next quest under that ID
     -- inherits this one's icon
     local function drop(_, questID)
-        if questID then rewardCache[questID] = nil end
+        if questID then atlasCache[questID] = nil end
         notifyDirty()
     end
 

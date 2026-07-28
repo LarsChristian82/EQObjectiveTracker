@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Three appearance ports from Everything Quests, bringing the tracker closer to the
-parity needed before EQ can drop its own tracker and depend on this one.
+A large step toward the parity needed before Everything Quests can drop its own tracker
+and depend on this one. The appearance options, the world quest area, professions,
+endeavors and the full scenario and delve display are all ported across.
 
 ### New Features
 
@@ -41,12 +42,44 @@ parity needed before EQ can drop its own tracker and depend on this one.
   on choices made in the crafting window show their range instead of a false total. A
   recipe tracked both normally and as a recraft gets a row for each.
 - Endeavors are now tracked, showing each activity and its requirements. Completed
-  requirements follow your complete-entry colour like every other section, rather than
+  requirements follow your complete-entry color like every other section, rather than
   being locked to green.
 - Tracked world quests now survive logout. Blizzard drops world quest watches between
   sessions, so they are saved per character and restored shortly after login, once the
   world quest data exists. Expired ones are pruned rather than restored, and quests the
   game auto-watches as you walk past are not saved.
+- Simplify tracked achievements: show only the criteria you have not finished yet.
+- World quests that support it now carry a Find Group button, which opens the Premade
+  Group Finder for that quest. It only appears where a group can actually be made for
+  the quest, so most rows will not show one.
+- Scenarios, delves, dungeons and battlegrounds now show their current stage and its
+  criteria, with progress counts and completion. The content type is worked out from the
+  scenario type, texture kit and difficulty together, so Ritual Sites are told apart from
+  Delves and Follower Dungeons from ordinary ones, and it is shown in the entry's tooltip.
+  Unreleased steps that report an internal build string in place of real criteria text no
+  longer show that string. Scenarios draw in their own area pinned above the quest list
+  rather than scrolling with it, so the rest of the tracker moves down to make room.
+- The scenario banner, with its stage artwork, the content type above the instance name,
+  the final-stage filigree on the last stage, and the themed tint some scenarios carry.
+  Where a scenario supplies its own display widgets, those replace the banner as they do
+  in the default tracker. Criteria that track a percentage draw a progress bar.
+- Appearance options for the scenario banner: its own text shadow with color and
+  distance, kept separate from the tracker's text shadow, plus banner alignment, banner
+  text size and criteria text size.
+
+### Bug Fixes
+
+- World quests now show the quest type on their marker, matching Everything Quests and
+  the default tracker: a map pin ring, which brightens while super-tracked, with the
+  pet battle, profession or other type icon on it. They previously showed the quest's
+  reward instead, which also meant the icon visibly changed as reward data loaded, most
+  noticeably when listing every world quest in the zone at once.
+
+### Improvements
+
+- A finished progress bar now reads as its label alone. The tracker was still showing
+  the count beside it, so a completed bar read as "100/100 Rescued Villagers" where the
+  default tracker and Everything Quests both show just the label.
 
 ### Notes
 

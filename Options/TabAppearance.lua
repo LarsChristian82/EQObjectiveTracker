@@ -6,6 +6,14 @@ local OUTLINES   = { "None", "OUTLINE", "THICKOUTLINE" }
 local LAYOUTS    = { "Plain", "Card" }
 local BAR_STYLES = { "Horizontal", "Vertical" }
 
+local SCENARIO_ALIGN = { "Left", "Center", "Right" }
+
+local function alignLabel(v)
+    if v == "LEFT"  then return "Left"  end
+    if v == "RIGHT" then return "Right" end
+    return "Center"
+end
+
 local function pct(v) return ("%d%%"):format(math.floor(v * 100 + 0.5)) end
 local function px(v)  return ("%dpx"):format(math.floor(v + 0.5)) end
 local function signed(v)
@@ -71,6 +79,50 @@ Options:RegisterTab({
             function() return DB().textShadowStrength or 2 end,
             function(v) restyle("textShadowStrength", v) end,
             "How far the shadow is offset from the text.", px)
+
+        self:CreateHeading(content, "Scenario")
+
+        self:CreateCheckbox(content, "Text shadow",
+            function() return DB().scenarioTextShadow ~= false end,
+            function(v)
+                DB().scenarioTextShadow = v
+                ns:GetModule("Scenario"):ApplyBannerShadow()
+                ns:GetModule("Tracker"):Render()
+            end,
+            "Draws a drop shadow behind the scenario and delve banner text, the Stage and name lines. This is SEPARATE from the Text shadow above, which affects only the quest and objective text - the banner is styled on its own.")
+
+        self:CreateColorPicker(content, "Shadow color",
+            function() return DB().scenarioTextShadowColor end,
+            function(v)
+                DB().scenarioTextShadowColor = v
+                ns:GetModule("Scenario"):ApplyBannerShadow()
+            end,
+            "Color and opacity of the banner's drop shadow.", true)
+
+        self:CreateSlider(content, "Shadow distance", 1, 6, 0.5,
+            function() return DB().scenarioTextShadowStrength or 1 end,
+            function(v)
+                DB().scenarioTextShadowStrength = v
+                ns:GetModule("Scenario"):ApplyBannerShadow()
+                ns:GetModule("Tracker"):Render()
+            end,
+            "How far the banner's drop shadow is cast. Only used while the Scenario text shadow above is on.", px)
+
+        self:CreateDropdown(content, "Banner alignment",
+            function() return SCENARIO_ALIGN end,
+            function() return alignLabel(DB().scenarioTextAlign) end,
+            function(v) relayout("scenarioTextAlign", v:upper()) end,
+            "Positions the scenario and delve banner within the tracker. Left lines it up with the quest text, Center keeps it centered, and Right pushes it to the tracker's right edge.")
+
+        self:CreateSlider(content, "Banner text size", -4, 6, 0.5,
+            function() return DB().scenarioTextSizeDelta or 0 end,
+            function(v) relayout("scenarioTextSizeDelta", v) end,
+            "Grows or shrinks the banner's Stage and name text. 0 is the default size. The artwork is a fixed size, so large values may overflow it.", signed)
+
+        self:CreateSlider(content, "Criteria text size", 8, 24, 0.5,
+            function() return DB().scenarioFontSize or 13 end,
+            function(v) relayout("scenarioFontSize", v) end,
+            "Sizes the scenario and delve objective lines under the banner, separately from the Banner text size above.", px)
 
         self:CreateHeading(content, "Title colors")
 

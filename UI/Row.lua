@@ -9,6 +9,16 @@ local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 local PAD_X, PAD_Y     = 6, 2
 local ICON_SIZE        = 26
 local ICON_GAP         = 4
+
+-- The world quest marker is a POI ring with the quest-type atlas centred on it. The ring
+-- deliberately overhangs the 26px icon column, which is how the default tracker draws it.
+local WQ_RING_SIZE     = 33
+local WQ_STAR_SIZE     = 18
+local WQ_RING_TEXTURE  = "Interface/WorldMap/UI-QuestPoi-NumberIcons"
+local WQ_RING_TRACKED  = { 0.500, 0.625, 0.375, 0.5 }
+local WQ_RING_NORMAL   = { 0.875, 1.000, 0.375, 0.5 }
+local WQ_FALLBACK      = "Worldquest-icon"
+local GROUP_EYE_SIZE   = 16
 local TITLE_TO_SUB     = 1
 local SUB_TO_LINES     = 2
 local SUBTITLE_COLOR   = { 0.42, 0.69, 1.00 }
@@ -79,6 +89,8 @@ local function applyIcon(row, entry)
     row.iconBang:SetVertexColor(1, 1, 1)
 
     if kind == ICON.QUESTPOI then
+        row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+        row.iconBang:SetSize(ICON_SIZE, ICON_SIZE)
         local face = lookup(CENTER_FACE, icon.classification)
         if entry.isFocused and face then face = face .. "-SuperTracked" end
         Util.SafeSetAtlas(row.iconGlow, lookup(OUTER_GLOW, icon.classification))
@@ -91,6 +103,19 @@ local function applyIcon(row, entry)
         return
     end
 
+    if kind == ICON.WORLDQUEST then
+        row.iconGlow:SetTexture(nil)
+        row.icon:SetSize(WQ_RING_SIZE, WQ_RING_SIZE)
+        row.icon:SetTexture(WQ_RING_TEXTURE)
+        local c = entry.isFocused and WQ_RING_TRACKED or WQ_RING_NORMAL
+        row.icon:SetTexCoord(c[1], c[2], c[3], c[4])
+        row.iconBang:SetSize(WQ_STAR_SIZE, WQ_STAR_SIZE)
+        Util.SafeSetAtlas(row.iconBang, icon.atlas or WQ_FALLBACK)
+        return
+    end
+
+    row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+    row.iconBang:SetSize(ICON_SIZE, ICON_SIZE)
     row.iconGlow:SetTexture(nil)
     row.iconBang:SetTexture(nil)
     if icon.atlas then
@@ -119,21 +144,32 @@ local function buildLineText(entry, cfg)
     local hideN  = cfg and cfg.showObjectiveNumbers == false
     local simple = cfg and cfg.simplifyMode
 
+    -- Per-section simplify is looked up by groupID, so this stays provider-agnostic and
+    -- every section - including ones that do not exist yet - gets the toggle for free.
+    local groups   = cfg and cfg.simplifyGroups
+    local hideDone = simple or (groups and entry.groupID and groups[entry.groupID]) or false
+
     local n = 0
     for i = 1, #lines do
         local ln = lines[i]
-        if not (simple and ln.completed) then
+        if not (hideDone and ln.completed) then
             local text = ln.text or ""
             if not ln.richText then
                 if ln.kind == LINE.PROGRESSBAR and ln.required and ln.required > 0 then
                     local meter = tostring(ln.current or 0) .. "/" .. tostring(ln.required)
-                    text = (text ~= "") and (meter .. " " .. text) or meter
+                    -- A finished bar reads as its label alone, matching the default
+                    -- tracker. With no label the meter is all there is, so it stays.
+                    if not ln.completed then
+                        text = (text ~= "") and (meter .. " " .. text) or meter
+                    elseif text == "" then
+                        text = meter
+                    end
                 end
                 if hideN then text = Util.StripLeadingCount(text) end
                 if ln.completed then
                     text = "|A:common-icon-checkmark:12:12|a |cff" .. hex .. text .. "|r"
                 elseif ln.kind == LINE.NOTE then
-                    text = "|cff999999" .. text .. "|r"
+                    text = "|cff999999- " .. text .. "|r"
                 else
                     text = "- " .. Util.ColorizeProgress(text)
                 end
@@ -144,8 +180,9 @@ local function buildLineText(entry, cfg)
         end
     end
 
-    -- Simplify mode with everything finished still needs to show the last line
-    if n == 0 and simple and #lines > 0 then
+    -- Everything finished still needs to show the last line, or the entry renders with a
+    -- bare title and reads as though it had no objectives at all
+    if n == 0 and hideDone and #lines > 0 then
         local last = lines[#lines]
         n = 1
         _scratch[1] = "|A:common-icon-checkmark:12:12|a |cff" .. hex .. (last.text or "") .. "|r"
@@ -227,6 +264,23 @@ function Row:Build()
     r.timer:SetWordWrap(false)
     r.timer:Hide()
 
+    r.groupFinder = CreateFrame("Button", nil, r)
+    r.groupFinder:SetSize(GROUP_EYE_SIZE, GROUP_EYE_SIZE)
+    r.groupFinder.icon = r.groupFinder:CreateTexture(nil, "ARTWORK")
+    r.groupFinder.icon:SetAllPoints()
+    r.groupFinder.icon:SetAtlas("groupfinder-eye-single")
+    r.groupFinder:Hide()
+    r.groupFinder:SetScript("OnClick", function(btn)
+        dispatch(btn:GetParent(), "OnEntryGroupFinder")
+    end)
+    r.groupFinder:SetScript("OnEnter", function(btn)
+        GameTooltip:SetOwner(btn, "ANCHOR_LEFT")
+        GameTooltip:SetText("Find Group", 1, 1, 1)
+        GameTooltip:AddLine("Open the Premade Group Finder for this quest.", 0.7, 0.7, 0.7, true)
+        GameTooltip:Show()
+    end)
+    r.groupFinder:SetScript("OnLeave", onLeave)
+
     r:EnableMouse(true)
     r:SetScript("OnMouseUp", onMouseUp)
     r:SetScript("OnEnter", onEnter)
@@ -240,6 +294,7 @@ function Row:Reset(row)
     row._sTitle, row._sSub, row._sState  = nil, nil, nil
     row._sFocus, row._sWidth, row._sText = nil, nil, nil
     row._sTime, row._sGen, row._sCardBg  = nil, nil, nil
+    row._sGroup = nil
     ns:GetModule("Card"):Clear(row)
 end
 
@@ -255,6 +310,7 @@ function Row:Render(row, entry, width, cfg)
 
     local subtitle = (cfg and cfg.showZoneTag ~= false) and entry.subtitle or nil
     local lineText = buildLineText(entry, cfg)
+    local showEye  = entry.canGroup and true or false
 
     local timeText, timeMins
     if entry.expiresAt then
@@ -281,6 +337,7 @@ function Row:Render(row, entry, width, cfg)
        and row._sText  == lineText
        and row._sTime  == timeText
        and row._sCardBg == cardBg
+       and row._sGroup == showEye
        and row._sGen   == self.generation
     if unchanged then return row:GetHeight() end
 
@@ -314,8 +371,15 @@ function Row:Render(row, entry, width, cfg)
     row.iconHolder:ClearAllPoints()
     row.iconHolder:SetPoint("TOPLEFT", row, "TOPLEFT", padX + gutter, -padY)
 
+    -- The eye takes the right edge and the countdown shuffles left of it, so a world
+    -- quest that can form a group still shows how long is left on it.
+    row.groupFinder:ClearAllPoints()
+    row.groupFinder:SetPoint("TOPRIGHT", row, "TOPRIGHT", -padX, -padY)
+    row.groupFinder:SetShown(showEye)
+    local eyeW = showEye and (GROUP_EYE_SIZE + 4) or 0
+
     row.timer:ClearAllPoints()
-    row.timer:SetPoint("TOPRIGHT", row, "TOPRIGHT", -padX, -padY)
+    row.timer:SetPoint("TOPRIGHT", row, "TOPRIGHT", -(padX + eyeW), -padY)
     local timerW = 0
     if timeText then
         row.timer:SetText(timeText)
@@ -372,7 +436,7 @@ function Row:Render(row, entry, width, cfg)
     -- width change and rows overlap
     local textW = width - (iconW + iconGap + padX * 2 + gutter)
     if textW > 0 then
-        row.title:SetWidth(math.max(1, textW - timerW))
+        row.title:SetWidth(math.max(1, textW - timerW - eyeW))
         row.lines:SetWidth(textW)
         if row.subtitle:IsShown() then row.subtitle:SetWidth(textW) end
     end
@@ -388,6 +452,7 @@ function Row:Render(row, entry, width, cfg)
     row._sFocus, row._sWidth, row._sText = entry.isFocused, width, lineText
     row._sTime = timeText
     row._sCardBg = cardBg
+    row._sGroup = showEye
     row._sGen = self.generation
 
     return row:GetHeight()

@@ -126,6 +126,33 @@ function Media:ApplyTitleFont(fs)
     self:ApplyFont(fs, cfg and cfg.titleSizeDelta or 0)
 end
 
+function Media:ApplyScenarioShadow(fs)
+    if not fs then return end
+    local cfg = ns:GetModule("DB"):Tracker()
+    if not cfg then return end
+    setShadow(fs, cfg.scenarioTextShadow, cfg.scenarioTextShadowColor,
+              cfg.scenarioTextShadowStrength or 1)
+end
+
+-- base must be captured before the first SetFont - GetFont() after a resize would feed
+-- the already-scaled size back in and the banner text would creep on every apply.
+function Media:ApplyScenarioFont(fs, base)
+    if not (fs and base and base[1] and base[2]) then return end
+    local cfg   = ns:GetModule("DB"):Tracker()
+    local delta = (cfg and cfg.scenarioTextSizeDelta) or 0
+    fs:SetFont(base[1], math.max(6, base[2] + delta), base[3] or "")
+end
+
+function Media:ApplyScenarioCriteriaFont(fs)
+    if not fs then return end
+    local cfg = ns:GetModule("DB"):Tracker()
+    if not cfg then return end
+    local file = self:GetFontFile(cfg.font)
+    if file then
+        fs:SetFont(file, math.max(8, cfg.scenarioFontSize or 13), cfg.fontOutline or "")
+    end
+end
+
 function Media:LineSpacing()
     local cfg = ns:GetModule("DB"):Tracker()
     return math.max(-8, math.min(24, (cfg and cfg.lineSpacing) or 0))

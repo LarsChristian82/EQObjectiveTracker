@@ -10,6 +10,7 @@ local REFRESH_THROTTLE = 0.25
 
 local WQ_PIN_FRACTION  = 0.40
 local PINNED_GROUP     = "worldquests"
+local CONTAINER_GROUP  = "scenarios"
 
 -- Hiding the bar reclaims its gutter for text, so the inset is a function of the
 -- setting rather than a constant.
@@ -154,6 +155,17 @@ function Tracker:BuildFrame()
     f.background = bg:CreateTexture(nil, "BACKGROUND")
     f.background:SetAllPoints()
     f.background:Hide()
+
+    -- Not a section: no header, no collapse, no toggle. It pins above the scroll area and
+    -- everything below anchors off its bottom, so a scenario pushes the list down rather
+    -- than scrolling with it.
+    local scenarioContainer = CreateFrame("Frame", nil, f)
+    scenarioContainer:SetPoint("TOPLEFT", CONTENT_PAD, -DRAG_HANDLE_H)
+    -- Reserve the quest list's scroll bar gutter so the banner lines up with scrolled text
+    scenarioContainer:SetPoint("TOPRIGHT", -(scrollGutter(cfg) - CONTENT_PAD), -DRAG_HANDLE_H)
+    scenarioContainer:SetHeight(1)
+    f.scenarioContainer = scenarioContainer
+    scenarioContainer:SetScript("OnSizeChanged", function() Tracker:Refresh() end)
 
     local eventsRegion = CreateFrame("Frame", nil, f)
     eventsRegion:SetHeight(1)
@@ -354,11 +366,7 @@ function Tracker:ApplyFrameSkin(cfg)
 
     -- The scroll frame is sized explicitly per render, so the gutter feeds the anchoring
     -- pass rather than a BOTTOMRIGHT point that would fight SetSize.
-    local gutter = scrollGutter(cfg)
-    if f._scrollGutter ~= gutter then
-        f._scrollGutter = gutter
-        self:ApplyWorldQuestsPosition()
-    end
+    self:ApplyContentInset()
 
     local hideBar = cfg.hideScrollBar == true
     if f.scrollBarBG then
@@ -377,24 +385,37 @@ function Tracker:ApplyFrameSkin(cfg)
     applyScrollBarSkin(f.eventsScroll, cfg)
 end
 
+-- Guarded on the last gutter: SetPoint fires scenarioContainer's OnSizeChanged, which
+-- calls Refresh, so an unguarded re-inset re-enters on every pass.
+function Tracker:ApplyContentInset()
+    local f = self.frame
+    if not (f and f.scenarioContainer) then return end
+    local gutter = scrollGutter(ns:GetModule("DB"):Tracker())
+    if f._scrollGutter == gutter then return end
+    f._scrollGutter = gutter
+    f.scenarioContainer:SetPoint("TOPLEFT",  CONTENT_PAD, -DRAG_HANDLE_H)
+    f.scenarioContainer:SetPoint("TOPRIGHT", -(gutter - CONTENT_PAD), -DRAG_HANDLE_H)
+end
+
+-- Everything hangs off the scenario container's bottom rather than off the frame top, so
+-- the whole stack moves down together when a scenario appears.
 function Tracker:ApplyWorldQuestsPosition()
     local f = self.frame
     if not f then return end
-    local scroll, region = f.scroll, f.eventsRegion
-    if not (scroll and region) then return end
+    local scroll, region, scen = f.scroll, f.eventsRegion, f.scenarioContainer
+    if not (scroll and region and scen) then return end
 
-    local cfg    = ns:GetModule("DB"):Tracker()
-    local pos    = (cfg and cfg.worldQuestsPosition) or "bottom"
-    local gutter = scrollGutter(cfg)
+    local cfg = ns:GetModule("DB"):Tracker()
+    local pos = (cfg and cfg.worldQuestsPosition) or "bottom"
 
     scroll:ClearAllPoints()
     region:ClearAllPoints()
     if pos == "top" then
-        region:SetPoint("TOPLEFT",  f, "TOPLEFT",  CONTENT_PAD, -DRAG_HANDLE_H)
-        region:SetPoint("TOPRIGHT", f, "TOPRIGHT", -gutter,     -DRAG_HANDLE_H)
-        scroll:SetPoint("TOPLEFT",  region, "BOTTOMLEFT", 0, -2)
+        region:SetPoint("TOPLEFT",  scen,   "BOTTOMLEFT",  0, -2)
+        region:SetPoint("TOPRIGHT", scen,   "BOTTOMRIGHT", 0, -2)
+        scroll:SetPoint("TOPLEFT",  region, "BOTTOMLEFT",  0, -2)
     else
-        scroll:SetPoint("TOPLEFT",  f, "TOPLEFT", CONTENT_PAD, -DRAG_HANDLE_H)
+        scroll:SetPoint("TOPLEFT",  scen,   "BOTTOMLEFT",  0, -2)
         region:SetPoint("TOPLEFT",  scroll, "BOTTOMLEFT",  0, -2)
         region:SetPoint("TOPRIGHT", scroll, "BOTTOMRIGHT", 0, -2)
     end
@@ -448,6 +469,10 @@ function Tracker:DebugScroll()
         sf:GetHeight() or 0,
         f.eventsRegion and f.eventsRegion:GetHeight() or 0,
         f.eventsContent and f.eventsContent:GetHeight() or 0)
+
+    out[#out + 1] = ("scenario container %s h=%.0f"):format(
+        shown(f.scenarioContainer),
+        f.scenarioContainer and f.scenarioContainer:GetHeight() or 0)
 
     return table.concat(out, " | ")
 end
@@ -539,6 +564,27 @@ function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
     return band + viewport, hasTimed
 end
 
+-- The banner draws itself from provider facts rather than from an Entry: it needs stage
+-- numbers, a texture kit and a widget set, none of which the Entry shape carries.
+function Tracker:_RenderScenario(group, cfg)
+    local f    = self.frame
+    local scen = f.scenarioContainer
+    if not scen then return 1 end
+
+    local entry = (group and group.visibleCount > 0) and group.entries[1] or nil
+    local info
+    if entry then
+        local provider = ns:GetModule("Registry"):Get(CONTAINER_GROUP)
+        if provider and provider.GetBanner then info = provider:GetBanner() end
+    end
+
+    local h = math.max(1, ns:GetModule("Scenario"):Render(scen, cfg, info, entry))
+
+    -- SetHeight fires OnSizeChanged, which calls Refresh, so only touch it on a real move
+    if math.abs((scen:GetHeight() or 0) - h) > 0.5 then scen:SetHeight(h) end
+    return h
+end
+
 function Tracker:Render()
     local f = self.frame
     if not f then return end
@@ -571,6 +617,9 @@ function Tracker:Render()
     local byGroup  = Feed:Build()
     local Card     = ns:GetModule("Card")
     local gap      = Card:Gap(math.max(0, (cfg and cfg.blockSpacing) or 2), (Card:State(cfg)))
+
+    local scenarioH = self:_RenderScenario(byGroup[CONTAINER_GROUP], cfg)
+
     local y        = 0
     local hasTimed = false
     local sectionTops = {}
@@ -601,7 +650,8 @@ function Tracker:Render()
     local questContentH = y
     content:SetHeight(math.max(1, questContentH))
 
-    local available = math.max(1, (f:GetHeight() or 0) - DRAG_HANDLE_H - (GRIP_SIZE + 2))
+    local available = math.max(1, (f:GetHeight() or 0) - DRAG_HANDLE_H - scenarioH - 2
+                                  - (GRIP_SIZE + 2))
     local fraction  = (cfg and cfg.worldQuestsPinnedMaxFraction) or WQ_PIN_FRACTION
     local band      = headerBand()
 

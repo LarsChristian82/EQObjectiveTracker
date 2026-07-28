@@ -53,12 +53,18 @@ local function fillCriteria(e, id)
         local text, _, done, quantity, required, _, flags = GetAchievementCriteriaInfo(id, c)
         local isBar    = flags and bit.band(flags, PROGRESS_BAR_FLAG) ~= 0
         local hasMeter = required and required > 1
-        if (text and text ~= "") or isBar or hasMeter then
+        if (text and text ~= "") or isBar then
             local ln = Entry.PushLine(e)
             ln.text      = text or ""
             ln.completed = done and true or false
-            if hasMeter then ln.current, ln.required = quantity, required end
-            if isBar or hasMeter then ln.kind = LINE.PROGRESSBAR end
+            -- A criterion with no count of its own renders dimmed, which is the shape
+            -- LINE.NOTE already carries. Anything metered keeps the ordinary bar look.
+            if hasMeter then
+                ln.current, ln.required = quantity, required
+                ln.kind = LINE.PROGRESSBAR
+            else
+                ln.kind = LINE.NOTE
+            end
             shown = shown + 1
         end
     end
@@ -100,8 +106,7 @@ end
 
 function Achievements:OnEntryTooltip(entry, tooltip)
     tooltip:AddLine(entry.title, 1, 0.82, 0)
-    tooltip:AddLine(" ")
-    tooltip:AddLine("Left-click to open, right-click to untrack.", 0.5, 0.5, 0.5)
+    tooltip:AddLine("Left-click to open, right-click to untrack.", 0.6, 0.6, 0.6)
 end
 
 function Achievements:Enable(notifyDirty)

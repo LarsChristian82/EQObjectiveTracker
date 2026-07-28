@@ -42,6 +42,7 @@ Has.TrackedRecipes      = method(C_TradeSkillUI, "GetRecipesTracked")
 Has.RecipeSchematic     = method(ProfessionsUtil, "GetRecipeSchematic")
                           or method(C_TradeSkillUI, "GetRecipeSchematic")
 Has.Scenario            = method(C_Scenario, "GetInfo")
+Has.ScenarioCriteria    = method(C_ScenarioInfo, "GetCriteriaInfo")
 Has.Map                 = method(C_Map, "GetBestMapForUnit")
 Has.Atlas               = method(C_Texture, "GetAtlasInfo")
 

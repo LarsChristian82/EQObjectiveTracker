@@ -28,12 +28,21 @@ Sections.frames = {}
 -- so they sit outside the reorderable run and Order never returns them.
 Sections.PINNED = { worldquests = true }
 
+-- The scenario container is not a section at all - no header, no collapse, no visibility
+-- toggle, and it always sits above everything while a scenario is running. Kept separate
+-- from PINNED because that list is what the World Quests options block iterates.
+Sections.CONTAINER = { scenarios = true }
+
 function Sections:Title(groupID)
     return self.TITLES[groupID] or groupID
 end
 
 function Sections:IsPinned(groupID)
     return self.PINNED[groupID] == true
+end
+
+function Sections:IsContainer(groupID)
+    return self.CONTAINER[groupID] == true
 end
 
 function Sections:Pinned()
@@ -57,13 +66,13 @@ function Sections:Order()
 
     local seen, out = {}, {}
     for _, id in ipairs((cfg and cfg.sectionOrder) or {}) do
-        if live[id] and not seen[id] and not self:IsPinned(id) then
+        if live[id] and not seen[id] and not self:IsPinned(id) and not self:IsContainer(id) then
             seen[id] = true
             out[#out + 1] = id
         end
     end
     for _, id in ipairs(Registry:Groups()) do
-        if not seen[id] and not self:IsPinned(id) then
+        if not seen[id] and not self:IsPinned(id) and not self:IsContainer(id) then
             seen[id] = true
             out[#out + 1] = id
         end
