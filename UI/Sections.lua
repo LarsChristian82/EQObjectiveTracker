@@ -23,8 +23,25 @@ Sections.TITLES = {
 
 Sections.frames = {}
 
+-- World quests draw in their own capped region pinned above or below the scroll area,
+-- so they sit outside the reorderable run and Order never returns them.
+Sections.PINNED = { worldquests = true }
+
 function Sections:Title(groupID)
     return self.TITLES[groupID] or groupID
+end
+
+function Sections:IsPinned(groupID)
+    return self.PINNED[groupID] == true
+end
+
+function Sections:Pinned()
+    local Registry = ns:GetModule("Registry")
+    local out = {}
+    for _, id in ipairs(Registry:Groups()) do
+        if self:IsPinned(id) then out[#out + 1] = id end
+    end
+    return out
 end
 
 -- Saved order first, then any group the saved order has not seen. Appending the
@@ -39,13 +56,13 @@ function Sections:Order()
 
     local seen, out = {}, {}
     for _, id in ipairs((cfg and cfg.sectionOrder) or {}) do
-        if live[id] and not seen[id] then
+        if live[id] and not seen[id] and not self:IsPinned(id) then
             seen[id] = true
             out[#out + 1] = id
         end
     end
     for _, id in ipairs(Registry:Groups()) do
-        if not seen[id] then
+        if not seen[id] and not self:IsPinned(id) then
             seen[id] = true
             out[#out + 1] = id
         end

@@ -30,7 +30,8 @@ local store = Entry.NewStore({
 })
 
 local candidates, seen, watched = {}, {}, {}
-local sourceStats = { watched = 0, inzone = 0, questlog = 0, wq = 0, bonus = 0, logOwned = 0 }
+local sourceStats = { watched = 0, autozone = 0, inzone = 0, questlog = 0,
+                      wq = 0, bonus = 0, logOwned = 0 }
 local currentSource
 
 local function push(qid)
@@ -43,8 +44,9 @@ end
 
 function WorldQuests:DebugLine()
     local m = ns.Has.Map and C_Map.GetBestMapForUnit("player")
-    return ("sources: watched %d, in-zone %d, quest log %d   map %s\n      kinds: %d real world quests, %d task/bonus, %d normal log quests (left to Quests)")
-        :format(sourceStats.watched, sourceStats.inzone, sourceStats.questlog, tostring(m),
+    return ("sources: watched %d, zone-list %d, in-zone %d, quest log %d   map %s\n      kinds: %d real world quests, %d task/bonus, %d normal log quests (left to Quests)")
+        :format(sourceStats.watched, sourceStats.autozone, sourceStats.inzone,
+                sourceStats.questlog, tostring(m),
                 sourceStats.wq, sourceStats.bonus, sourceStats.logOwned)
 end
 
@@ -106,6 +108,24 @@ local function isWorldQuest(qid)
     if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(qid) then return true end
     if QuestUtils_IsQuestWorldQuest and QuestUtils_IsQuestWorldQuest(qid) then return true end
     return false
+end
+
+-- Lists every world quest on the map you are standing in, watched or not. No inProgress
+-- gate, which is what makes unstarted ones appear, and deliberately no parent-map walk:
+-- a zone list should be the zone, not its whole continent.
+local function addZoneWorldQuests()
+    local DB  = ns:GetModule("DB")
+    local cfg = DB and DB:Tracker()
+    if not (cfg and cfg.autoListZoneWorldQuests) then return end
+    if not ns.Has.Map then return end
+    local m = C_Map.GetBestMapForUnit("player")
+    if not m or m <= 0 then return end
+    local list = taskQuestsForMap(m)
+    for i = 1, (list and #list or 0) do
+        local q   = list[i]
+        local qid = q and (q.questId or q.questID)
+        if qid and isWorldQuest(qid) then push(qid) end
+    end
 end
 
 -- A normal, visible quest log entry belongs to the Quests section. Task and bonus
@@ -198,8 +218,10 @@ function WorldQuests:GetEntries()
     wipe(candidates)
     wipe(seen)
     sourceStats.watched, sourceStats.inzone, sourceStats.questlog = 0, 0, 0
+    sourceStats.autozone = 0
     sourceStats.wq, sourceStats.bonus, sourceStats.logOwned = 0, 0, 0
     currentSource = "watched";  addWatched()
+    currentSource = "autozone"; addZoneWorldQuests()
     currentSource = "inzone";   addInZoneTaskQuests()
     currentSource = "questlog"; addQuestLogTaskQuests()
     currentSource = nil

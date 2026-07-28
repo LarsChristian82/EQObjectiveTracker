@@ -29,11 +29,20 @@ parity needed before EQ can drop its own tracker and depend on this one.
   scroll bar entirely. Hiding the bar gives its gutter back to the text.
 - `/eqot status` now reports the scroll bar's live state, including which thumb
   widget the current client actually uses.
+- World quests now render in their own capped, separately scrolling area pinned above
+  or below the quest list, rather than as an ordinary section. Its share of the
+  tracker is capped, and the quest sections are given their space first, so a long
+  world quest list can no longer push quests off screen. The cap is adjustable, or it
+  can be replaced with a fixed height.
+- Optionally list every world quest on your current map without tracking each one.
 
 ### Notes
 
 - Entry spacing has a 4px floor while the card layout is on. Below that, adjacent
   card borders touch and a list reads as one merged card.
+- World Quests no longer appears in the section reorder list, because a pinned region
+  has no position within the scrolling run. Its Top or Bottom placement, and its
+  show and hide toggle, moved to the World Quests group on the Sections tab.
 - Turning the solid color thumb back off restores the original scroll bar thumb.
   Everything Quests only restores an atlas-based thumb, so where the stock thumb is a
   plain texture it stays stuck as a solid block until the UI is reloaded.

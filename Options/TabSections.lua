@@ -3,6 +3,10 @@ local _, ns = ...
 local Options = ns:GetModule("Options")
 
 local ROW_H = 26
+local WQ_POSITIONS = { "Top", "Bottom" }
+
+local function pct(v) return ("%d%%"):format(math.floor(v + 0.5)) end
+local function px(v)  return ("%dpx"):format(math.floor(v + 0.5)) end
 
 local function buildSectionRow(parent)
     local r = CreateFrame("Frame", nil, parent)
@@ -84,6 +88,57 @@ Options:RegisterTab({
 
         layout()
         self:Place(content, list, list:GetHeight(), 4)
+
+        local pinned = Sections:Pinned()
+        if #pinned > 0 then
+            self:CreateHeading(content, "World Quests")
+            self:CreateLabel(content,
+                "Pinned to its own capped area, so it is not in the list above.",
+                0.6, 0.6, 0.6)
+
+            for _, id in ipairs(pinned) do
+                self:CreateCheckbox(content, ("Show %s"):format(Sections:Title(id)),
+                    function() return not Sections:IsHidden(id) end,
+                    function(v) Sections:SetHidden(id, not v) end,
+                    "Hide this section entirely, even when it has entries.")
+            end
+
+            self:CreateCheckbox(content, "List every world quest in your zone",
+                function() return DB:Tracker().autoListZoneWorldQuests end,
+                function(v) DB:Tracker().autoListZoneWorldQuests = v end,
+                "Shows every world quest on your current map without having to track each one. Only the map you are standing on, not the whole continent.")
+
+            self:CreateDropdown(content, "Position",
+                function() return WQ_POSITIONS end,
+                function() return DB:Tracker().worldQuestsPosition == "top" and "Top" or "Bottom" end,
+                function(v)
+                    ns:GetModule("Tracker"):SetWorldQuestsPosition(v == "Top" and "top" or "bottom")
+                end,
+                "Whether the world quest area sits above or below the scrolling quest list.")
+
+            self:CreateSlider(content, "Maximum height", 10, 80, 5,
+                function() return (DB:Tracker().worldQuestsPinnedMaxFraction or 0.40) * 100 end,
+                function(v)
+                    DB:Tracker().worldQuestsPinnedMaxFraction = v / 100
+                    ns:GetModule("Tracker"):Render()
+                end,
+                "The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation.",
+                pct)
+
+            self:CreateCheckbox(content, "Set a custom height",
+                function() return DB:Tracker().worldQuestsHeightOverride end,
+                function(v) DB:Tracker().worldQuestsHeightOverride = v end,
+                "By default the world quest area shares space with the quest list and gets squeezed when you have a lot of quests. Turn this on to give it a fixed height instead.")
+
+            self:CreateSlider(content, "Custom height", 40, 400, 10,
+                function() return DB:Tracker().worldQuestsHeight or 120 end,
+                function(v)
+                    DB:Tracker().worldQuestsHeight = v
+                    ns:GetModule("Tracker"):Render()
+                end,
+                "Fixed height for the world quest area. Only used while Set a custom height is on.",
+                px)
+        end
 
         self:CreateHeading(content, "Show quest types")
 

@@ -8,11 +8,20 @@ local DRAG_HANDLE_H    = 14
 local GRIP_SIZE        = 14
 local REFRESH_THROTTLE = 0.25
 
+local WQ_PIN_FRACTION  = 0.40
+local PINNED_GROUP     = "worldquests"
+
 -- Hiding the bar reclaims its gutter for text, so the inset is a function of the
 -- setting rather than a constant.
 local function scrollGutter(cfg)
     if cfg and cfg.hideScrollBar == true then return CONTENT_PAD * 2 end
     return SCROLLBAR_GUTTER
+end
+
+-- The pinned region reserves its header plus a 2px gap before its own scroll area.
+-- Derived rather than a constant so it tracks the section header height.
+local function headerBand()
+    return ns:GetModule("Sections"):Height() + 2
 end
 local MIN_W, MIN_H     = 200, 100
 local MAX_W, MAX_H     = 600, 2000
@@ -146,21 +155,49 @@ function Tracker:BuildFrame()
     f.background:SetAllPoints()
     f.background:Hide()
 
+    local eventsRegion = CreateFrame("Frame", nil, f)
+    eventsRegion:SetHeight(1)
+    eventsRegion:Hide()
+    f.eventsRegion = eventsRegion
+
+    local eventsScroll = CreateFrame("ScrollFrame", nil, eventsRegion, "UIPanelScrollFrameTemplate")
+    eventsScroll:SetPoint("TOPLEFT",     eventsRegion, "TOPLEFT",     0, -headerBand())
+    eventsScroll:SetPoint("BOTTOMRIGHT", eventsRegion, "BOTTOMRIGHT", 0, 0)
+    local eventsContent = CreateFrame("Frame", nil, eventsScroll)
+    eventsContent:SetSize(math.max(1, cfg.width - scrollGutter(cfg)), 1)
+    eventsScroll:SetScrollChild(eventsContent)
+    f.eventsScroll, f.eventsContent = eventsScroll, eventsContent
+
+    local eBg = f:CreateTexture(nil, "BORDER")
+    local eBar = eventsScroll.ScrollBar or eventsScroll.scrollBar
+    if eBar then
+        eBg:SetPoint("TOPLEFT",     eBar, "TOPLEFT",    -1, 0)
+        eBg:SetPoint("BOTTOMRIGHT", eBar, "BOTTOMRIGHT", 1, 0)
+    else
+        eBg:SetPoint("TOPLEFT",     eventsScroll, "TOPRIGHT",     0, 1)
+        eBg:SetPoint("BOTTOMRIGHT", eventsRegion, "BOTTOMRIGHT", -2, 0)
+    end
+    eBg:Hide()
+    f.eventsScrollBarBG = eBg
+
+    -- scroll and eventsRegion are anchored by ApplyWorldQuestsPosition per the Top/Bottom
+    -- setting, so they are deliberately not hard-anchored here.
     local scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", CONTENT_PAD, -DRAG_HANDLE_H)
-    scroll:SetPoint("BOTTOMRIGHT", -scrollGutter(cfg), GRIP_SIZE + 2)
 
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(math.max(1, cfg.width - scrollGutter(cfg)), 1)
     scroll:SetScrollChild(content)
 
-    scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function(sf, delta)
+    local function wheelScroll(sf, delta)
         local range = sf:GetVerticalScrollRange() or 0
         if range <= 0 then return end
         local new = (sf:GetVerticalScroll() or 0) - delta * 24
         sf:SetVerticalScroll(math.max(0, math.min(new, range)))
-    end)
+    end
+    for _, sf in ipairs({ scroll, eventsScroll }) do
+        sf:EnableMouseWheel(true)
+        sf:SetScript("OnMouseWheel", wheelScroll)
+    end
 
     -- Anchored to the bar itself when the template exposes one, so it tracks the bar's
     -- real width rather than assuming the gutter constant matches it.
@@ -179,6 +216,7 @@ function Tracker:BuildFrame()
     f:SetScript("OnSizeChanged", function() Tracker:Refresh() end)
 
     f.drag, f.grip, f.scroll, f.content = drag, grip, scroll, content
+    self:ApplyWorldQuestsPosition()
     self:ApplyLockState()
 end
 
@@ -314,10 +352,12 @@ function Tracker:ApplyFrameSkin(cfg)
         f.bgFrame:SetBackdropBorderColor(0, 0, 0, 0)
     end
 
+    -- The scroll frame is sized explicitly per render, so the gutter feeds the anchoring
+    -- pass rather than a BOTTOMRIGHT point that would fight SetSize.
     local gutter = scrollGutter(cfg)
     if f._scrollGutter ~= gutter then
         f._scrollGutter = gutter
-        f.scroll:SetPoint("BOTTOMRIGHT", -gutter, GRIP_SIZE + 2)
+        self:ApplyWorldQuestsPosition()
     end
 
     local hideBar = cfg.hideScrollBar == true
@@ -332,7 +372,39 @@ function Tracker:ApplyFrameSkin(cfg)
     end
 
     setScrollBarHidden(f.scroll, hideBar)
+    setScrollBarHidden(f.eventsScroll, hideBar)
     applyScrollBarSkin(f.scroll, cfg)
+    applyScrollBarSkin(f.eventsScroll, cfg)
+end
+
+function Tracker:ApplyWorldQuestsPosition()
+    local f = self.frame
+    if not f then return end
+    local scroll, region = f.scroll, f.eventsRegion
+    if not (scroll and region) then return end
+
+    local cfg    = ns:GetModule("DB"):Tracker()
+    local pos    = (cfg and cfg.worldQuestsPosition) or "bottom"
+    local gutter = scrollGutter(cfg)
+
+    scroll:ClearAllPoints()
+    region:ClearAllPoints()
+    if pos == "top" then
+        region:SetPoint("TOPLEFT",  f, "TOPLEFT",  CONTENT_PAD, -DRAG_HANDLE_H)
+        region:SetPoint("TOPRIGHT", f, "TOPRIGHT", -gutter,     -DRAG_HANDLE_H)
+        scroll:SetPoint("TOPLEFT",  region, "BOTTOMLEFT", 0, -2)
+    else
+        scroll:SetPoint("TOPLEFT",  f, "TOPLEFT", CONTENT_PAD, -DRAG_HANDLE_H)
+        region:SetPoint("TOPLEFT",  scroll, "BOTTOMLEFT",  0, -2)
+        region:SetPoint("TOPRIGHT", scroll, "BOTTOMRIGHT", 0, -2)
+    end
+end
+
+function Tracker:SetWorldQuestsPosition(pos)
+    local cfg = ns:GetModule("DB"):Tracker()
+    if cfg then cfg.worldQuestsPosition = pos end
+    self:ApplyWorldQuestsPosition()
+    self:Render()
 end
 
 -- Scroll widgets differ between flavors and between the old slider bar and the newer
@@ -371,6 +443,12 @@ function Tracker:DebugScroll()
         tostring(cfg.hideScrollBar), tostring(cfg.scrollBarBg),
         tostring(cfg.skinScrollBar), tostring(cfg.hideScrollArrows))
 
+    out[#out + 1] = ("wq %s pos=%s scrollH=%.0f regionH=%.0f contentH=%.0f"):format(
+        shown(f.eventsRegion), tostring(cfg.worldQuestsPosition),
+        sf:GetHeight() or 0,
+        f.eventsRegion and f.eventsRegion:GetHeight() or 0,
+        f.eventsContent and f.eventsContent:GetHeight() or 0)
+
     return table.concat(out, " | ")
 end
 
@@ -385,6 +463,81 @@ end
 -- Hoisted: Render runs on every quest event, so a per-row closure here would
 -- allocate garbage proportional to the tracker's length on every repaint.
 local _buildRow, _resetRow
+
+-- World quests live outside the main scroll area in a region capped to a fraction of the
+-- tracker, so a long world quest list can never push the quest sections off screen.
+function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
+    local f = self.frame
+    local region, escroll, econtent = f.eventsRegion, f.eventsScroll, f.eventsContent
+    if not (region and escroll and econtent) then return 0, false end
+
+    local Sections = ns:GetModule("Sections")
+    local band     = headerBand()
+
+    local function collapseRegion()
+        escroll:Hide()
+        if f.eventsScrollBarBG then f.eventsScrollBarBG:Hide() end
+        region:SetHeight(1)
+        region:Hide()
+    end
+
+    if not group or group.visibleCount == 0 or Sections:IsHidden(PINNED_GROUP) then
+        collapseRegion()
+        return 0, false
+    end
+
+    region:Show()
+
+    local collapsed = Sections:IsCollapsed(PINNED_GROUP)
+    local header    = Sections:Acquire(region, PINNED_GROUP)
+    Sections:Place(header, region, 0, group, collapsed, cfg and cfg.showQuestTotal ~= false)
+
+    if collapsed then
+        escroll:Hide()
+        if f.eventsScrollBarBG then f.eventsScrollBarBG:Hide() end
+        region:SetHeight(band)
+        return band, false
+    end
+
+    escroll:Show()
+    econtent:SetWidth(math.max(1, width))
+
+    local Row     = ns:GetModule("Row")
+    local RowPool = ns:GetModule("RowPool")
+    local Card    = ns:GetModule("Card")
+    local gap     = Card:Gap(math.max(0, (cfg and cfg.blockSpacing) or 2), (Card:State(cfg)))
+
+    local y, hasTimed = 0, false
+    for i = 1, group.visibleCount do
+        local entry = group.entries[i]
+        if entry.expiresAt then hasTimed = true end
+        local row = RowPool:Acquire(econtent, entry.providerID, entry.id, _buildRow)
+        row:SetWidth(width)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", econtent, "TOPLEFT", 0, -y)
+        y = y + Row:Render(row, entry, width, cfg) + gap
+    end
+    econtent:SetHeight(math.max(1, y))
+
+    local capViewport = math.max(30, (cap or 0) - band)
+    local viewport    = math.max(1, math.min(y, capViewport))
+    region:SetHeight(band + viewport)
+
+    if escroll.UpdateScrollChildRect then escroll:UpdateScrollChildRect() end
+
+    if f.eventsScrollBarBG then
+        local needsBar = y > viewport + 0.5
+        if needsBar and cfg and cfg.scrollBarBg ~= false and cfg.hideScrollBar ~= true then
+            local s = cfg.scrollBarBgColor or {}
+            f.eventsScrollBarBG:SetColorTexture(s.r or 0.60, s.g or 0.60, s.b or 0.65, s.a or 0.25)
+            f.eventsScrollBarBG:Show()
+        else
+            f.eventsScrollBarBG:Hide()
+        end
+    end
+
+    return band + viewport, hasTimed
+end
 
 function Tracker:Render()
     local f = self.frame
@@ -420,12 +573,14 @@ function Tracker:Render()
     local gap      = Card:Gap(math.max(0, (cfg and cfg.blockSpacing) or 2), (Card:State(cfg)))
     local y        = 0
     local hasTimed = false
+    local sectionTops = {}
 
     for _, groupID in ipairs(Sections:Order()) do
         local group = byGroup[groupID]
         if group and group.visibleCount > 0 and not Sections:IsHidden(groupID) then
             local collapsed = Sections:IsCollapsed(groupID)
             local header    = Sections:Acquire(content, groupID)
+            sectionTops[#sectionTops + 1] = y
             y = y + Sections:Place(header, content, y, group, collapsed,
                                    cfg and cfg.showQuestTotal ~= false) + gap
 
@@ -443,8 +598,48 @@ function Tracker:Render()
         end
     end
 
+    local questContentH = y
+    content:SetHeight(math.max(1, questContentH))
+
+    local available = math.max(1, (f:GetHeight() or 0) - DRAG_HANDLE_H - (GRIP_SIZE + 2))
+    local fraction  = (cfg and cfg.worldQuestsPinnedMaxFraction) or WQ_PIN_FRACTION
+    local band      = headerBand()
+
+    -- Quests get vertical-space priority so a trailing section is never left as a header
+    -- with no body, and the floor keeps the world quest region from vanishing entirely.
+    local eventsCap
+    if cfg and cfg.worldQuestsHeightOverride then
+        local wqWant   = band + math.max(0, cfg.worldQuestsHeight or 0)
+        local questMin = band + 40
+        eventsCap = math.max(0, math.min(wqWant, available - questMin))
+    else
+        local wqFloor    = band + 40
+        local questWants = math.min(questContentH, math.max(1, available - wqFloor))
+        eventsCap = math.max(0, math.min(math.floor(available * fraction), available - questWants))
+    end
+
+    local wqH, wqTimed = self:_RenderPinnedWorldQuests(byGroup[PINNED_GROUP], eventsCap, width, cfg)
+    if wqTimed then hasTimed = true end
+
+    -- Only snap the clip up when the cut lands inside a header's own row. Snapping when a
+    -- body merely overflows would collapse the viewport to the sections above it.
+    local scrollH = math.min(questContentH, available - (wqH or 0))
+    if scrollH < questContentH then
+        local headerGap = Sections:Height() + gap
+        for i = #sectionTops, 1, -1 do
+            local top = sectionTops[i]
+            if top > 0 and top < scrollH then
+                if scrollH - top < headerGap then scrollH = top end
+                break
+            end
+        end
+    end
+    if scrollH < 1 then scrollH = 1 end
+
+    f.scroll:SetSize(math.max(1, width), scrollH)
+    if f.scroll.UpdateScrollChildRect then f.scroll:UpdateScrollChildRect() end
+
     RowPool:Sweep(_resetRow)
-    content:SetHeight(math.max(1, y))
     self:_EnsureTimerTicker(hasTimed)
 end
 

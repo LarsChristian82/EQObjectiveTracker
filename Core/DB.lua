@@ -92,8 +92,16 @@ DB.defaults = {
                 onlyCurrentZone = false,
             },
 
-            sectionOrder  = { "campaign", "quests", "worldquests" },
+            -- worldquests is deliberately absent: it renders in its own pinned region
+            -- and its placement comes from worldQuestsPosition, not this order.
+            sectionOrder  = { "campaign", "quests" },
             sectionsHidden = {},
+
+            autoListZoneWorldQuests      = false,
+            worldQuestsPosition          = "bottom",
+            worldQuestsPinnedMaxFraction = 0.40,
+            worldQuestsHeightOverride    = false,
+            worldQuestsHeight            = 120,
         },
     },
     char = {
