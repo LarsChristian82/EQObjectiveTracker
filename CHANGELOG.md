@@ -35,6 +35,10 @@ parity needed before EQ can drop its own tracker and depend on this one.
   world quest list can no longer push quests off screen. The cap is adjustable, or it
   can be replaced with a fixed height.
 - Optionally list every world quest on your current map without tracking each one.
+- Tracked world quests now survive logout. Blizzard drops world quest watches between
+  sessions, so they are saved per character and restored shortly after login, once the
+  world quest data exists. Expired ones are pruned rather than restored, and quests the
+  game auto-watches as you walk past are not saved.
 
 ### Notes
 

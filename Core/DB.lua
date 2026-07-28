@@ -105,8 +105,9 @@ DB.defaults = {
         },
     },
     char = {
-        sectionsCollapsed = {},
-        hidden            = {},
+        sectionsCollapsed  = {},
+        hidden             = {},
+        trackedWorldQuests = {},
     },
     global = {
         schemaVersion = 1,

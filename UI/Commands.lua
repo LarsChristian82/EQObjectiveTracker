@@ -72,6 +72,9 @@ handlers.status = function()
 
     local T = tracker()
     if T and T.DebugScroll then ns:Print("scroll: " .. T:DebugScroll()) end
+
+    local WP = ns:GetModule("WatchPersist")
+    if WP and WP.DebugLine then ns:Print(WP:DebugLine()) end
 end
 
 function Commands:OnEnable()

@@ -29,6 +29,7 @@ Data\Registry.lua
 Data\Filter.lua
 Data\Sort.lua
 Data\Feed.lua
+Data\WatchPersist.lua
 
 # Providers. THE ONLY FLAVOR-VARYING SECTION OF THIS FILE.
 Data\Providers\Quests.lua
