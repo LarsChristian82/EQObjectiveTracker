@@ -12,9 +12,12 @@ local function silence(frame)
     if frame.Hide then frame:Hide() end
 end
 
+-- Deliberately NOT latched behind a "done" flag. Another addon touching the tracker can
+-- re-register its modules or re-show it, and a one-shot suppress could never recover -
+-- that is exactly how a second tracker reappears mid-session.
 function Blizzard:Suppress()
     local tracker = ObjectiveTrackerFrame
-    if not tracker or self._done then return end
+    if not tracker then return end
 
     silence(tracker)
 
@@ -24,11 +27,32 @@ function Blizzard:Suppress()
         for _, m in ipairs(tracker.modules) do silence(m) end
     end
 
-    tracker:HookScript("OnShow", function(f)
-        if not InCombatLockdown() then f:Hide() end
-    end)
+    -- Hooking is the one part that must happen once, or every Suppress stacks another
+    if not self._hooked then
+        self._hooked = true
+        tracker:HookScript("OnShow", function(f)
+            if InCombatLockdown() then
+                -- Hiding a frame hosting secure quest-item buttons is protected in
+                -- combat, so queue it rather than dropping the re-hide entirely
+                local Events = ns:GetModule("Events")
+                if Events and Events.RunWhenOutOfCombat then
+                    self._reSuppress = self._reSuppress or function() self:Suppress() end
+                    Events:RunWhenOutOfCombat("eqot.blizzardSuppress", self._reSuppress)
+                end
+                return
+            end
+            f:Hide()
+        end)
+    end
+end
 
-    self._done = true
+function Blizzard:DebugLine()
+    local t = ObjectiveTrackerFrame
+    if not t then return "blizzard tracker: frame absent" end
+    local n = (type(t.modules) == "table") and #t.modules or 0
+    return ("blizzard tracker: %s, %d modules, hook %s"):format(
+        t:IsShown() and "SHOWN - suppression lost" or "hidden",
+        n, self._hooked and "installed" or "missing")
 end
 
 function Blizzard:OnEnable()
@@ -36,6 +60,7 @@ function Blizzard:OnEnable()
 
     local Events = ns:GetModule("Events")
     Events:On("PLAYER_ENTERING_WORLD", function() self:Suppress() end)
+    Events:On("PLAYER_REGEN_ENABLED",  function() self:Suppress() end)
     Events:On("ADDON_LOADED", function(_, name)
         if name == "Blizzard_ObjectiveTracker" then self:Suppress() end
     end)

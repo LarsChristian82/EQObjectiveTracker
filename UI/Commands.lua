@@ -75,6 +75,9 @@ handlers.status = function()
 
     local WP = ns:GetModule("WatchPersist")
     if WP and WP.DebugLine then ns:Print(WP:DebugLine()) end
+
+    local BZ = ns:GetModule("Blizzard")
+    if BZ and BZ.DebugLine then ns:Print(BZ:DebugLine()) end
 end
 
 function Commands:OnEnable()
