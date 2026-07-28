@@ -35,6 +35,7 @@ Data\WatchPersist.lua
 Data\Providers\Quests.lua
 Data\Providers\WorldQuests.lua
 Data\Providers\Achievements.lua
+Data\Providers\Endeavors.lua
 
 # Display layer. Operates on frames, never on a quest API.
 UI\Blizzard.lua

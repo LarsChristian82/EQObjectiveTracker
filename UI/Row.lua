@@ -303,7 +303,14 @@ function Row:Render(row, entry, width, cfg)
     Media:ApplyFont(row.timer, -2)
     row.lines:SetSpacing(Media:LineSpacing())
 
+    -- A provider that emits no icon should not pay for the icon column, or its titles
+    -- hang in empty space where the art would have been.
+    local hasIcon = ((entry.icon and entry.icon.kind) or ICON.NONE) ~= ICON.NONE
+    local iconW   = hasIcon and ICON_SIZE or 0
+    local iconGap = hasIcon and ICON_GAP or 0
+
     local gutter = self:Gutter()
+    row.iconHolder:SetSize(math.max(1, iconW), ICON_SIZE)
     row.iconHolder:ClearAllPoints()
     row.iconHolder:SetPoint("TOPLEFT", row, "TOPLEFT", padX + gutter, -padY)
 
@@ -323,7 +330,7 @@ function Row:Render(row, entry, width, cfg)
     -- Widths are explicit rather than left to a TOPRIGHT anchor, so the timer only ever
     -- narrows the title. Objectives keep the full column.
     row.title:ClearAllPoints()
-    row.title:SetPoint("TOPLEFT", row.iconHolder, "TOPRIGHT", ICON_GAP, 1)
+    row.title:SetPoint("TOPLEFT", row.iconHolder, "TOPRIGHT", iconGap, 1)
 
     -- Anchor the subtitle even when hidden - the lines below hang off it, so leaving it
     -- unpositioned drops the objectives off the frame the moment it is shown
@@ -363,14 +370,14 @@ function Row:Render(row, entry, width, cfg)
 
     -- Without an explicit SetWidth, GetStringHeight returns stale values after a
     -- width change and rows overlap
-    local textW = width - (ICON_SIZE + ICON_GAP + padX * 2 + gutter)
+    local textW = width - (iconW + iconGap + padX * 2 + gutter)
     if textW > 0 then
         row.title:SetWidth(math.max(1, textW - timerW))
         row.lines:SetWidth(textW)
         if row.subtitle:IsShown() then row.subtitle:SetWidth(textW) end
     end
 
-    local titleH = math.max(row.title:GetStringHeight(), ICON_SIZE)
+    local titleH = math.max(row.title:GetStringHeight(), iconW)
     local subH   = row.subtitle:IsShown() and (TITLE_TO_SUB + row.subtitle:GetStringHeight()) or 0
     local linesH = (lineText ~= "") and (subGap + row.lines:GetStringHeight()) or 0
     local h      = titleH + subH + linesH + padY * 2
