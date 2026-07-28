@@ -94,7 +94,7 @@ DB.defaults = {
 
             -- worldquests is deliberately absent: it renders in its own pinned region
             -- and its placement comes from worldQuestsPosition, not this order.
-            sectionOrder  = { "campaign", "quests", "endeavors" },
+            sectionOrder  = { "campaign", "quests", "profession", "endeavors" },
             sectionsHidden = {},
 
             autoListZoneWorldQuests      = false,

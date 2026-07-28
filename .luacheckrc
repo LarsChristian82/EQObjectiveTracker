@@ -33,6 +33,11 @@ read_globals = {
     "C_Timer", "C_Map", "C_QuestLog", "C_QuestInfoSystem", "C_CampaignInfo",
     "C_SuperTrack", "C_TaskQuest", "C_ContentTracking", "C_PerksActivities",
     "C_Scenario", "C_Texture", "C_AddOns", "Enum",
+    "C_TradeSkillUI", "C_CurrencyInfo", "C_Item", "ProfessionsUtil",
+
+    -- Blizzard format strings, used so reagent lines stay localized
+    "PROFESSIONS_TRACKER_REAGENT_FORMAT", "PROFESSIONS_TRACKER_REAGENT_COUNT_FORMAT",
+    "PROFESSIONS_TRACKER_REAGENT_RANGE_FORMAT", "PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER",
 
     -- Legacy / cross-flavor globals guarded by Core/Compat.lua
     "GetAchievementInfo", "GetAchievementNumCriteria", "GetAchievementCriteriaInfo",

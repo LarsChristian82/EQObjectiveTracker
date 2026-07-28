@@ -35,6 +35,11 @@ parity needed before EQ can drop its own tracker and depend on this one.
   world quest list can no longer push quests off screen. The cap is adjustable, or it
   can be replaced with a fixed height.
 - Optionally list every world quest on your current map without tracking each one.
+- Tracked profession recipes are now shown, with their required reagents and how many
+  of each you hold. Reagent counts sum every quality tier, so a stack of nothing but
+  rank two or rank three still counts toward the total. Reagents whose amount depends
+  on choices made in the crafting window show their range instead of a false total. A
+  recipe tracked both normally and as a recraft gets a row for each.
 - Endeavors are now tracked, showing each activity and its requirements. Completed
   requirements follow your complete-entry colour like every other section, rather than
   being locked to green.

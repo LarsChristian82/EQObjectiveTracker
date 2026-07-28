@@ -19,6 +19,7 @@ Sections.TITLES = {
     achievements = "Achievements",
     scenarios    = "Scenario",
     endeavors    = "Endeavors",
+    profession   = "Profession",
 }
 
 Sections.frames = {}
