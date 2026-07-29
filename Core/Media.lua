@@ -60,12 +60,112 @@ local WOW_FONTS = {
     { name = "WoW Morpheus",                file = [[Fonts\MORPHEUS.TTF]] },
 }
 
+-- These names are the same migration contract as the fonts above: a profile stores the
+-- bar by NAME, so renaming one drops the user back to the Blizzard texture silently.
+local STATUSBAR_PATH = [[Interface\AddOns\EQObjectiveTracker\Media\Statusbars\]]
+local STATUSBARS = {
+    { name = "EQ Smooth",   file = STATUSBAR_PATH .. "EQ-Smooth.tga" },
+    { name = "EQ Glaze",    file = STATUSBAR_PATH .. "EQ-Glaze.tga" },
+    { name = "EQ Gradient", file = STATUSBAR_PATH .. "EQ-Gradient.tga" },
+    { name = "EQ Bevel",    file = STATUSBAR_PATH .. "EQ-Bevel.tga" },
+    { name = "EQ Glow",     file = STATUSBAR_PATH .. "EQ-Glow.tga" },
+    { name = "EQ Gloss",    file = STATUSBAR_PATH .. "EQ-Gloss.tga" },
+    { name = "EQ Steel",    file = STATUSBAR_PATH .. "EQ-Steel.tga" },
+}
+
+-- LSM's built-in "Blizzard" bar, and the fallback when LSM is absent
+local DEFAULT_STATUSBAR = [[Interface\TargetingFrame\UI-StatusBar]]
+
+-- Blizzard file IDs, not bundled audio, so this costs nothing in the zip. Names are the
+-- same migration contract as the fonts and bars above.
+local SOUNDS = {
+    { name = "EQ: Work Complete",   file = 558132 },
+    { name = "EQ: BloodElf (M)",    file = 539400 },
+    { name = "EQ: BloodElf (F)",    file = 539175 },
+    { name = "EQ: Draenei (M)",     file = 539661 },
+    { name = "EQ: Draenei (F)",     file = 539676 },
+    { name = "EQ: Dwarf (M)",       file = 540042 },
+    { name = "EQ: Dwarf (F)",       file = 539981 },
+    { name = "EQ: Gnome (M)",       file = 540512 },
+    { name = "EQ: Gnome (F)",       file = 540432 },
+    { name = "EQ: Goblin (M)",      file = 542005 },
+    { name = "EQ: Goblin (F)",      file = 541735 },
+    { name = "EQ: Human (M)",       file = 540703 },
+    { name = "EQ: Human (F)",       file = 540654 },
+    { name = "EQ: NightElf (M)",    file = 541085 },
+    { name = "EQ: NightElf (F)",    file = 541031 },
+    { name = "EQ: Orc (M)",         file = 541401 },
+    { name = "EQ: Orc (F)",         file = 541317 },
+    { name = "EQ: Pandaren (M)",    file = 630070 },
+    { name = "EQ: Pandaren (F)",    file = 636419 },
+    { name = "EQ: Tauren (M)",      file = 561484 },
+    { name = "EQ: Tauren (F)",      file = 542997 },
+    { name = "EQ: Troll (M)",       file = 543307 },
+    { name = "EQ: Troll (F)",       file = 543273 },
+    { name = "EQ: Undead (M)",      file = 542775 },
+    { name = "EQ: Undead (F)",      file = 542684 },
+    { name = "EQ: Worgen (M)",      file = 542228 },
+    { name = "EQ: Worgen (F)",      file = 542028 },
+}
+
 function Media:OnInitialize()
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if not LSM then return end
-    for _, f in ipairs(FONTS)     do LSM:Register("font", f.name, f.file) end
-    for _, f in ipairs(WOW_FONTS) do LSM:Register("font", f.name, f.file) end
+    for _, f in ipairs(FONTS)      do LSM:Register("font", f.name, f.file) end
+    for _, f in ipairs(WOW_FONTS)  do LSM:Register("font", f.name, f.file) end
+    for _, s in ipairs(STATUSBARS) do LSM:Register("statusbar", s.name, s.file) end
+    for _, s in ipairs(SOUNDS)     do LSM:Register("sound", s.name, s.file) end
     self.LSM = LSM
+end
+
+-- Labels drop the "EQ: " prefix, values keep it - the value is what a profile stores
+function Media:GetSoundList()
+    local out, labels = { "None" }, { None = "NONE" }
+    for _, s in ipairs(SOUNDS) do
+        local label = s.name:gsub("^EQ: ", "")
+        out[#out + 1] = label
+        labels[label] = s.name
+    end
+    return out, labels
+end
+
+function Media:GetSoundLabel(value)
+    if not value or value == "NONE" then return "None" end
+    return (value:gsub("^EQ: ", ""))
+end
+
+function Media:GetSoundFile(name)
+    if name == "NONE" then return nil end
+    if self.LSM then
+        local f = self.LSM:Fetch("sound", name)
+        if f then return f end
+    end
+    for _, s in ipairs(SOUNDS) do
+        if s.name == name then return s.file end
+    end
+    return SOUNDS[1].file
+end
+
+function Media:GetStatusBarList()
+    local out = {}
+    local names = self.LSM and self.LSM:List("statusbar")
+    if names and #names > 0 then
+        for _, name in ipairs(names) do out[#out + 1] = name end
+        return out
+    end
+    for _, s in ipairs(STATUSBARS) do out[#out + 1] = s.name end
+    return out
+end
+
+function Media:GetStatusBarFile(name)
+    if self.LSM then
+        local f = self.LSM:Fetch("statusbar", name or "Blizzard")
+        if f then return f end
+    end
+    for _, s in ipairs(STATUSBARS) do
+        if s.name == name then return s.file end
+    end
+    return DEFAULT_STATUSBAR
 end
 
 function Media:GetFontList()

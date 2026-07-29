@@ -10,6 +10,7 @@ DB.defaults = {
         general = {
             lockTracker  = false,
             hideInCombat = false,
+            restoreSuperTrackOnLogin = true,
         },
         tracker = {
             anchor        = "TOPRIGHT",
@@ -19,6 +20,9 @@ DB.defaults = {
             width         = 305,
             maxHeight     = 600,
             scale         = 1.0,
+
+            questSoundEnabled    = true,
+            questCompleteSound   = "EQ: Work Complete",
 
             showOnlyWatched      = true,
             sortMode             = "zone",
@@ -107,6 +111,16 @@ DB.defaults = {
             -- and its placement comes from worldQuestsPosition, not this order.
             sectionOrder  = { "campaign", "quests", "profession", "endeavors" },
             sectionsHidden = {},
+
+            showZoneProgressBar  = false,
+            zoneProgressLocation = "floating",
+            zoneProgressBar = {
+                point = "CENTER", relPoint = "CENTER", x = 0, y = 220,
+                scale = 1.0,
+                locked = false,
+                showBorder = true,
+                showBackground = true,
+            },
 
             autoListZoneWorldQuests      = false,
             worldQuestsPosition          = "bottom",

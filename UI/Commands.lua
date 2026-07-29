@@ -78,6 +78,11 @@ handlers.status = function()
 
     local BZ = ns:GetModule("Blizzard")
     if BZ and BZ.DebugLine then ns:Print(BZ:DebugLine()) end
+
+    local ZP = ns:GetModule("ZoneProgress")
+    if ZP and ZP.DebugLines then
+        for _, line in ipairs(ZP:DebugLines()) do ns:Print(line) end
+    end
 end
 
 function Commands:OnEnable()

@@ -49,6 +49,17 @@ endeavors and the full scenario and delve display are all ported across.
   world quest data exists. Expired ones are pruned rather than restored, and quests the
   game auto-watches as you walk past are not saved.
 - Simplify tracked achievements: show only the criteria you have not finished yet.
+- Keep focused quest after relog, on by default. With it off, the waypoint arrow is
+  cleared shortly after you log in. Reloading and changing zone never disturb it either
+  way.
+- Opening the flight map highlights the flight point nearest your focused quest.
+- A sound plays when a quest becomes ready to turn in, with 27 voices to pick from and
+  a preview when you choose one. On by default, and it can be turned off.
+- Everything Quests' seven status bar textures are bundled and offered through
+  LibSharedMedia, so they are available to other addons as well.
+- Zone progress bar, off by default. Shows how much of the current zone's questlines you
+  have finished, as a movable bar you can drag anywhere, with right-click to lock it or
+  reset its position. Standing in a capital shows the surrounding zone's progress.
 - World quests that support it now carry a Find Group button, which opens the Premade
   Group Finder for that quest. It only appears where a group can actually be made for
   the quest, so most rows will not show one.

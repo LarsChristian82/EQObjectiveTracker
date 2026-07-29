@@ -30,6 +30,10 @@ Data\Filter.lua
 Data\Sort.lua
 Data\Feed.lua
 Data\WatchPersist.lua
+Data\SuperTrackPersist.lua
+Data\QuestSound.lua
+Data\ZoneRouting.lua
+Data\ZoneProgress.lua
 
 # Providers. THE ONLY FLAVOR-VARYING SECTION OF THIS FILE.
 Data\Providers\Quests.lua
@@ -47,6 +51,8 @@ UI\Row.lua
 UI\Sections.lua
 UI\Scenario.lua
 UI\Tracker.lua
+UI\TaxiHighlight.lua
+UI\ZoneProgressBar.lua
 
 # Options. Frame.lua defines RegisterTab and must load before any Tab file.
 Options\Frame.lua

@@ -449,8 +449,12 @@ function Tracker:DebugScroll()
         out[#out + 1] = ("bar %s %.0fx%.0f"):format(shown(bar), bar:GetWidth() or 0, bar:GetHeight() or 0)
         local t = bar.GetThumbTexture and bar:GetThumbTexture()
         if t then
+            -- Assign before tostring: a getter that returns NO values, rather than nil,
+            -- leaves tostring() with zero arguments and that is an error, not a "nil"
+            local tex   = t:GetTexture()
+            local atlas = t.GetAtlas and t:GetAtlas()
             out[#out + 1] = ("thumbTex %s tex=%s atlas=%s w=%.0f"):format(shown(t),
-                tostring(t:GetTexture()), tostring(t.GetAtlas and t:GetAtlas()), t:GetWidth() or 0)
+                tostring(tex), tostring(atlas), t:GetWidth() or 0)
         else
             local tf = bar.Thumb or (bar.Track and bar.Track.Thumb)
             out[#out + 1] = tf and ("thumbFrame %s w=%.0f"):format(shown(tf), tf:GetWidth() or 0)

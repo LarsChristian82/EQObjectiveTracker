@@ -1,0 +1,133 @@
+local _, ns = ...
+
+-- VENDORED FROM EVERYTHING QUESTS - keep in step by hand.
+--   EQ Data/QuestChains/_Index.lua            -> ns.CAT and ns.ZONE_CATEGORIES
+--   EQ Data/QuestChains/_QuestLineRouting.lua -> ns.QUESTLINE_ROUTING
+--
+-- This is an INDEX, not quest data: it maps questline IDs to a zone. The quests inside
+-- each questline still come from C_QuestLine.GetQuestLineQuests at runtime, which is why
+-- 20 routed questlines produce a 147 quest total for Eversong Woods.
+--
+-- A zone missing from the routing shows no bar at all rather than a wrong number, so
+-- drift against EQ degrades quietly. That is EQ's own behaviour when a zone is unrouted.
+
+ns.CAT = {
+    CAMPAIGN          = 1100,
+    EVERSONG_WOODS    = 1101,
+    ZULAMAN           = 1102,
+    HARANDAR          = 1103,
+    VOIDSTORM         = 1104,
+    ARATOR            = 1105,
+    WAR_LIGHT_SHADOW  = 1106,
+    REVELATIONS       = 1107,
+    VOID_ACROPOLIS    = 1108,
+    SUNSTRIDER_OMNIUM = 1109,
+}
+
+-- mapIDs is how a zone resolves to a category, with the category name as the fallback.
+-- Eversong Woods deliberately lists Silvermoon City (2393) so standing in the city shows
+-- the zone's progress. Eversong itself (2395) resolves by name.
+ns.ZONE_CATEGORIES = {
+    [ns.CAT.CAMPAIGN]          = { name = "Midnight Campaign",           mapIDs = {},       campaignID = 270 },
+    [ns.CAT.WAR_LIGHT_SHADOW]  = { name = "The War of Light and Shadow", mapIDs = {},       campaignID = 284 },
+    [ns.CAT.EVERSONG_WOODS]    = { name = "Eversong Woods",              mapIDs = { 2393 } },
+    [ns.CAT.ZULAMAN]           = { name = "Zul'Aman",                    mapIDs = { 2437 } },
+    [ns.CAT.HARANDAR]          = { name = "Harandar",                    mapIDs = { 2413 } },
+    [ns.CAT.ARATOR]            = { name = "Arator",                      mapIDs = {} },
+    [ns.CAT.VOIDSTORM]         = { name = "Voidstorm",                   mapIDs = { 2405 } },
+    [ns.CAT.REVELATIONS]       = { name = "Revelations (12.0.7)",        mapIDs = { 2424 } },
+    [ns.CAT.SUNSTRIDER_OMNIUM] = { name = "The Sunstrider Omnium",       mapIDs = {} },
+    [ns.CAT.VOID_ACROPOLIS]    = { name = "Void Acropolis",              mapIDs = { 2599 } },
+}
+
+ns.QUESTLINE_ROUTING = {
+    [5719] = { cat = ns.CAT.EVERSONG_WOODS, name = "Whispers in the Twilight" },
+    [5720] = { cat = ns.CAT.EVERSONG_WOODS, name = "Shadowfall" },
+    [5721] = { cat = ns.CAT.EVERSONG_WOODS, name = "Ripple Effects" },
+    [5931] = { cat = ns.CAT.EVERSONG_WOODS, name = "Fear and Fel" },
+    [6020] = { cat = ns.CAT.EVERSONG_WOODS, name = "Flowers for Amalthea" },
+    [5949] = { cat = ns.CAT.EVERSONG_WOODS, name = "Sunbath, Take Me Away" },
+    [5805] = { cat = ns.CAT.EVERSONG_WOODS, name = "Port Detective" },
+    [5812] = { cat = ns.CAT.EVERSONG_WOODS, name = "Lesser Evil" },
+    [5898] = { cat = ns.CAT.EVERSONG_WOODS, name = "One Adventurous Hatchling" },
+    [5969] = { cat = ns.CAT.EVERSONG_WOODS, name = "Far Striding" },
+    [5989] = { cat = ns.CAT.EVERSONG_WOODS, name = "Tailor Troubles" },
+    [6018] = { cat = ns.CAT.EVERSONG_WOODS, name = "Blinding Sun" },
+    [5993] = { cat = ns.CAT.EVERSONG_WOODS, name = "Runestone Rumbles" },
+    [5908] = { cat = ns.CAT.EVERSONG_WOODS, name = "Paladin Rescue" },
+    [5937] = { cat = ns.CAT.EVERSONG_WOODS, name = "How to Train Your Protege" },
+    [6030] = { cat = ns.CAT.EVERSONG_WOODS, name = "Scootin' Through Silvermoon" },
+    [5781] = { cat = ns.CAT.EVERSONG_WOODS, name = "Aspiring Academic" },
+    [5784] = { cat = ns.CAT.EVERSONG_WOODS, name = "The Drinking Debt" },
+    [5804] = { cat = ns.CAT.EVERSONG_WOODS, name = "Theft Tracking" },
+    [5958] = { cat = ns.CAT.EVERSONG_WOODS, name = "Daggerspine Landing" },
+    [5722] = { cat = ns.CAT.ZULAMAN, name = "Dis Was Our Land" },
+    [5723] = { cat = ns.CAT.ZULAMAN, name = "Path of De Hashey" },
+    [5938] = { cat = ns.CAT.ZULAMAN, name = "Where War Slumbers" },
+    [5724] = { cat = ns.CAT.ZULAMAN, name = "De Amani Never Die" },
+    [5778] = { cat = ns.CAT.ZULAMAN, name = "Healing the Spirit" },
+    [6048] = { cat = ns.CAT.ZULAMAN, name = "Sawdust to Sawdust" },
+    [5981] = { cat = ns.CAT.ZULAMAN, name = "Between Two Trolls" },
+    [5901] = { cat = ns.CAT.ZULAMAN, name = "Sorrowing Kin" },
+    [5905] = { cat = ns.CAT.ZULAMAN, name = "Unlikely Friends" },
+    [5971] = { cat = ns.CAT.ZULAMAN, name = "The Voice of Nalorakk" },
+    [6011] = { cat = ns.CAT.ZULAMAN, name = "Reclaiming De Honor" },
+    [5939] = { cat = ns.CAT.ZULAMAN, name = "Vengeance for Tolbani" },
+    [5988] = { cat = ns.CAT.ZULAMAN, name = "The Loa of Murlocs" },
+    [5999] = { cat = ns.CAT.ZULAMAN, name = "No Fear" },
+    [6042] = { cat = ns.CAT.ZULAMAN, name = "Bitter Honor" },
+    [6055] = { cat = ns.CAT.ZULAMAN, name = "The Sound of Her Voice" },
+    [5950] = { cat = ns.CAT.ZULAMAN, name = "A Venomous History" },
+    [6044] = { cat = ns.CAT.ZULAMAN, name = "Beyond the Walls" },
+    [5975] = { cat = ns.CAT.ZULAMAN, name = "Something Vile This Way Comes" },
+    [6045] = { cat = ns.CAT.ZULAMAN, name = "River Walkers of the Prowl" },
+    [6052] = { cat = ns.CAT.ZULAMAN, name = "Bloodstains" },
+    [5728] = { cat = ns.CAT.VOIDSTORM, name = "Into the Abyss" },
+    [5729] = { cat = ns.CAT.VOIDSTORM, name = "The Night's Veil" },
+    [5730] = { cat = ns.CAT.VOIDSTORM, name = "Dawn of Reckoning" },
+    [6010] = { cat = ns.CAT.VOIDSTORM, name = "The Void Peers Back" },
+    [5943] = { cat = ns.CAT.VOIDSTORM, name = "Shadow Puppets" },
+    [5933] = { cat = ns.CAT.VOIDSTORM, name = "The Nethersent" },
+    [5962] = { cat = ns.CAT.VOIDSTORM, name = "The Nightbreaker" },
+    [6028] = { cat = ns.CAT.VOIDSTORM, name = "Pathogenic Problem" },
+    [6013] = { cat = ns.CAT.VOIDSTORM, name = "A Voice Inside" },
+    [5987] = { cat = ns.CAT.VOIDSTORM, name = "Shadowguard's Shadow" },
+    [6019] = { cat = ns.CAT.VOIDSTORM, name = "A Gift Given Freely" },
+    [5964] = { cat = ns.CAT.VOIDSTORM, name = "Breaking the Triad" },
+    [6022] = { cat = ns.CAT.VOIDSTORM, name = "Go Low, Go Loud" },
+    [6017] = { cat = ns.CAT.VOIDSTORM, name = "Secrets in the Dark" },
+    [6014] = { cat = ns.CAT.VOIDSTORM, name = "Oaths to Family" },
+    [5961] = { cat = ns.CAT.VOIDSTORM, name = "To Be Changed" },
+    [5936] = { cat = ns.CAT.VOIDSTORM, name = "A Dance with the Devil" },
+    [6012] = { cat = ns.CAT.VOIDSTORM, name = "A Domanaar's Best Friend" },
+    [6001] = { cat = ns.CAT.VOIDSTORM, name = "A More Potent Foe" },
+    [5725] = { cat = ns.CAT.HARANDAR, name = "Of Caves and Cradles" },
+    [5726] = { cat = ns.CAT.HARANDAR, name = "Call of the Goddess" },
+    [5907] = { cat = ns.CAT.HARANDAR, name = "A Goblin in Harandar" },
+    [5909] = { cat = ns.CAT.HARANDAR, name = "The Legend of Aln'sharan" },
+    [5935] = { cat = ns.CAT.HARANDAR, name = "Late Bloomers" },
+    [5952] = { cat = ns.CAT.HARANDAR, name = "The Greenspeaker's Vigil" },
+    [5944] = { cat = ns.CAT.HARANDAR, name = "Peril Among Petals" },
+    [5960] = { cat = ns.CAT.HARANDAR, name = "Haranir Never Say Die" },
+    [5966] = { cat = ns.CAT.HARANDAR, name = "Harandar's Kitchen" },
+    [6036] = { cat = ns.CAT.HARANDAR, name = "Silence at Fungara Village" },
+    [5977] = { cat = ns.CAT.HARANDAR, name = "Cultivating Hope" },
+    [6039] = { cat = ns.CAT.HARANDAR, name = "Hunter's Rights" },
+    [6038] = { cat = ns.CAT.HARANDAR, name = "A Palette of Feelings" },
+    [6040] = { cat = ns.CAT.HARANDAR, name = "Predator Reintroduction" },
+    [6032] = { cat = ns.CAT.HARANDAR, name = "Bloomtown" },
+    [5910] = { cat = ns.CAT.HARANDAR, name = "The Grudge Pit" },
+    [5932] = { cat = ns.CAT.HARANDAR, name = "Trials of the Shulka" },
+    [5750] = { cat = ns.CAT.ARATOR, name = "The Path of Light" },
+    [5751] = { cat = ns.CAT.ARATOR, name = "Regrets of the Past" },
+    [6050] = { cat = ns.CAT.REVELATIONS, name = "Legacy of the Amani" },
+    [6229] = { cat = ns.CAT.REVELATIONS, name = "An Island of Fangs" },
+    [6230] = { cat = ns.CAT.REVELATIONS, name = "Ghosts of the Past" },
+    [6231] = { cat = ns.CAT.REVELATIONS, name = "Original Sin" },
+    [6232] = { cat = ns.CAT.REVELATIONS, name = "The Battle for Atal'Utek" },
+    [6272] = { cat = ns.CAT.VOID_ACROPOLIS, name = "Umbral Blitz" },
+    [6309] = { cat = ns.CAT.VOID_ACROPOLIS, name = "Assault and Strike Back: Val" },
+    [6275] = { cat = ns.CAT.SUNSTRIDER_OMNIUM, name = "The Sunstrider Omnium" },
+    -- EQ sources the campaign spine live through C_CampaignInfo, so campaign questlines
+    -- are deliberately absent here
+}

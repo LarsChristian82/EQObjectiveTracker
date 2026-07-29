@@ -32,6 +32,11 @@ Options:RegisterTab({
             ns:GetModule("Tracker"):ResetPosition()
         end, "Returns the tracker to its default position and size.")
 
+        self:CreateCheckbox(content, "Keep focused quest after relog",
+            function() return DB:General().restoreSuperTrackOnLogin ~= false end,
+            function(v) DB:General().restoreSuperTrackOnLogin = v end,
+            "Restores the waypoint arrow.")
+
         self:CreateHeading(content, "What to show")
 
         self:CreateCheckbox(content, "Only show tracked quests",
@@ -84,6 +89,43 @@ Options:RegisterTab({
                 ns:GetModule("Row"):Invalidate()
             end,
             "Keep the leading count, for example 3/10, at the start of each objective.")
+
+        self:CreateHeading(content, "Quest Sound")
+
+        self:CreateCheckbox(content, "Quest Sound",
+            function() return DB:Tracker().questSoundEnabled ~= false end,
+            function(v) DB:Tracker().questSoundEnabled = v end,
+            "Plays when a quest is ready to turn in.")
+
+        self:CreateDropdown(content, "Quest Complete Sound",
+            function() return (ns:GetModule("Media"):GetSoundList()) end,
+            function() return ns:GetModule("Media"):GetSoundLabel(DB:Tracker().questCompleteSound) end,
+            function(label)
+                local Media = ns:GetModule("Media")
+                local _, values = Media:GetSoundList()
+                local value = values[label] or "NONE"
+                DB:Tracker().questCompleteSound = value
+                -- Preview it, the way picking a sound anywhere else in the game does
+                local file = Media:GetSoundFile(value)
+                if file and PlaySoundFile then PlaySoundFile(file, "Master") end
+            end,
+            "Which sound plays when a quest becomes ready to turn in.")
+
+        self:CreateHeading(content, "Zone Progress Bar")
+
+        self:CreateCheckbox(content, "Show zone progress bar",
+            function() return DB:Tracker().showZoneProgressBar end,
+            function(v) ns:GetModule("ZoneProgressBar"):SetEnabled(v) end,
+            "Approximate questline progress.")
+
+        self:CreateCheckbox(content, "Float as a movable bar",
+            function()
+                return (DB:Tracker().zoneProgressLocation or "floating") == "floating"
+            end,
+            function(v)
+                ns:GetModule("ZoneProgressBar"):SetLocation(v and "floating" or "tracker")
+            end,
+            "Drag to move; right-click to lock or reset.")
 
         self:CreateHeading(content, "Sorting")
 
