@@ -15,6 +15,9 @@ DB.defaults = {
         tracker = {
             anchor        = "TOPRIGHT",
             relativePoint = "TOPRIGHT",
+            -- In UIParent units, NOT the frame's own scaled space. Tracker divides by the
+            -- live scale on apply and multiplies on save, so the tracker grows in place
+            -- rather than sliding when the scale slider moves.
             xOffset       = -85,
             yOffset       = -200,
             width         = 305,
@@ -103,6 +106,11 @@ DB.defaults = {
                 showBonus       = true,
                 onlyCurrentZone = false,
             },
+
+            -- positionInScreenUnits is deliberately NOT defaulted here, and must never be.
+            -- Its ABSENCE is what marks a profile whose xOffset and yOffset predate the
+            -- units change above, and Core/Migrate.lua converts on that. Give it a default
+            -- and every unconverted profile silently reads as already converted.
 
             -- sectionOrder is deliberately NOT defaulted here, and must never be. AceDB
             -- merges an array default per index and strips matching indices at logout, so a

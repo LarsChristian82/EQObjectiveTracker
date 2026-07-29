@@ -179,9 +179,7 @@ Options:RegisterTab({
             function() return DB().scale or 1 end,
             function(v)
                 DB().scale = v
-                local f = ns:GetModule("Tracker").frame
-                -- SetScale on a frame with secure children is protected in combat
-                if f and not InCombatLockdown() then f:SetScale(v) end
+                ns:GetModule("Tracker"):ApplyScale()
             end,
             "Scales the whole tracker. Takes effect immediately out of combat.", pct)
 

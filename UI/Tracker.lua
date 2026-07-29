@@ -27,11 +27,40 @@ end
 local MIN_W, MIN_H     = 200, 100
 local MAX_W, MAX_H     = 600, 2000
 
+local function frameScale(f)
+    local s = f and f:GetScale()
+    if not s or s <= 0 then return 1 end
+    return s
+end
+
+-- Offsets are stored in UIParent units but SetPoint reads them in the frame's own scaled
+-- space, so they are divided back out. Without this the tracker slides across the screen
+-- as the scale slider moves instead of growing in place.
 function Tracker:_ApplyPosition(anchor, relativePoint, x, y)
     local f = self.frame
     if not f then return end
+    local scale = frameScale(f)
     f:ClearAllPoints()
-    f:SetPoint(anchor or "CENTER", UIParent, relativePoint or anchor or "CENTER", x or 0, y or 0)
+    f:SetPoint(anchor or "CENTER", UIParent, relativePoint or anchor or "CENTER",
+               (x or 0) / scale, (y or 0) / scale)
+end
+
+local function applyScaleWhenSafe() Tracker:ApplyScale() end
+
+-- Re-anchors as well as scaling, or the frame keeps offsets meant for the old scale
+function Tracker:ApplyScale()
+    local f = self.frame
+    if not f then return end
+    -- Deferred rather than dropped: SetScale is protected once secure children land here,
+    -- and the key collapses a whole slider drag into one call when combat ends
+    if InCombatLockdown() then
+        ns:GetModule("Events"):RunWhenOutOfCombat("eqot.applyScale", applyScaleWhenSafe)
+        return
+    end
+    local cfg = ns:GetModule("DB"):Tracker()
+    if not cfg then return end
+    f:SetScale(cfg.scale or 1)
+    self:_ApplyPosition(cfg.anchor, cfg.relativePoint, cfg.xOffset, cfg.yOffset)
 end
 
 function Tracker:PersistPositionAndSize()
@@ -46,10 +75,11 @@ function Tracker:PersistPositionAndSize()
     local point, _, relativePoint, x, y = f:GetPoint()
     if not point then return end
 
+    local scale = frameScale(f)
     cfg.anchor        = point
     cfg.relativePoint = relativePoint or point
-    cfg.xOffset       = math.floor((x or 0) + 0.5)
-    cfg.yOffset       = math.floor((y or 0) + 0.5)
+    cfg.xOffset       = math.floor((x or 0) * scale + 0.5)
+    cfg.yOffset       = math.floor((y or 0) * scale + 0.5)
 
     self:_ApplyPosition(cfg.anchor, cfg.relativePoint, cfg.xOffset, cfg.yOffset)
 end
@@ -439,6 +469,13 @@ function Tracker:DebugScroll()
 
     out[#out + 1] = ("gutter %s range %.0f bgTex %s"):format(
         tostring(f._scrollGutter), sf:GetVerticalScrollRange() or 0, shown(f.scrollBarBG))
+
+    -- Live frame-space offsets beside the stored UIParent ones: this fix's only symptom is
+    -- geometric, and a cfg scale that disagrees with the frame means combat deferred it.
+    local point, _, relPoint, px, py = f:GetPoint()
+    out[#out + 1] = ("scale %.2f cfg %.2f anchor %s>%s live %.0f,%.0f stored %.0f,%.0f"):format(
+        f:GetScale() or 1, cfg.scale or 1, tostring(point), tostring(relPoint),
+        px or 0, py or 0, cfg.xOffset or 0, cfg.yOffset or 0)
 
     if not bar then
         out[#out + 1] = "bar none"
