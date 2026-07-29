@@ -104,9 +104,10 @@ DB.defaults = {
                 onlyCurrentZone = false,
             },
 
-            -- worldquests is deliberately absent: it renders in its own pinned region
-            -- and its placement comes from worldQuestsPosition, not this order.
-            sectionOrder  = { "campaign", "quests", "profession", "endeavors" },
+            -- sectionOrder is deliberately NOT defaulted here, and must never be. AceDB
+            -- merges an array default per index and strips matching indices at logout, so a
+            -- saved order returns as a sparse fragment and any later change to the default's
+            -- shape silently reinterprets it. Sections.DEFAULT_ORDER holds it instead.
             sectionsHidden = {},
 
             showZoneProgressBar  = false,

@@ -13,6 +13,7 @@ local SOFT_MASK    = "Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\he
 -- Titles are display-side because a group is a display concept. A provider that
 -- declares a group nobody has titled still renders, under its raw id.
 Sections.TITLES = {
+    zoneprogress = "Zone Progress",
     quests       = "Quests",
     campaign     = "Campaign",
     worldquests  = "World Quests",
@@ -32,6 +33,16 @@ Sections.PINNED = { worldquests = true }
 -- iterates, and a scenario has no header, collapse or visibility toggle to offer.
 Sections.CONTAINER = { scenarios = true }
 
+-- No provider backs a virtual section. Its body is a StatusBar rather than a run of rows,
+-- so reaching Order through a fake provider would mean faking an Entry too.
+Sections.VIRTUAL = { zoneprogress = true }
+
+-- Kept out of the AceDB defaults on purpose. AceDB merges an array default per index and
+-- strips matching indices at logout, so a saved order comes back sparse and adding an entry
+-- here would shift every later index and rewrite the user's run. worldquests is absent
+-- because its placement comes from worldQuestsPosition, not from this order.
+Sections.DEFAULT_ORDER = { "zoneprogress", "campaign", "quests", "profession", "endeavors" }
+
 function Sections:Title(groupID)
     return self.TITLES[groupID] or groupID
 end
@@ -44,6 +55,10 @@ function Sections:IsContainer(groupID)
     return self.CONTAINER[groupID] == true
 end
 
+function Sections:IsVirtual(groupID)
+    return self.VIRTUAL[groupID] == true
+end
+
 function Sections:Pinned()
     local Registry = ns:GetModule("Registry")
     local out = {}
@@ -53,24 +68,39 @@ function Sections:Pinned()
     return out
 end
 
+-- Virtual ids lead, matching EQ's own reorderable list, so a saved order that predates
+-- one appends it ahead of the other unseen groups rather than below them.
+function Sections:Known()
+    local out = {}
+    for id in pairs(self.VIRTUAL) do out[#out + 1] = id end
+    table.sort(out)
+    for _, id in ipairs(ns:GetModule("Registry"):Groups()) do out[#out + 1] = id end
+    return out
+end
+
 -- Saved order first, then any group the saved order has not seen. Appending the
 -- unseen ones keeps a newly added provider from being invisible on an old profile.
 function Sections:Order()
-    local Registry = ns:GetModule("Registry")
-    local DB       = ns:GetModule("DB")
-    local cfg      = DB and DB:Tracker()
+    local DB  = ns:GetModule("DB")
+    local cfg = DB and DB:Tracker()
 
-    local live = {}
-    for _, id in ipairs(Registry:Groups()) do live[id] = true end
+    local known = self:Known()
+    local live  = {}
+    for _, id in ipairs(known) do live[id] = true end
+
+    local saved = (cfg and cfg.sectionOrder) or self.DEFAULT_ORDER
 
     local seen, out = {}, {}
-    for _, id in ipairs((cfg and cfg.sectionOrder) or {}) do
-        if live[id] and not seen[id] and not self:IsPinned(id) and not self:IsContainer(id) then
+    -- Indexed rather than ipairs: an order saved while this key still had an AceDB default
+    -- comes back with holes where it matched, and ipairs would stop at the first one.
+    for i = 1, #known do
+        local id = saved[i]
+        if id and live[id] and not seen[id] and not self:IsPinned(id) and not self:IsContainer(id) then
             seen[id] = true
             out[#out + 1] = id
         end
     end
-    for _, id in ipairs(Registry:Groups()) do
+    for _, id in ipairs(known) do
         if not seen[id] and not self:IsPinned(id) and not self:IsContainer(id) then
             seen[id] = true
             out[#out + 1] = id

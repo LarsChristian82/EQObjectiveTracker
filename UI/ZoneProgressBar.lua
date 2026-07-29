@@ -5,6 +5,8 @@ local ZoneBar = ns:RegisterModule("ZoneProgressBar", {})
 local FRAME_W     = 220
 local FRAME_H     = 38
 local BAR_H       = 12
+local ROW_PAD_TOP = 2
+local ROW_PAD_BOT = 4
 local DEFAULT_BAR = [[Interface\TargetingFrame\UI-StatusBar]]
 
 local TITLE_COLOR = { 0.93, 0.32, 0.10 }
@@ -46,11 +48,16 @@ function ZoneBar:ApplySettings()
     local f = self.frame
     if not f then return end
     local st = barState() or {}
+    local scale = st.scale or 1.0
+    if scale <= 0 then scale = 1.0 end
 
+    -- Offsets are stored in UIParent units but SetPoint reads them in the frame's own
+    -- scaled space, so they are divided back out. Without this the bar walks across the
+    -- screen as the scale slider moves instead of growing in place. EQ has this bug.
+    f:SetScale(scale)
     f:ClearAllPoints()
     f:SetPoint(st.point or "CENTER", UIParent, st.relPoint or st.point or "CENTER",
-               st.x or 0, st.y or 220)
-    f:SetScale(st.scale or 1.0)
+               (st.x or 0) / scale, (st.y or 220) / scale)
 
     if st.showBackground == false then
         f:SetBackdropColor(0, 0, 0, 0)
@@ -72,7 +79,11 @@ function ZoneBar:_SavePosition()
     local f, st = self.frame, barState()
     if not (f and st) then return end
     local point, _, relPoint, x, y = f:GetPoint()
-    st.point, st.relPoint, st.x, st.y = point, relPoint, x, y
+    if not point then return end
+    local scale = f:GetScale()
+    if not scale or scale <= 0 then scale = 1.0 end
+    st.point, st.relPoint = point, relPoint
+    st.x, st.y = (x or 0) * scale, (y or 0) * scale
 end
 
 function ZoneBar:_ContextMenu()
@@ -151,9 +162,77 @@ function ZoneBar:_Acquire()
     return f
 end
 
+-- Docked, the bar is drawn by the tracker's own render pass, so both counts come back
+-- together and one count walk serves the header and the bar.
+function ZoneBar:DockedState()
+    if not (enabled() and not isFloating()) then return nil end
+    local done, total, zoneName = ns:GetModule("ZoneProgress"):Current()
+    if not total or total <= 0 then return nil end
+    return done, total, zoneName or ""
+end
+
+function ZoneBar:_AcquireDocked(parent)
+    local bar = self.docked
+    if bar then
+        if bar:GetParent() ~= parent then bar:SetParent(parent) end
+        return bar
+    end
+
+    bar = CreateFrame("StatusBar", nil, parent)
+    bar:SetHeight(BAR_H)
+    bar:SetMinMaxValues(0, 100)
+    applyBarFill(bar)
+
+    bar.bg = bar:CreateTexture(nil, "BACKGROUND")
+    bar.bg:SetAllPoints()
+    bar.bg:SetColorTexture(0.04, 0.07, 0.18, 0.9)
+
+    bar.border = CreateFrame("Frame", nil, bar, "BackdropTemplate")
+    bar.border:SetPoint("TOPLEFT", -1, 1)
+    bar.border:SetPoint("BOTTOMRIGHT", 1, -1)
+    bar.border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    bar.border:SetBackdropBorderColor(0, 0, 0, 0.9)
+
+    bar.label = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    bar.label:SetPoint("CENTER")
+
+    self.docked = bar
+    return bar
+end
+
+function ZoneBar:HideDocked()
+    if self.docked then self.docked:Hide() end
+end
+
+-- The zone name and the count live on the section header, so the bar itself carries only
+-- its percentage, exactly as EQ draws it.
+function ZoneBar:RenderDocked(content, y, done, total)
+    local bar = self:_AcquireDocked(content)
+    bar:ClearAllPoints()
+    bar:SetPoint("TOPLEFT",  content, "TOPLEFT",  0, -(y + ROW_PAD_TOP))
+    bar:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, -(y + ROW_PAD_TOP))
+
+    local pct = (done / total) * 100
+    bar:SetValue(pct)
+    bar.label:SetText(("%d%%"):format(math.floor(pct + 0.5)))
+
+    ns:GetModule("Media"):ApplyFont(bar.label, -2)
+    applyBarFill(bar)
+
+    bar:Show()
+    return ROW_PAD_TOP + BAR_H + ROW_PAD_BOT
+end
+
+local function refreshTracker()
+    local Tracker = ns:GetModule("Tracker")
+    if Tracker then Tracker:Refresh() end
+end
+
 function ZoneBar:Update()
     if not (enabled() and isFloating()) then
         if self.frame then self.frame:Hide() end
+        -- Reached with the feature on only while docked, and the tracker owns that repaint
+        if enabled() then refreshTracker() end
         return
     end
 
@@ -179,30 +258,51 @@ function ZoneBar:Update()
     if cc then f.count:SetTextColor(cc.r, cc.g, cc.b, cc.a or 1)
     else       f.count:SetTextColor(COUNT_COLOR[1], COUNT_COLOR[2], COUNT_COLOR[3]) end
 
+    -- The bar's own font applies to the floating frame only, as it does in EQ. Docked, the
+    -- header is a section header and the label follows the tracker font.
     local Media = ns:GetModule("Media")
-    Media:ApplyTitleFont(f.title)
-    Media:ApplyFont(f.count, -2)
-    Media:ApplyFont(f.bar.label, -2)
+    Media:ApplyTitleFont(f.title, st.font)
+    Media:ApplyFont(f.count, -2, st.font)
+    Media:ApplyFont(f.bar.label, -2, st.font)
     applyBarFill(f.bar)
 
     f:Show()
 end
 
+-- Rendered rather than refreshed: turning either setting off has to clear the docked bar
+-- in the same click, and Refresh alone would leave it up for the debounce window.
 function ZoneBar:SetEnabled(on)
     local t = cfg()
     if t then t.showZoneProgressBar = on and true or false end
     self:Update()
+    local Tracker = ns:GetModule("Tracker")
+    if Tracker then Tracker:Render() end
 end
 
 function ZoneBar:SetLocation(loc)
     local t = cfg()
     if t then t.zoneProgressLocation = loc end
     self:Update()
+    local Tracker = ns:GetModule("Tracker")
+    if Tracker then Tracker:Render() end
 end
 
 function ZoneBar:RefreshAppearance()
     self:ApplySettings()
     self:Update()
+end
+
+function ZoneBar:DebugLine()
+    local function shown(o)
+        if not o then return "none" end
+        return o:IsShown() and "shown" or "hidden"
+    end
+    local done, total, zoneName = self:DockedState()
+    return ("zone bar: %s, location=%s, float %s, docked %s%s"):format(
+        enabled() and "on" or "off",
+        isFloating() and "floating" or "tracker",
+        shown(self.frame), shown(self.docked),
+        done and (" %s %d/%d"):format(zoneName, done, total) or "")
 end
 
 function ZoneBar:OnEnable()

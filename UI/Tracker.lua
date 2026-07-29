@@ -565,6 +565,36 @@ function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
     return band + viewport, hasTimed
 end
 
+-- Reused: Place reads only the two counts and the zone header overwrites both straight
+-- after, so a fresh table per render would be pure garbage.
+local _virtualGroup = { visibleCount = 0, totalCount = 0 }
+
+function Tracker:_RenderZoneSection(content, groupID, y, gap)
+    local ZoneBar = ns:GetModule("ZoneProgressBar")
+    if not ZoneBar then return 0 end
+
+    local done, total, zoneName = ZoneBar:DockedState()
+    if not done then
+        ZoneBar:HideDocked()
+        return 0
+    end
+
+    local Sections  = ns:GetModule("Sections")
+    local collapsed = Sections:IsCollapsed(groupID)
+    local header    = Sections:Acquire(content, groupID)
+    local added     = Sections:Place(header, content, y, _virtualGroup, collapsed, false) + gap
+
+    header.text:SetText(zoneName)
+    header.count:SetText(done .. "/" .. total)
+
+    if collapsed then
+        ZoneBar:HideDocked()
+    else
+        added = added + ZoneBar:RenderDocked(content, y + added, done, total) + gap
+    end
+    return added
+end
+
 function Tracker:_RenderScenario(group, cfg)
     local f    = self.frame
     local scen = f.scenarioContainer
@@ -624,23 +654,30 @@ function Tracker:Render()
     local sectionTops = {}
 
     for _, groupID in ipairs(Sections:Order()) do
-        local group = byGroup[groupID]
-        if group and group.visibleCount > 0 and not Sections:IsHidden(groupID) then
-            local collapsed = Sections:IsCollapsed(groupID)
-            local header    = Sections:Acquire(content, groupID)
-            sectionTops[#sectionTops + 1] = y
-            y = y + Sections:Place(header, content, y, group, collapsed,
-                                   cfg and cfg.showQuestTotal ~= false) + gap
+        if Sections:IsVirtual(groupID) then
+            local top   = y
+            local added = self:_RenderZoneSection(content, groupID, y, gap)
+            if added > 0 then sectionTops[#sectionTops + 1] = top end
+            y = y + added
+        else
+            local group = byGroup[groupID]
+            if group and group.visibleCount > 0 and not Sections:IsHidden(groupID) then
+                local collapsed = Sections:IsCollapsed(groupID)
+                local header    = Sections:Acquire(content, groupID)
+                sectionTops[#sectionTops + 1] = y
+                y = y + Sections:Place(header, content, y, group, collapsed,
+                                       cfg and cfg.showQuestTotal ~= false) + gap
 
-            if not collapsed then
-                for i = 1, group.visibleCount do
-                    local entry = group.entries[i]
-                    if entry.expiresAt then hasTimed = true end
-                    local row = RowPool:Acquire(content, entry.providerID, entry.id, _buildRow)
-                    row:SetWidth(width)
-                    row:ClearAllPoints()
-                    row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
-                    y = y + Row:Render(row, entry, width, cfg) + gap
+                if not collapsed then
+                    for i = 1, group.visibleCount do
+                        local entry = group.entries[i]
+                        if entry.expiresAt then hasTimed = true end
+                        local row = RowPool:Acquire(content, entry.providerID, entry.id, _buildRow)
+                        row:SetWidth(width)
+                        row:ClearAllPoints()
+                        row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+                        y = y + Row:Render(row, entry, width, cfg) + gap
+                    end
                 end
             end
         end

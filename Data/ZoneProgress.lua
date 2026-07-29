@@ -109,7 +109,16 @@ local function fireDirty()
     end
 end
 
-function ZoneProgress:EnsureQuests(qlID)
+local _count = {}
+
+function ZoneProgress:Invalidate()
+    _count.rootID = nil
+end
+
+-- silent is passed by Count alone. Count owns _seen and is not re-entrant, and a listener
+-- fired mid-walk calls straight back into it, so an inline fill must never announce itself.
+-- The caller already has the filled data; only the async retry has news worth telling.
+function ZoneProgress:EnsureQuests(qlID, silent)
     if not (qlID and C_QuestLine and C_QuestLine.GetQuestLineQuests) then return end
     local quests = C_QuestLine.GetQuestLineQuests(qlID)
     if not quests or #quests == 0 then
@@ -128,9 +137,10 @@ function ZoneProgress:EnsureQuests(qlID)
     local existing = qlQuests[qlID]
     if not existing or #quests >= #existing then
         qlQuests[qlID] = quests
+        self:Invalidate()
         -- The retry is the whole point of this function, so it has to tell someone. A
         -- silent fill leaves the bar hidden or short until an unrelated event repaints it.
-        fireDirty()
+        if not silent then fireDirty() end
     end
 end
 
@@ -151,7 +161,7 @@ function ZoneProgress:Count(rootID, rootName)
         local qlID = lines[i]
         local quests = qlQuests[qlID]
         if not quests then
-            self:EnsureQuests(qlID)
+            self:EnsureQuests(qlID, true)
             quests = qlQuests[qlID]
         end
         for j = 1, (quests and #quests or 0) do
@@ -166,12 +176,22 @@ function ZoneProgress:Count(rootID, rootName)
     return done, total, catID
 end
 
+-- Memoized because the tracker calls this once per render and Render is not throttled -
+-- an appearance slider drag would otherwise re-walk every routed questline per step.
+-- A fill during the walk clears the entry and the walk then overwrites it, so the stored
+-- result is always a complete pass rather than a half-updated one.
 function ZoneProgress:Current()
     local rootID, rootName = zoneRoot()
     if not rootID then return nil end
-    local done, total, catID = self:Count(rootID, rootName)
-    if not total or total == 0 then return nil end
-    return done, total, rootName, catID
+
+    if _count.rootID ~= rootID then
+        local done, total, catID = self:Count(rootID, rootName)
+        _count.rootID, _count.done, _count.total, _count.name, _count.catID =
+            rootID, done, total, rootName, catID
+    end
+
+    if not _count.total or _count.total == 0 then return nil end
+    return _count.done, _count.total, _count.name, _count.catID
 end
 
 function ZoneProgress:DebugLines()
@@ -202,6 +222,9 @@ function ZoneProgress:DebugLines()
     return lines
 end
 
+-- Registered here rather than only on the bar because the count cache has to be dropped
+-- before any renderer reads it, and Events dispatches in registration order - this module
+-- loads ahead of every consumer in the TOC, so its handler runs first.
 function ZoneProgress:OnEnable()
     local Events = ns:GetModule("Events")
     -- Clearing the retry counters matters as much as the map: a questline that exhausted
@@ -210,7 +233,15 @@ function ZoneProgress:OnEnable()
         _rootDirty = true
         wipe(retryCount)
         wipe(retryPending)
+        self:Invalidate()
     end
     Events:On("ZONE_CHANGED_NEW_AREA", dirty)
     Events:On("PLAYER_ENTERING_WORLD", dirty)
+
+    -- A turn-in moves the bar without touching the questline store, so the cache needs
+    -- clearing on its own here.
+    local function recount() self:Invalidate() end
+    Events:On("QUEST_TURNED_IN",  recount)
+    Events:On("QUEST_REMOVED",    recount)
+    Events:On("QUESTLINE_UPDATE", recount)
 end

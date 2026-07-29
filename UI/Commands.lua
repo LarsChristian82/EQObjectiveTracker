@@ -61,8 +61,9 @@ handlers.status = function()
     ns:Print("sections (in render order):")
     for _, id in ipairs(Sections:Order()) do
         local g = Feed.byGroup[id]
-        ns:Print(("  %-14s %d/%d visible%s%s"):format(id,
+        ns:Print(("  %-14s %d/%d visible%s%s%s"):format(id,
             g and g.visibleCount or 0, g and g.totalCount or 0,
+            Sections:IsVirtual(id) and "  [virtual]" or "",
             Sections:IsHidden(id) and "  [hidden]" or "",
             Sections:IsCollapsed(id) and "  [collapsed]" or ""))
     end
@@ -83,6 +84,9 @@ handlers.status = function()
     if ZP and ZP.DebugLines then
         for _, line in ipairs(ZP:DebugLines()) do ns:Print(line) end
     end
+
+    local ZB = ns:GetModule("ZoneProgressBar")
+    if ZB and ZB.DebugLine then ns:Print(ZB:DebugLine()) end
 end
 
 function Commands:OnEnable()

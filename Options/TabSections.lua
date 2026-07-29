@@ -44,7 +44,7 @@ Options:RegisterTab({
 
         self:CreateHeading(content, "Sections")
         self:CreateLabel(content,
-            "Only sections a loaded content provider can fill are listed here.",
+            "Reorder the tracker's sections. A section only shows while it has something in it.",
             0.6, 0.6, 0.6)
 
         local list = CreateFrame("Frame", nil, content)
@@ -71,13 +71,20 @@ Options:RegisterTab({
             local r = buildSectionRow(list)
             rows[id] = r
             r.label:SetText(Sections:Title(id))
-            r.check:SetChecked(not Sections:IsHidden(id))
-            self:AttachTooltip(r.check, Sections:Title(id),
-                "Hide this section entirely, even when it has entries.")
-            r.check:SetScript("OnClick", function(btn)
-                Sections:SetHidden(id, not btn:GetChecked())
-                ns:GetModule("Tracker"):Render()
-            end)
+            -- A virtual section has no entries to hide, so its own settings own its
+            -- visibility and a second control here would only contradict them. The label
+            -- keeps the checkbox's anchor so the column stays flush.
+            if Sections:IsVirtual(id) then
+                r.check:Hide()
+            else
+                r.check:SetChecked(not Sections:IsHidden(id))
+                self:AttachTooltip(r.check, Sections:Title(id),
+                    "Hide this section entirely, even when it has entries.")
+                r.check:SetScript("OnClick", function(btn)
+                    Sections:SetHidden(id, not btn:GetChecked())
+                    ns:GetModule("Tracker"):Render()
+                end)
+            end
             r.up:SetScript("OnClick", function()
                 Sections:Move(id, -1); layout()
             end)
