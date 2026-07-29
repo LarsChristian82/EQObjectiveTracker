@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-28
+
 A large step toward the parity needed before Everything Quests can drop its own tracker
 and depend on this one. The appearance options, the world quest area, professions,
 endeavors and the full scenario and delve display are all ported across.
