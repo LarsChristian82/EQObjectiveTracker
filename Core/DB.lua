@@ -27,8 +27,6 @@ DB.defaults = {
             showOnlyWatched      = true,
             sortMode             = "zone",
             simplifyMode         = false,
-            -- Keyed by groupID. EQ's equivalent is the achievements-only
-            -- simplifyAchievements, so this one key is a semantic import, not a copy.
             simplifyGroups       = {},
 
             font               = "GothamXNarrow Black",
@@ -39,7 +37,6 @@ DB.defaults = {
             textShadowColor    = { r = 0, g = 0, b = 0, a = 1 },
             textShadowStrength = 2,
 
-            -- The banner is styled on its own, separately from the quest text above it
             scenarioTextShadow         = true,
             scenarioTextShadowColor    = { r = 0, g = 0, b = 0, a = 1 },
             scenarioTextShadowStrength = 1,

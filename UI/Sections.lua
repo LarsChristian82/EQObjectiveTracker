@@ -28,9 +28,8 @@ Sections.frames = {}
 -- so they sit outside the reorderable run and Order never returns them.
 Sections.PINNED = { worldquests = true }
 
--- The scenario container is not a section at all - no header, no collapse, no visibility
--- toggle, and it always sits above everything while a scenario is running. Kept separate
--- from PINNED because that list is what the World Quests options block iterates.
+-- Kept separate from PINNED because that list is what the World Quests options block
+-- iterates, and a scenario has no header, collapse or visibility toggle to offer.
 Sections.CONTAINER = { scenarios = true }
 
 function Sections:Title(groupID)

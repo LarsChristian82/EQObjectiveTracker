@@ -4,10 +4,9 @@ local ZoneProgress = ns:RegisterModule("ZoneProgress", {})
 
 local MAX_HOPS = 5
 
--- EQ resolves the zone by walking up from the player's map until it hits a Zone, so a
--- micro-dungeon or a sub-area still counts against the zone that contains it.
 local _rootID, _rootName, _rootDirty = nil, nil, true
 
+-- Walks up to the containing Zone, so a micro-dungeon counts against the zone around it.
 local function zoneRoot()
     if not _rootDirty then return _rootID, _rootName end
     if not ns.Has.Map then return nil end
@@ -28,15 +27,20 @@ local function zoneRoot()
         if not info.parentMapID or info.parentMapID == 0 then break end
         id = info.parentMapID
     end
+
+    -- Fall back to the player's own map, as EQ does. Without this a map with no Zone
+    -- ancestor latches nil until the next zone change, and the mapID routing entries for
+    -- Zul'Aman, Voidstorm and Void Acropolis could never be reached.
+    if not _rootID then
+        local info = C_Map.GetMapInfo(mapID)
+        _rootID, _rootName = mapID, info and info.name or nil
+    end
     return _rootID, _rootName
 end
 
 local RETRY_DELAY = 0.3
 local RETRY_MAX   = 5
 
--- Blizzard exposes no per-zone quest total. Zone story achievements, campaign chapters
--- and GetAvailableQuestLines were each measured against a live client and none of them
--- answers, which is why the routing index in Data/ZoneRouting.lua has to exist.
 local function categoryByMapID(rootID)
     if not rootID then return nil end
     for id, cat in pairs(ns.ZONE_CATEGORIES or {}) do
@@ -92,6 +96,19 @@ local qlQuests      = {}
 local retryCount    = {}
 local retryPending  = {}
 
+local dirtyListeners = {}
+
+function ZoneProgress:OnDirty(fn)
+    dirtyListeners[#dirtyListeners + 1] = fn
+end
+
+local function fireDirty()
+    for i = 1, #dirtyListeners do
+        local ok, err = pcall(dirtyListeners[i])
+        if not ok then geterrorhandler()(err) end
+    end
+end
+
 function ZoneProgress:EnsureQuests(qlID)
     if not (qlID and C_QuestLine and C_QuestLine.GetQuestLineQuests) then return end
     local quests = C_QuestLine.GetQuestLineQuests(qlID)
@@ -111,6 +128,9 @@ function ZoneProgress:EnsureQuests(qlID)
     local existing = qlQuests[qlID]
     if not existing or #quests >= #existing then
         qlQuests[qlID] = quests
+        -- The retry is the whole point of this function, so it has to tell someone. A
+        -- silent fill leaves the bar hidden or short until an unrelated event repaints it.
+        fireDirty()
     end
 end
 
@@ -184,7 +204,13 @@ end
 
 function ZoneProgress:OnEnable()
     local Events = ns:GetModule("Events")
-    local function dirty() _rootDirty = true end
+    -- Clearing the retry counters matters as much as the map: a questline that exhausted
+    -- its five attempts would otherwise never poll again for the rest of the session.
+    local function dirty()
+        _rootDirty = true
+        wipe(retryCount)
+        wipe(retryPending)
+    end
     Events:On("ZONE_CHANGED_NEW_AREA", dirty)
     Events:On("PLAYER_ENTERING_WORLD", dirty)
 end

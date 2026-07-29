@@ -3,13 +3,11 @@ local _, ns = ...
 -- VENDORED FROM EVERYTHING QUESTS - keep in step by hand.
 --   EQ Data/QuestChains/_Index.lua            -> ns.CAT and ns.ZONE_CATEGORIES
 --   EQ Data/QuestChains/_QuestLineRouting.lua -> ns.QUESTLINE_ROUTING
---
--- This is an INDEX, not quest data: it maps questline IDs to a zone. The quests inside
--- each questline still come from C_QuestLine.GetQuestLineQuests at runtime, which is why
--- 20 routed questlines produce a 147 quest total for Eversong Woods.
---
--- A zone missing from the routing shows no bar at all rather than a wrong number, so
--- drift against EQ degrades quietly. That is EQ's own behaviour when a zone is unrouted.
+-- An index only: the quests inside each questline come from C_QuestLine at runtime.
+-- Blizzard exposes no per-zone quest total, so this file cannot be replaced by an API -
+-- zone story achievements, campaign chapters and GetAvailableQuestLines were each tried
+-- against a live client and none answers. An unrouted zone shows no bar rather than a
+-- wrong number, which is EQ's own behavior.
 
 ns.CAT = {
     CAMPAIGN          = 1100,
@@ -24,9 +22,8 @@ ns.CAT = {
     SUNSTRIDER_OMNIUM = 1109,
 }
 
--- mapIDs is how a zone resolves to a category, with the category name as the fallback.
--- Eversong Woods deliberately lists Silvermoon City (2393) so standing in the city shows
--- the zone's progress. Eversong itself (2395) resolves by name.
+-- Eversong Woods lists Silvermoon City (2393) on purpose so the city shows the zone's
+-- progress. Eversong itself (2395) resolves by name.
 ns.ZONE_CATEGORIES = {
     [ns.CAT.CAMPAIGN]          = { name = "Midnight Campaign",           mapIDs = {},       campaignID = 270 },
     [ns.CAT.WAR_LIGHT_SHADOW]  = { name = "The War of Light and Shadow", mapIDs = {},       campaignID = 284 },

@@ -278,7 +278,6 @@ function Scenario:_DrawBanner(info, cfg)
         banner.ThemeOverlay:Hide()
     end
 
-    -- A widget set replaces the entire banner, art and text alike
     if info.widgetSetID and info.widgetSetID > 0 then
         banner.WidgetContainer:RegisterForWidgetSet(info.widgetSetID)
         banner.WidgetContainer:Show()
@@ -314,10 +313,8 @@ end
 function Scenario:_DrawCriteria(container, lines)
     local Media    = ns:GetModule("Media")
     local width    = math.max(1, container:GetWidth() or 1)
-    local barWidth = math.floor(width * BAR_W_RATIO)
-    local rowWidth = width - 16
-    -- Rows centre on the container rather than the banner, so a side-aligned banner
-    -- does not drag them off centre with it
+    local barWidth = math.max(1, math.floor(width * BAR_W_RATIO))
+    local rowWidth = math.max(1, width - 16)
     local firstRowY = (self.subHeaderH or SUBHEADER_H) + BANNER_GAP + BANNER_H
                       + CRITERIA_LINE_GAP
 
@@ -332,6 +329,8 @@ function Scenario:_DrawCriteria(container, lines)
         if prev then
             row:SetPoint("TOP", prev, "BOTTOM", 0, -CRITERIA_LINE_GAP)
         else
+            -- Anchored to the container, not the banner, so a side-aligned banner does
+            -- not drag the rows off center with it
             row:SetPoint("TOP", container, "TOP", 0, -firstRowY)
         end
 
@@ -373,6 +372,9 @@ function Scenario:_DrawCriteria(container, lines)
             row.text:SetPoint("LEFT",  row.icon, "RIGHT", 6, 0)
             row.text:SetPoint("RIGHT", row, "RIGHT", -4, 0)
             row.text:SetJustifyH("LEFT")
+            -- GetStringHeight below is stale off anchors alone, so the wrap width is set
+            -- explicitly or a wrapped criterion measures as one line and rows overlap
+            row.text:SetWidth(math.max(1, rowWidth - 18))
 
             -- Completed criteria drop the X/Y prefix, matching the default tracker
             local label = ln.text or ""

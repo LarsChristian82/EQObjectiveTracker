@@ -105,7 +105,6 @@ Options:RegisterTab({
                 local _, values = Media:GetSoundList()
                 local value = values[label] or "NONE"
                 DB:Tracker().questCompleteSound = value
-                -- Preview it, the way picking a sound anywhere else in the game does
                 local file = Media:GetSoundFile(value)
                 if file and PlaySoundFile then PlaySoundFile(file, "Master") end
             end,

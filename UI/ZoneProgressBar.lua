@@ -212,7 +212,7 @@ function ZoneBar:OnEnable()
     Events:On("PLAYER_ENTERING_WORLD", refresh)
     Events:On("QUEST_TURNED_IN",       refresh)
     Events:On("QUEST_REMOVED",         refresh)
-    -- Questline contents arrive async, so recount when the data lands
     Events:On("QUESTLINE_UPDATE",      refresh)
+    ns:GetModule("ZoneProgress"):OnDirty(refresh)
     self:Update()
 end

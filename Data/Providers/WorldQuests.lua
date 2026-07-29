@@ -222,6 +222,8 @@ function WorldQuests:GetEntries()
     currentSource = nil
 
     store:Begin()
+    local superID = ns.Has.SuperTrack and C_SuperTrack.GetSuperTrackedQuestID() or 0
+
     for i = 1, #candidates do
         local qid  = candidates[i]
         local name = title(qid)
@@ -256,6 +258,7 @@ function WorldQuests:GetEntries()
 
             e.icon.atlas = typeAtlas(qid)
             e.canGroup   = canCreateGroup(qid)
+            e.isFocused  = (superID == qid)
 
             fillLines(e, qid, complete)
         end

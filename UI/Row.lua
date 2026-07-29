@@ -10,8 +10,7 @@ local PAD_X, PAD_Y     = 6, 2
 local ICON_SIZE        = 26
 local ICON_GAP         = 4
 
--- The world quest marker is a POI ring with the quest-type atlas centred on it. The ring
--- deliberately overhangs the 26px icon column, which is how the default tracker draws it.
+-- The ring deliberately overhangs the 26px icon column, matching the default tracker
 local WQ_RING_SIZE     = 33
 local WQ_STAR_SIZE     = 18
 local WQ_RING_TEXTURE  = "Interface/WorldMap/UI-QuestPoi-NumberIcons"
@@ -144,8 +143,6 @@ local function buildLineText(entry, cfg)
     local hideN  = cfg and cfg.showObjectiveNumbers == false
     local simple = cfg and cfg.simplifyMode
 
-    -- Per-section simplify is looked up by groupID, so this stays provider-agnostic and
-    -- every section - including ones that do not exist yet - gets the toggle for free.
     local groups   = cfg and cfg.simplifyGroups
     local hideDone = simple or (groups and entry.groupID and groups[entry.groupID]) or false
 
@@ -294,7 +291,7 @@ function Row:Reset(row)
     row._sTitle, row._sSub, row._sState  = nil, nil, nil
     row._sFocus, row._sWidth, row._sText = nil, nil, nil
     row._sTime, row._sGen, row._sCardBg  = nil, nil, nil
-    row._sGroup = nil
+    row._sGroup, row._sIcon = nil, nil
     ns:GetModule("Card"):Clear(row)
 end
 
@@ -311,6 +308,12 @@ function Row:Render(row, entry, width, cfg)
     local subtitle = (cfg and cfg.showZoneTag ~= false) and entry.subtitle or nil
     local lineText = buildLineText(entry, cfg)
     local showEye  = entry.canGroup and true or false
+
+    -- Providers resolve icons late on purpose - a world quest falls back to the generic
+    -- marker until its tag info streams in - so the icon has to sit in the repaint gate
+    -- or that second answer never reaches the screen.
+    local icon    = entry.icon
+    local iconKey = icon and (icon.atlas or icon.texture or icon.classification) or nil
 
     local timeText, timeMins
     if entry.expiresAt then
@@ -338,6 +341,7 @@ function Row:Render(row, entry, width, cfg)
        and row._sTime  == timeText
        and row._sCardBg == cardBg
        and row._sGroup == showEye
+       and row._sIcon  == iconKey
        and row._sGen   == self.generation
     if unchanged then return row:GetHeight() end
 
@@ -453,6 +457,7 @@ function Row:Render(row, entry, width, cfg)
     row._sTime = timeText
     row._sCardBg = cardBg
     row._sGroup = showEye
+    row._sIcon = iconKey
     row._sGen = self.generation
 
     return row:GetHeight()

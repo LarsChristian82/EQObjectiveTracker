@@ -55,8 +55,8 @@ local function detectTransitions()
             if id then
                 local now = (ns.Has.QuestIsComplete and C_QuestLog.IsComplete(id)) and true or false
                 seen[id] = now
-                -- was == false, not "not was": a quest first seen already complete is nil
-                -- here and must stay silent, or a cold login fires for the whole log
+                -- == false, not `not lastComplete[id]`: a quest first seen already complete
+                -- is nil here and must stay silent, or a cold login fires for the whole log
                 if armed and now and lastComplete[id] == false then
                     local title = info.title or ""
                     -- The chat path may already have played this one

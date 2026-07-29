@@ -50,7 +50,7 @@ local function categoryLabel(scenarioType, textureKit, scenarioName, instType, d
     if scenarioType == WARFRONT_TYPE    then return "Warfront" end
     if scenarioType == PROVING_TYPE     then return "Proving Grounds" end
 
-    -- Normal dungeons report the same scenarioType, so only the difficulty separates these
+    -- Normal dungeons also report scenarioType 3, so only difficulty 205 means Follower Dungeon
     if diffID == FOLLOWER_DUNGEON then return "Follower Dungeon" end
 
     if scenarioName then
@@ -181,7 +181,7 @@ end
 
 -- The banner is bespoke atlas art with no Entry equivalent, so the display layer reads
 -- these facts through a provider method rather than through entry.payload. The theme
--- colour resolves to plain numbers here - Data never hands UI a colour escape.
+-- color resolves to plain numbers here - Data never hands UI a color escape.
 function Scenarios:GetBanner()
     if not facts.active then return nil end
 
@@ -216,9 +216,6 @@ function Scenarios:OnEntryTooltip(entry, tooltip)
     end
 end
 
--- Reports the raw classification inputs, not just the answer. The scenarioType and
--- texture kit pairs are what decide Delve against Ritual Site, and they are the values
--- worth reading back off a live run before the banner trusts them.
 function Scenarios:DebugLine()
     if not facts.active then return "no active scenario" end
     return ("%s | %s stage %d/%d | type %s kit %s diff %s inst %s | widgetSet %s | %d criteria"):format(
@@ -227,8 +224,8 @@ function Scenarios:DebugLine()
         tostring(facts.instType), tostring(facts.widgetSetID), facts.criteria)
 end
 
--- No debounce here, unlike EQ's copy: EQ called Refresh straight from the event, while
--- Tracker:Refresh already coalesces, so a second timer would only add latency.
+-- EQ debounces its own scenario events. Tracker:Refresh already coalesces, so a second
+-- timer here would only add latency.
 function Scenarios:Enable(notifyDirty)
     local Events = ns:GetModule("Events")
     Events:On("SCENARIO_UPDATE",                     notifyDirty)

@@ -60,8 +60,7 @@ local WOW_FONTS = {
     { name = "WoW Morpheus",                file = [[Fonts\MORPHEUS.TTF]] },
 }
 
--- These names are the same migration contract as the fonts above: a profile stores the
--- bar by NAME, so renaming one drops the user back to the Blizzard texture silently.
+-- Same migration contract as the fonts: a profile stores the bar by NAME.
 local STATUSBAR_PATH = [[Interface\AddOns\EQObjectiveTracker\Media\Statusbars\]]
 local STATUSBARS = {
     { name = "EQ Smooth",   file = STATUSBAR_PATH .. "EQ-Smooth.tga" },
@@ -76,8 +75,7 @@ local STATUSBARS = {
 -- LSM's built-in "Blizzard" bar, and the fallback when LSM is absent
 local DEFAULT_STATUSBAR = [[Interface\TargetingFrame\UI-StatusBar]]
 
--- Blizzard file IDs, not bundled audio, so this costs nothing in the zip. Names are the
--- same migration contract as the fonts and bars above.
+-- Blizzard file IDs, not bundled audio, so the zip does not grow
 local SOUNDS = {
     { name = "EQ: Work Complete",   file = 558132 },
     { name = "EQ: BloodElf (M)",    file = 539400 },

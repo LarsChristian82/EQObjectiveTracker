@@ -156,9 +156,6 @@ function Tracker:BuildFrame()
     f.background:SetAllPoints()
     f.background:Hide()
 
-    -- Not a section: no header, no collapse, no toggle. It pins above the scroll area and
-    -- everything below anchors off its bottom, so a scenario pushes the list down rather
-    -- than scrolling with it.
     local scenarioContainer = CreateFrame("Frame", nil, f)
     scenarioContainer:SetPoint("TOPLEFT", CONTENT_PAD, -DRAG_HANDLE_H)
     -- Reserve the quest list's scroll bar gutter so the banner lines up with scrolled text
@@ -568,8 +565,6 @@ function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
     return band + viewport, hasTimed
 end
 
--- The banner draws itself from provider facts rather than from an Entry: it needs stage
--- numbers, a texture kit and a widget set, none of which the Entry shape carries.
 function Tracker:_RenderScenario(group, cfg)
     local f    = self.frame
     local scen = f.scenarioContainer

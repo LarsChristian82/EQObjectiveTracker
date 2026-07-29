@@ -21,8 +21,8 @@ Entry.ICON = {
     NONE     = "none",
     TEXTURE  = "texture",
     QUESTPOI = "questPOI",
-    -- A POI ring with the quest-type atlas centred on it. Two layers, so it cannot be
-    -- expressed as a plain TEXTURE, and the ring changes when the entry is super-tracked.
+    -- Two layers, a POI ring plus the quest-type atlas, so a plain TEXTURE cannot
+    -- express it. The ring also reacts to isFocused.
     WORLDQUEST = "worldQuest",
 }
 
