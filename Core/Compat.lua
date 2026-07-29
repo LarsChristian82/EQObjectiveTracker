@@ -44,6 +44,7 @@ Has.RecipeSchematic     = method(ProfessionsUtil, "GetRecipeSchematic")
 Has.Scenario            = method(C_Scenario, "GetInfo")
 Has.ScenarioCriteria    = method(C_ScenarioInfo, "GetCriteriaInfo")
 Has.Map                 = method(C_Map, "GetBestMapForUnit")
+Has.MythicPlus          = method(C_ChallengeMode, "IsChallengeModeActive")
 Has.Atlas               = method(C_Texture, "GetAtlasInfo")
 
 Has.Achievements        = global("GetAchievementInfo") and global("GetAchievementNumCriteria")

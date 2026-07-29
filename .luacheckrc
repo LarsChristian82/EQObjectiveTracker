@@ -33,6 +33,7 @@ read_globals = {
     "C_Timer", "C_Map", "C_QuestLog", "C_QuestInfoSystem", "C_CampaignInfo",
     "C_SuperTrack", "C_TaskQuest", "C_ContentTracking", "C_PerksActivities",
     "C_Scenario", "C_ScenarioInfo", "GetInstanceInfo", "C_Texture", "C_AddOns", "Enum",
+    "IsInInstance", "C_ChallengeMode", "WorldMapFrame",
     "C_TradeSkillUI", "C_CurrencyInfo", "C_Item", "ProfessionsUtil", "QuestUtil",
     "C_LFGList", "LFGListUtil_FindQuestGroup", "C_TaxiMap", "FlightMapFrame",
     "PlaySoundFile", "ERR_QUEST_COMPLETE_S", "C_QuestLine", "MenuUtil",

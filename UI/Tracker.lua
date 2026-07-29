@@ -512,6 +512,12 @@ function Tracker:DebugScroll()
         shown(f.scenarioContainer),
         f.scenarioContainer and f.scenarioContainer:GetHeight() or 0)
 
+    -- A hidden tracker skips Render, so the provider counters above are the last painted
+    -- ones rather than the current state. Say so instead of letting them read as live.
+    out[#out + 1] = ("frame %s%s%s"):format(shown(f),
+        f._eqotUserHidden and " [toggled off]" or "",
+        f._eqotPendingRender and " [render pending]" or "")
+
     return table.concat(out, " | ")
 end
 
@@ -654,6 +660,12 @@ end
 function Tracker:Render()
     local f = self.frame
     if not f then return end
+    -- Nothing on screen to lay out, so the work is deferred until Visibility shows it again
+    if f._eqotHidden or not f:IsShown() then
+        f._eqotPendingRender = true
+        return
+    end
+    f._eqotPendingRender = nil
     local content = f.content
     if not content then return end
 
@@ -780,10 +792,24 @@ function Tracker:_EnsureTimerTicker(wanted)
     end
 end
 
+-- Records intent and lets Visibility do the painting. Branching on IsShown instead would
+-- invert the toggle whenever a rule already had the tracker hidden, and the flag is what
+-- keeps a manual hide from being undone by the next visibility event.
 function Tracker:Toggle()
     local f = self.frame
     if not f then return end
-    if f:IsShown() then f:Hide() else f:Show(); self:Render() end
+    f._eqotUserHidden = (not f._eqotUserHidden) or nil
+
+    local V = ns:GetModule("Visibility")
+    if V then
+        V:Apply()
+        if not f._eqotUserHidden and V:IsRuleHiding() then
+            ns:Print("a visibility rule is keeping the tracker hidden - see /eqot, General.")
+        end
+        return
+    end
+
+    if f._eqotUserHidden then f:Hide() else f:Show(); self:Render() end
 end
 
 function Tracker:ResetPosition()

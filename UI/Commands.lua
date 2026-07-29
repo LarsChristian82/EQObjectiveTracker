@@ -42,8 +42,11 @@ handlers.status = function()
 
     ns:Print(("version %s"):format(ns.VERSION))
 
-    -- Rebuild first so the counters describe the current state, not the last repaint
+    -- Rebuild first so the counters describe the current state, not the last repaint.
+    -- Render skips entirely while the tracker is hidden, so the feed is built directly too
+    -- or a rule-hidden tracker would report whatever the last paint happened to leave.
     ns:GetModule("Tracker"):Render()
+    Feed:Build()
 
     ns:Print("providers (emitted -> duplicate / filtered / shown):")
     for _, p in ipairs(Registry:Active()) do
@@ -79,6 +82,9 @@ handlers.status = function()
 
     local BZ = ns:GetModule("Blizzard")
     if BZ and BZ.DebugLine then ns:Print(BZ:DebugLine()) end
+
+    local VIS = ns:GetModule("Visibility")
+    if VIS and VIS.DebugLine then ns:Print(VIS:DebugLine()) end
 
     local ZP = ns:GetModule("ZoneProgress")
     if ZP and ZP.DebugLines then

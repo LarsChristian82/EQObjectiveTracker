@@ -37,6 +37,28 @@ Options:RegisterTab({
             function(v) DB:General().restoreSuperTrackOnLogin = v end,
             "Restores the waypoint arrow.")
 
+        local function hideRule(key, label, tooltip)
+            self:CreateCheckbox(content, label,
+                function() return DB:General()[key] end,
+                function(v)
+                    DB:General()[key] = v
+                    ns:GetModule("Visibility"):Apply()
+                end,
+                tooltip)
+        end
+
+        hideRule("hideInCombat", "Hide tracker in combat",
+            "Hides the tracker while you are in combat and brings it back when you leave.")
+        hideRule("hideInInstances", "Hide tracker in instances",
+            "Raids, dungeons, delves.")
+        hideRule("hideOnMapOpen", "Hide tracker when world map is open",
+            "Hides the tracker while the world map is up, so it does not sit over the map.")
+        -- No Mythic+ API on this client, so the toggle could never fire
+        if ns.Has.MythicPlus then
+            hideRule("hideInMythicPlus", "Hide tracker in Mythic+",
+                "Hides the tracker during an active Mythic+ run, then brings it back when the run ends.")
+        end
+
         self:CreateHeading(content, "What to show")
 
         self:CreateCheckbox(content, "Only show tracked quests",

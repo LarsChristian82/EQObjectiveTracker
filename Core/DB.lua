@@ -8,8 +8,11 @@ local DB = ns:RegisterModule("DB", {})
 DB.defaults = {
     profile = {
         general = {
-            lockTracker  = false,
-            hideInCombat = false,
+            lockTracker      = false,
+            hideInCombat     = false,
+            hideInInstances  = false,
+            hideOnMapOpen    = false,
+            hideInMythicPlus = false,
             restoreSuperTrackOnLogin = true,
         },
         tracker = {

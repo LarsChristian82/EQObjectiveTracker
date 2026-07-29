@@ -53,6 +53,7 @@ UI\Scenario.lua
 UI\Tracker.lua
 UI\TaxiHighlight.lua
 UI\ZoneProgressBar.lua
+UI\Visibility.lua
 
 # Options. Frame.lua defines RegisterTab and must load before any Tab file.
 Options\Frame.lua
