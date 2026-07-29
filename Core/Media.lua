@@ -207,11 +207,13 @@ function Media:ApplyTextShadow(fs)
     setShadow(fs, cfg.textShadow, cfg.textShadowColor, cfg.textShadowStrength)
 end
 
-function Media:ApplyFont(fs, sizeDelta)
+-- fontName overrides the tracker's own font for callers that offer their own picker. It
+-- takes a NAME rather than a file so a profile survives the font moving on disk.
+function Media:ApplyFont(fs, sizeDelta, fontName)
     if not fs then return end
     local cfg = ns:GetModule("DB"):Tracker()
     if not cfg then return end
-    local file = self:GetFontFile(cfg.font)
+    local file = self:GetFontFile(fontName or cfg.font)
     if file then
         fs:SetFont(file, math.max(8, (cfg.fontSize or 12) + (sizeDelta or 0)),
                    cfg.fontOutline or "")
@@ -219,9 +221,9 @@ function Media:ApplyFont(fs, sizeDelta)
     setShadow(fs, cfg.textShadow, cfg.textShadowColor, cfg.textShadowStrength)
 end
 
-function Media:ApplyTitleFont(fs)
+function Media:ApplyTitleFont(fs, fontName)
     local cfg = ns:GetModule("DB"):Tracker()
-    self:ApplyFont(fs, cfg and cfg.titleSizeDelta or 0)
+    self:ApplyFont(fs, cfg and cfg.titleSizeDelta or 0, fontName)
 end
 
 function Media:ApplyScenarioShadow(fs)

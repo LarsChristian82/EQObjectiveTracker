@@ -170,7 +170,35 @@ local function dropdownPopup()
     return p
 end
 
-local function showDropdown(anchor, list, current, onPick)
+local SWATCH_W, SWATCH_H = 60, 12
+
+-- One popup is shared by every dropdown, so a row that grew a swatch has to give it back
+-- when a plain list reuses it.
+local function decorateRow(b, item, decorate)
+    if decorate then
+        if not b.swatch then
+            b.swatchBg = b:CreateTexture(nil, "BACKGROUND")
+            b.swatchBg:SetPoint("LEFT", 4, 0)
+            b.swatchBg:SetSize(SWATCH_W, SWATCH_H)
+            b.swatchBg:SetColorTexture(0, 0, 0, 0.6)
+            b.swatch = b:CreateTexture(nil, "ARTWORK")
+            b.swatch:SetPoint("LEFT", 4, 0)
+            b.swatch:SetSize(SWATCH_W, SWATCH_H)
+        end
+        b.swatchBg:Show()
+        b.swatch:Show()
+        b.text:ClearAllPoints()
+        b.text:SetPoint("LEFT", SWATCH_W + 12, 0)
+        decorate(b, item)
+    elseif b.swatch then
+        b.swatchBg:Hide()
+        b.swatch:Hide()
+        b.text:ClearAllPoints()
+        b.text:SetPoint("LEFT", 4, 0)
+    end
+end
+
+local function showDropdown(anchor, list, current, onPick, decorate)
     local p = dropdownPopup()
     p:ClearAllPoints()
     p:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
@@ -193,6 +221,7 @@ local function showDropdown(anchor, list, current, onPick)
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT",  p.content, "TOPLEFT",  0, -(i - 1) * DD_ROW)
         b:SetPoint("TOPRIGHT", p.content, "TOPRIGHT", 0, -(i - 1) * DD_ROW)
+        decorateRow(b, item, decorate)
         b.text:SetText(item)
         if item == current then
             b.text:SetTextColor(0.92, 0.72, 0.02)
@@ -209,7 +238,9 @@ local function showDropdown(anchor, list, current, onPick)
     p:Show()
 end
 
-function Options:CreateDropdown(content, label, getList, getter, setter, tooltip)
+-- decorate(frame, value) draws a preview on the closed button and on every row. Passed by
+-- pickers whose values are not self-describing, such as a status bar texture.
+function Options:CreateDropdown(content, label, getList, getter, setter, tooltip, decorate)
     local holder = CreateFrame("Frame", nil, content)
     holder:SetSize(320, 40)
 
@@ -221,14 +252,33 @@ function Options:CreateDropdown(content, label, getList, getter, setter, tooltip
     btn:SetPoint("TOPLEFT", 0, -18)
     btn:SetSize(320, 20)
 
-    local function refresh() btn:SetText(getter() or "") end
+    if decorate then
+        btn.swatchBg = btn:CreateTexture(nil, "BACKGROUND")
+        btn.swatchBg:SetPoint("LEFT", 8, 0)
+        btn.swatchBg:SetSize(SWATCH_W, SWATCH_H)
+        btn.swatchBg:SetColorTexture(0, 0, 0, 0.6)
+        btn.swatch = btn:CreateTexture(nil, "ARTWORK")
+        btn.swatch:SetPoint("LEFT", 8, 0)
+        btn.swatch:SetSize(SWATCH_W, SWATCH_H)
+        local fs = btn:GetFontString()
+        if fs then
+            fs:ClearAllPoints()
+            fs:SetPoint("LEFT", btn.swatch, "RIGHT", 8, 0)
+            fs:SetJustifyH("LEFT")
+        end
+    end
+
+    local function refresh()
+        btn:SetText(getter() or "")
+        if decorate then decorate(btn, getter()) end
+    end
     refresh()
 
     btn:SetScript("OnClick", function()
         showDropdown(btn, getList(), getter(), function(v)
             setter(v)
             refresh()
-        end)
+        end, decorate)
     end)
 
     holder.Refresh = refresh

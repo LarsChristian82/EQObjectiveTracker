@@ -36,6 +36,31 @@ local function relayout(key, v)
     ns:GetModule("Tracker"):Render()
 end
 
+local SAME_FONT = "Same as tracker font"
+
+local function zbState()
+    local t = DB()
+    if not t then return nil end
+    t.zoneProgressBar = t.zoneProgressBar or {}
+    return t.zoneProgressBar
+end
+
+-- Only the fill texture and colour reach the docked bar, so only those repaint the tracker.
+-- The rest land on the floating frame alone, and a full Render there would re-run every
+-- provider once per slider step for a frame the tracker does not contain.
+local function zbSet(key, v, shared)
+    local st = zbState()
+    if st then st[key] = v end
+    ns:GetModule("ZoneProgressBar"):RefreshAppearance()
+    if shared then ns:GetModule("Tracker"):Render() end
+end
+
+local function barTextureSwatch(frame, name)
+    if not frame.swatch then return end
+    frame.swatch:SetTexture(ns:GetModule("Media"):GetStatusBarFile(name))
+    frame.swatch:SetVertexColor(0.26, 0.42, 1.0)
+end
+
 Options:RegisterTab({
     id    = "appearance",
     title = "Appearance",
@@ -344,5 +369,74 @@ Options:RegisterTab({
             function() return DB().borderSize or 1 end,
             function(v) relayout("borderSize", v) end,
             "Border thickness in pixels.", px)
+
+        self:CreateHeading(content, "Zone bar appearance")
+
+        self:CreateDropdown(content, "Bar texture",
+            function() return ns:GetModule("Media"):GetStatusBarList() end,
+            function() local st = zbState(); return (st and st.barTexture) or "Blizzard" end,
+            function(v) zbSet("barTexture", v, true) end,
+            "Fill texture for the zone progress bar. Textures registered through LibSharedMedia, so anything from ElvUI, SharedMedia or Details appears here too.",
+            barTextureSwatch)
+
+        self:CreateColorPicker(content, "Bar color",
+            function()
+                local st = zbState()
+                return (st and st.barColor) or { r = 0.26, g = 0.42, b = 1.0, a = 1 }
+            end,
+            function(v) zbSet("barColor", v, true) end,
+            "Fill color and opacity of the bar itself.", true)
+
+        self:CreateSlider(content, "Scale", 0.5, 2.0, 0.05,
+            function() local st = zbState(); return (st and st.scale) or 1.0 end,
+            function(v) zbSet("scale", v) end,
+            "Size of the floating bar. The docked section follows the tracker's own scale instead.",
+            pct)
+
+        self:CreateDropdown(content, "Font",
+            function()
+                local list = { SAME_FONT }
+                for _, n in ipairs(ns:GetModule("Media"):GetFontList()) do
+                    list[#list + 1] = n
+                end
+                return list
+            end,
+            function() local st = zbState(); return (st and st.font) or SAME_FONT end,
+            function(v) zbSet("font", v ~= SAME_FONT and v or nil) end,
+            "Font for the floating bar's zone name, count and percentage. The docked section uses the tracker font.")
+
+        self:CreateColorPicker(content, "Zone name color",
+            function()
+                local st = zbState()
+                return (st and st.headerColor) or { r = 0.93, g = 0.32, b = 0.10, a = 1 }
+            end,
+            function(v) zbSet("headerColor", v) end,
+            "Color of the zone name on the floating bar. The docked section uses the section header color.", true)
+
+        self:CreateColorPicker(content, "Count color",
+            function()
+                local st = zbState()
+                return (st and st.countColor) or { r = 0.92, g = 0.72, b = 0.02, a = 1 }
+            end,
+            function(v) zbSet("countColor", v) end,
+            "Color of the completed-of-total count on the floating bar.", true)
+
+        self:CreateCheckbox(content, "Show background",
+            function() local st = zbState(); return not (st and st.showBackground == false) end,
+            function(v) zbSet("showBackground", v) end,
+            "Fills the floating bar behind its text. It fades slightly once the bar is locked.")
+
+        self:CreateCheckbox(content, "Show border",
+            function() local st = zbState(); return not (st and st.showBorder == false) end,
+            function(v) zbSet("showBorder", v) end,
+            "Draws a border around the floating bar.")
+
+        self:CreateColorPicker(content, "Border color",
+            function()
+                local st = zbState()
+                return (st and st.borderColor) or { r = 0.635, g = 0.000, b = 0.039, a = 1 }
+            end,
+            function(v) zbSet("borderColor", v) end,
+            "Border color and opacity for the floating bar.", true)
     end,
 })
