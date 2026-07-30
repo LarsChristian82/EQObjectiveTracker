@@ -23,13 +23,20 @@ local SUB_TO_LINES     = 2
 local SUBTITLE_COLOR   = { 0.42, 0.69, 1.00 }
 local DEFAULT_DONE_HEX = "44ff44"
 
--- Reserved for the secure quest-item buttons that land as the first post-launch
--- feature. Every horizontal anchor already offsets by it, so turning it on is a
--- constant change plus the button itself - no layout rework.
-Row.GUTTER_W = 0
-
+-- The width one secure quest-item button needs. Only a row that actually owns an item pays
+-- for it - EQ computes this per block rather than indenting the whole list, so one item
+-- quest indents one row.
 function Row:Gutter()
-    return self.GUTTER_W
+    local IB = ns:GetModule("ItemButtons")
+    return (IB and IB.Gutter) and IB:Gutter() or 0
+end
+
+-- ItemButtons reads this rather than keeping its own copy - a stale copy puts the button
+-- on the card border instead of inside it.
+function Row:Padding(cfg)
+    local cardOn, cardPad = ns:GetModule("Card"):State(cfg)
+    if cardOn then return cardPad, cardPad end
+    return PAD_X, PAD_Y
 end
 
 -- Shared by quests, campaign quests and world quests, so these live here once rather
@@ -65,6 +72,15 @@ do
     CENTER_TURNIN[QC.Legendary or -6] = "UI-QuestPoiLegendary-QuestBangTurnIn"
     CENTER_TURNIN[QC.Recurring or -7] = "UI-QuestPoiRecurring-QuestBangTurnIn"
     CENTER_TURNIN[QC.Meta      or -8] = "UI-QuestPoiWrapper-QuestBangTurnIn"
+end
+
+-- The plain quest POI art, no classification and no bang, for the auto-quest popup boxes.
+-- Kept here so the atlas tables above stay the single source.
+function Row:ApplyGenericQuestIcon(glow, icon)
+    Util.SafeSetAtlas(glow, OUTER_GLOW[(Enum and Enum.QuestClassification
+                                       and Enum.QuestClassification.Normal) or -1])
+    Util.SafeSetAtlas(icon, CENTER_FACE[(Enum and Enum.QuestClassification
+                                        and Enum.QuestClassification.Normal) or -1])
 end
 
 local function lookup(tbl, classification)
@@ -189,7 +205,13 @@ local function buildLineText(entry, cfg)
     return table.concat(_scratch, "\n", 1, n)
 end
 
+local function clickThrough()
+    local Tracker = ns:GetModule("Tracker")
+    return (Tracker and Tracker.IsClickThrough and Tracker:IsClickThrough()) and true or false
+end
+
 local function dispatch(row, fnName, ...)
+    if clickThrough() then return end
     local Registry = ns:GetModule("Registry")
     local provider = row._providerID and Registry:Get(row._providerID)
     if not (provider and provider[fnName] and row._entry) then return end
@@ -197,7 +219,7 @@ local function dispatch(row, fnName, ...)
 end
 
 local function onMouseUp(row, button)
-    if not row._entry then return end
+    if not row._entry or clickThrough() then return end
     if IsModifiedClick and IsModifiedClick("QUESTWATCHTOGGLE") then
         local Filter = ns:GetModule("Filter")
         Filter:SetHidden(row._entry, not Filter:IsHidden(row._entry))
@@ -209,7 +231,7 @@ local function onMouseUp(row, button)
 end
 
 local function onEnter(row)
-    if not row._entry then return end
+    if not row._entry or clickThrough() then return end
     local Registry = ns:GetModule("Registry")
     local provider = row._providerID and Registry:Get(row._providerID)
     if not (provider and provider.OnEntryTooltip) then return end
@@ -271,6 +293,7 @@ function Row:Build()
         dispatch(btn:GetParent(), "OnEntryGroupFinder")
     end)
     r.groupFinder:SetScript("OnEnter", function(btn)
+        if clickThrough() then return end
         GameTooltip:SetOwner(btn, "ANCHOR_LEFT")
         GameTooltip:SetText("Find Group", 1, 1, 1)
         GameTooltip:AddLine("Open the Premade Group Finder for this quest.", 0.7, 0.7, 0.7, true)
@@ -291,7 +314,7 @@ function Row:Reset(row)
     row._sTitle, row._sSub, row._sState  = nil, nil, nil
     row._sFocus, row._sWidth, row._sText = nil, nil, nil
     row._sTime, row._sGen, row._sCardBg  = nil, nil, nil
-    row._sGroup, row._sIcon = nil, nil
+    row._sGroup, row._sIcon, row._sItem = nil, nil, nil
     ns:GetModule("Card"):Clear(row)
 end
 
@@ -308,6 +331,9 @@ function Row:Render(row, entry, width, cfg)
     local subtitle = (cfg and cfg.showZoneTag ~= false) and entry.subtitle or nil
     local lineText = buildLineText(entry, cfg)
     local showEye  = entry.canGroup and true or false
+    -- The effective answer, not the raw field, so turning the option off drops the gutter
+    -- as well as the button and both land through the one repaint gate below.
+    local hasItem  = (entry.hasItem and (not cfg or cfg.showItemButtons ~= false)) and true or false
 
     -- Providers resolve icons late on purpose - a world quest falls back to the generic
     -- marker until its tag info streams in - so the icon has to sit in the repaint gate
@@ -322,7 +348,7 @@ function Row:Render(row, entry, width, cfg)
     end
 
     local Card = ns:GetModule("Card")
-    local cardOn, cardPad, cardBorderSize = Card:State(cfg)
+    local cardOn, _, cardBorderSize = Card:State(cfg)
     local cardBg, cardBorder
     if cardOn then
         cardBg, cardBorder = Card:Colors(cfg)
@@ -342,13 +368,13 @@ function Row:Render(row, entry, width, cfg)
        and row._sCardBg == cardBg
        and row._sGroup == showEye
        and row._sIcon  == iconKey
+       and row._sItem  == hasItem
        and row._sGen   == self.generation
     if unchanged then return row:GetHeight() end
 
     applyIcon(row, entry)
 
-    local padX = cardOn and cardPad or PAD_X
-    local padY = cardOn and cardPad or PAD_Y
+    local padX, padY = self:Padding(cfg)
 
     -- Zero inset: the row frame already carries the card's padding, so the card tracks it
     if cardOn then
@@ -370,7 +396,7 @@ function Row:Render(row, entry, width, cfg)
     local iconW   = hasIcon and ICON_SIZE or 0
     local iconGap = hasIcon and ICON_GAP or 0
 
-    local gutter = self:Gutter()
+    local gutter = hasItem and self:Gutter() or 0
     row.iconHolder:SetSize(math.max(1, iconW), ICON_SIZE)
     row.iconHolder:ClearAllPoints()
     row.iconHolder:SetPoint("TOPLEFT", row, "TOPLEFT", padX + gutter, -padY)
@@ -458,6 +484,7 @@ function Row:Render(row, entry, width, cfg)
     row._sCardBg = cardBg
     row._sGroup = showEye
     row._sIcon = iconKey
+    row._sItem = hasItem
     row._sGen = self.generation
 
     return row:GetHeight()

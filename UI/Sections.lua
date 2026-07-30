@@ -202,6 +202,8 @@ local function build(parent, groupID, title)
 
     h.groupID = groupID
     h:SetScript("OnClick", function(self)
+        local Tracker = ns:GetModule("Tracker")
+        if Tracker and Tracker.IsClickThrough and Tracker:IsClickThrough() then return end
         Sections:ToggleCollapsed(self.groupID)
     end)
     return h
@@ -294,17 +296,21 @@ function Sections:ApplyStyle(header)
                                     d.b or HAIRLINE[3], d.a or HAIRLINE[4])
 end
 
-function Sections:Place(header, content, y, group, collapsed, showTotal)
+-- extra is the auto-quest popup count for this group. Popup boxes are section content
+-- without being entries, so they add to both sides of the count exactly as in EQ.
+function Sections:Place(header, content, y, group, collapsed, showTotal, extra)
     self:ApplyStyle(header)
     header:Show()
     header:ClearAllPoints()
     header:SetPoint("TOPLEFT",  content, "TOPLEFT",  0, -y)
     header:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, -y)
 
-    if showTotal and group.totalCount ~= group.visibleCount then
-        header.count:SetText(group.visibleCount .. "/" .. group.totalCount)
+    extra = extra or 0
+    local visible, total = group.visibleCount + extra, group.totalCount + extra
+    if showTotal and total ~= visible then
+        header.count:SetText(visible .. "/" .. total)
     else
-        header.count:SetText(tostring(group.visibleCount))
+        header.count:SetText(tostring(visible))
     end
     header.collapse:SetText(collapsed and "+" or "\226\128\147")
     return HEADER_H

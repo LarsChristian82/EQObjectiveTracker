@@ -46,6 +46,9 @@ handlers.status = function()
     -- Render skips entirely while the tracker is hidden, so the feed is built directly too
     -- or a rule-hidden tracker would report whatever the last paint happened to leave.
     ns:GetModule("Tracker"):Render()
+    -- Render owns this refresh normally, but it returns early while hidden, and Filter reads
+    -- the suppression set - so refresh here too or the direct build below reports stale rows.
+    ns:GetModule("AutoQuestPopups"):Refresh()
     Feed:Build()
 
     ns:Print("providers (emitted -> duplicate / filtered / shown):")
@@ -76,6 +79,12 @@ handlers.status = function()
 
     local T = tracker()
     if T and T.DebugScroll then ns:Print("scroll: " .. T:DebugScroll()) end
+
+    local IB = ns:GetModule("ItemButtons")
+    if IB and IB.DebugLine then ns:Print(IB:DebugLine()) end
+
+    local AQP = ns:GetModule("AutoQuestPopups")
+    if AQP and AQP.DebugLine then ns:Print(AQP:DebugLine()) end
 
     local WP = ns:GetModule("WatchPersist")
     if WP and WP.DebugLine then ns:Print(WP:DebugLine()) end

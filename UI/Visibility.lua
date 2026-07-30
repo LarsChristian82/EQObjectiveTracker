@@ -30,16 +30,19 @@ local function shouldHide(f)
     return false
 end
 
--- A real hide, unlike EQ's. EQ keeps the frame shown at alpha 0 during combat because its
--- tracker owns secure item buttons, which makes Show and Hide protected there - but that
--- leaves an invisible frame still taking clicks, tooltips and the wheel, which EQ patches
--- on only two of its own click paths. EQOT has no secure children yet, so this hides for
--- real. When the quest item buttons land, this has to go back to the alpha path AND guard
--- every mouse handler, or that click trap arrives with them.
+-- A real Hide wherever the engine allows one, which is everywhere except combat with a
+-- secure quest-item button live - there Show and Hide are protected and alpha is the only
+-- hide available, exactly as in EQ. Unlike EQ the invisible frame is also made
+-- click-through: Tracker:IsClickThrough gates every mouse handler and the item buttons
+-- give up their own mouse, so an alpha-0 tracker cannot take clicks, tooltips or the wheel.
 local function setVisible(f, visible)
+    local IB = ns:GetModule("ItemButtons")
     f:SetAlpha(visible and 1 or 0)
     f._eqotHidden = (not visible) or nil
-    if visible then f:Show() else f:Hide() end
+    if not (IB and IB.Locked and IB:Locked()) then
+        if visible then f:Show() else f:Hide() end
+    end
+    if IB and IB.SetMouseSuspended then IB:SetMouseSuspended(not visible) end
 end
 
 function Visibility:Apply()

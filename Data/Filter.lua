@@ -52,6 +52,14 @@ function Filter:Visible(entry, cfg, provider)
     if self:IsHidden(entry) then return false end
     if cfg and cfg.showOnlyWatched and entry.isTracked == false then return false end
 
+    -- A quest with a Complete popup is drawn as a popup box instead, so it must not also
+    -- appear as a row. The suppression set is empty whenever the option is off, so this
+    -- costs one lookup and needs no config branch of its own.
+    if provider and provider.idSpace == "quest" then
+        local Popups = ns:GetModule("AutoQuestPopups")
+        if Popups and Popups:IsSuppressed(entry.id) then return false end
+    end
+
     if provider and provider.filterCategories then
         local f = cfg and cfg.filters
         if not self:PassesCategory(entry, f) then return false end

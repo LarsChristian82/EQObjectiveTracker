@@ -59,6 +59,11 @@ Options:RegisterTab({
                 "Hides the tracker during an active Mythic+ run, then brings it back when the run ends.")
         end
 
+        self:CreateCheckbox(content, "Auto-track accepted quests",
+            function() return DB:General().autoTrackAccepted ~= false end,
+            function(v) DB:General().autoTrackAccepted = v end,
+            "Matches Blizzard's default.")
+
         self:CreateHeading(content, "What to show")
 
         self:CreateCheckbox(content, "Only show tracked quests",
@@ -70,6 +75,19 @@ Options:RegisterTab({
             function() return DB:Tracker().showQuestTotal ~= false end,
             function(v) DB:Tracker().showQuestTotal = v end,
             "Show visible out of total, for example 13/22, instead of just the visible count.")
+
+        self:CreateCheckbox(content, "Show usable quest item buttons",
+            function() return DB:Tracker().showItemButtons ~= false end,
+            function(v)
+                DB:Tracker().showItemButtons = v
+                ns:GetModule("Row"):Invalidate()
+            end,
+            "Click to use the quest's item.")
+
+        self:CreateCheckbox(content, "Show Quest Discovered popups",
+            function() return DB:Tracker().showQuestPopups ~= false end,
+            function(v) DB:Tracker().showQuestPopups = v end,
+            "Boxes for newly discovered / completed quests.")
 
         self:CreateHeading(content, "Objective text")
 

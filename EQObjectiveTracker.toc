@@ -31,7 +31,10 @@ Data\Sort.lua
 Data\Feed.lua
 Data\WatchPersist.lua
 Data\SuperTrackPersist.lua
+Data\AutoTrack.lua
 Data\QuestSound.lua
+Data\QuestItems.lua
+Data\AutoQuestPopups.lua
 Data\ZoneRouting.lua
 Data\ZoneProgress.lua
 
@@ -48,6 +51,8 @@ UI\Blizzard.lua
 UI\RowPool.lua
 UI\Card.lua
 UI\Row.lua
+UI\ItemButtons.lua
+UI\AutoQuestPopup.lua
 UI\Sections.lua
 UI\Scenario.lua
 UI\Tracker.lua

@@ -47,6 +47,44 @@ end
 
 local function applyScaleWhenSafe() Tracker:ApplyScale() end
 
+-- A secure quest-item button makes every size and anchor call on the frames ABOVE it
+-- protected, not just the button. Once one has ever been built the whole chain stays that
+-- way for the session, so each such call asks this first and defers instead of erroring.
+local function secureLocked()
+    local IB = ns:GetModule("ItemButtons")
+    return (IB and IB.Locked and IB:Locked()) and true or false
+end
+
+-- True only in the window where Visibility could not call Hide, because a secure quest-item
+-- button makes it protected, so the tracker is invisible but still on screen. Every mouse
+-- handler in the tracker checks this. Without it an alpha-0 tracker keeps taking clicks,
+-- tooltips and the wheel, which is the trap EQ leaves open on all but two of its paths.
+function Tracker:IsClickThrough()
+    local f = self.frame
+    return (f and f._eqotHidden and f:IsShown()) and true or false
+end
+
+local function renderWhenSafe() Tracker:Render() end
+local function applyWQPosWhenSafe() Tracker:ApplyWorldQuestsPosition() end
+local function resetPositionWhenSafe() Tracker:ResetPosition() end
+
+-- One key for the whole render, so a combat full of quest events collapses into a single
+-- relayout when it ends rather than one per event.
+local function deferRender()
+    ns:GetModule("Events"):RunWhenOutOfCombat("eqot.deferredRender", renderWhenSafe)
+end
+
+-- In Top mode the protected quest scroll hangs off this region, so resizing it in combat
+-- blocks. Bottom mode has nothing protected below it and needs no gate.
+local function setRegionHeight(region, h)
+    local cfg = ns:GetModule("DB"):Tracker()
+    if ((cfg and cfg.worldQuestsPosition) or "bottom") == "top" and secureLocked() then
+        deferRender()
+        return
+    end
+    region:SetHeight(h)
+end
+
 -- Re-anchors as well as scaling, or the frame keeps offsets meant for the old scale
 function Tracker:ApplyScale()
     local f = self.frame
@@ -126,6 +164,7 @@ function Tracker:BuildFrame()
     hint:SetColorTexture(1, 1, 1, 0)
 
     drag:SetScript("OnEnter", function()
+        if Tracker:IsClickThrough() then return end
         hint:SetColorTexture(1, 1, 1, 0.15)
         GameTooltip:SetOwner(drag, "ANCHOR_BOTTOM")
         GameTooltip:SetText("EQ Objective Tracker", 0.92, 0.72, 0.02)
@@ -228,6 +267,7 @@ function Tracker:BuildFrame()
     scroll:SetScrollChild(content)
 
     local function wheelScroll(sf, delta)
+        if Tracker:IsClickThrough() then return end
         local range = sf:GetVerticalScrollRange() or 0
         if range <= 0 then return end
         local new = (sf:GetVerticalScroll() or 0) - delta * 24
@@ -432,6 +472,13 @@ function Tracker:ApplyWorldQuestsPosition()
     local scroll, region, scen = f.scroll, f.eventsRegion, f.scenarioContainer
     if not (scroll and region and scen) then return end
 
+    -- scroll is in the item button's protected ancestor chain, so re-anchoring it is a
+    -- protected move once one exists
+    if secureLocked() then
+        ns:GetModule("Events"):RunWhenOutOfCombat("eqot.applyWQPos", applyWQPosWhenSafe)
+        return
+    end
+
     local cfg = ns:GetModule("DB"):Tracker()
     local pos = (cfg and cfg.worldQuestsPosition) or "bottom"
 
@@ -546,7 +593,7 @@ function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
     local function collapseRegion()
         escroll:Hide()
         if f.eventsScrollBarBG then f.eventsScrollBarBG:Hide() end
-        region:SetHeight(1)
+        setRegionHeight(region, 1)
         region:Hide()
     end
 
@@ -564,7 +611,7 @@ function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
     if collapsed then
         escroll:Hide()
         if f.eventsScrollBarBG then f.eventsScrollBarBG:Hide() end
-        region:SetHeight(band)
+        setRegionHeight(region, band)
         return band, false
     end
 
@@ -590,7 +637,7 @@ function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
 
     local capViewport = math.max(30, (cap or 0) - band)
     local viewport    = math.max(1, math.min(y, capViewport))
-    region:SetHeight(band + viewport)
+    setRegionHeight(region, band + viewport)
 
     if escroll.UpdateScrollChildRect then escroll:UpdateScrollChildRect() end
 
@@ -653,7 +700,11 @@ function Tracker:_RenderScenario(group, cfg)
     local h = math.max(1, ns:GetModule("Scenario"):Render(scen, cfg, info, entry))
 
     -- SetHeight fires OnSizeChanged, which calls Refresh, so only touch it on a real move
-    if math.abs((scen:GetHeight() or 0) - h) > 0.5 then scen:SetHeight(h) end
+    -- Everything below hangs off this container's bottom, so resizing it moves the
+    -- protected scroll subtree with it
+    if math.abs((scen:GetHeight() or 0) - h) > 0.5 and not secureLocked() then
+        scen:SetHeight(h)
+    end
     return h
 end
 
@@ -680,17 +731,35 @@ function Tracker:Render()
     local Row      = ns:GetModule("Row")
     local RowPool  = ns:GetModule("RowPool")
     local Sections = ns:GetModule("Sections")
+    local ItemButtons = ns:GetModule("ItemButtons")
+    local PopupBoxes  = ns:GetModule("AutoQuestPopup")
+    local Popups      = ns:GetModule("AutoQuestPopups")
     local cfg      = DB:Tracker()
 
     self:ApplyFrameSkin(cfg)
 
-    local width = math.max(1, math.floor((f:GetWidth() or 0) + 0.5) - scrollGutter(cfg))
-    if math.floor((content:GetWidth() or 0) + 0.5) ~= width then
-        content:SetWidth(width)
+    local locked = secureLocked()
+    if locked then deferRender() end
+
+    local want = math.max(1, math.floor((f:GetWidth() or 0) + 0.5) - scrollGutter(cfg))
+    if math.floor((content:GetWidth() or 0) + 0.5) ~= want and not locked then
+        content:SetWidth(want)
     end
 
+    -- Rows are sized to what content ACTUALLY is, not to what it wants to be. Rows are not
+    -- in the button's anchor family so they stay free in combat, but the set above is
+    -- skipped there, and laying them out at the wanted width would overflow frozen content.
+    local width = math.floor((content:GetWidth() or 0) + 0.5)
+    if width <= 0 then width = want end
+
     RowPool:Begin()
+    ItemButtons:Begin()
+    PopupBoxes:ReleaseAll()
     Sections:HideAll()
+
+    -- Before Feed:Build, because Filter reads the popup suppression set to keep a quest
+    -- that is drawn as a popup box out of the section run as well.
+    Popups:Refresh()
 
     local byGroup  = Feed:Build()
     local Card     = ns:GetModule("Card")
@@ -709,15 +778,21 @@ function Tracker:Render()
             if added > 0 then sectionTops[#sectionTops + 1] = top end
             y = y + added
         else
-            local group = byGroup[groupID]
-            if group and group.visibleCount > 0 and not Sections:IsHidden(groupID) then
+            local group      = byGroup[groupID]
+            local popupCount = Popups:CountFor(groupID)
+            local anything   = (group and group.visibleCount or 0) + popupCount
+            if group and anything > 0 and not Sections:IsHidden(groupID) then
                 local collapsed = Sections:IsCollapsed(groupID)
                 local header    = Sections:Acquire(content, groupID)
                 sectionTops[#sectionTops + 1] = y
                 y = y + Sections:Place(header, content, y, group, collapsed,
-                                       cfg and cfg.showQuestTotal ~= false) + gap
+                                       cfg and cfg.showQuestTotal ~= false, popupCount) + gap
 
                 if not collapsed then
+                    -- Popup boxes sit above the rows in their section, as EQ has them
+                    if popupCount > 0 then
+                        y = y + PopupBoxes:Render(content, width, y, groupID)
+                    end
                     for i = 1, group.visibleCount do
                         local entry = group.entries[i]
                         if entry.expiresAt then hasTimed = true end
@@ -725,6 +800,7 @@ function Tracker:Render()
                         row:SetWidth(width)
                         row:ClearAllPoints()
                         row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+                        if entry.hasItem then ItemButtons:Want(entry.id, row) end
                         y = y + Row:Render(row, entry, width, cfg) + gap
                     end
                 end
@@ -733,7 +809,7 @@ function Tracker:Render()
     end
 
     local questContentH = y
-    content:SetHeight(math.max(1, questContentH))
+    if not locked then content:SetHeight(math.max(1, questContentH)) end
 
     local available = math.max(1, (f:GetHeight() or 0) - DRAG_HANDLE_H - scenarioH - 2
                                   - (GRIP_SIZE + 2))
@@ -771,10 +847,15 @@ function Tracker:Render()
     end
     if scrollH < 1 then scrollH = 1 end
 
-    f.scroll:SetSize(math.max(1, width), scrollH)
-    if f.scroll.UpdateScrollChildRect then f.scroll:UpdateScrollChildRect() end
+    if not locked then
+        f.scroll:SetSize(math.max(1, width), scrollH)
+        if f.scroll.UpdateScrollChildRect then f.scroll:UpdateScrollChildRect() end
+    end
 
     RowPool:Sweep(_resetRow)
+    -- After Sweep, so a retired row's button retires with it, and after the sizing above so
+    -- the anchor arithmetic reads settled positions.
+    ItemButtons:Commit()
     self:_EnsureTimerTicker(hasTimed)
 end
 
@@ -813,6 +894,12 @@ function Tracker:Toggle()
 end
 
 function Tracker:ResetPosition()
+    -- Sizing and re-anchoring the tracker itself is protected once it hosts a secure
+    -- button, so /eqot reset in combat lands when combat ends rather than erroring
+    if secureLocked() then
+        ns:GetModule("Events"):RunWhenOutOfCombat("eqot.resetPosition", resetPositionWhenSafe)
+        return
+    end
     local DB  = ns:GetModule("DB")
     local cfg = DB:Tracker()
     local d   = DB.defaults.profile.tracker

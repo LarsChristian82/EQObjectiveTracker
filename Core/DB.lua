@@ -13,6 +13,7 @@ DB.defaults = {
             hideInInstances  = false,
             hideOnMapOpen    = false,
             hideInMythicPlus = false,
+            autoTrackAccepted = true,
             restoreSuperTrackOnLogin = true,
         },
         tracker = {
@@ -93,6 +94,8 @@ DB.defaults = {
             showZoneTag          = false,
             showObjectiveNumbers = true,
             showQuestTotal       = true,
+            showItemButtons       = true,
+            showQuestPopups       = true,
             colorByDifficulty     = true,
             titleColorUseClass    = false,
             overrideCompleteGreen = true,

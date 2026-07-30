@@ -1,7 +1,8 @@
 local _, ns = ...
 
-local Entry    = ns:GetModule("Entry")
-local Registry = ns:GetModule("Registry")
+local Entry      = ns:GetModule("Entry")
+local Registry   = ns:GetModule("Registry")
+local QuestItems = ns:GetModule("QuestItems")
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 
@@ -214,6 +215,7 @@ local function fullRebuild()
                 e.isFocused = (focused == id)
                 e.isTracked = isWatched(id)
                 e.icon.classification = getClassification(id)
+                e.hasItem   = QuestItems:Has(id)
                 fillTags(e, id, info)
                 e.groupID = e.tags.campaign and "campaign" or "quests"
                 fillLines(e, id)
@@ -241,6 +243,9 @@ local function refreshDynamic()
         e.isTracked = isWatched(id)
         e.isFocused = (focused == id)
         e.state     = questState(id)
+        -- Refreshed on the cheap path too. A quest's special item arrives after the
+        -- quest does, so caching it only on full rebuild leaves the gutter missing.
+        e.hasItem   = QuestItems:Has(id)
         fillLines(e, id)
     end
     dirtyObjectives = false
