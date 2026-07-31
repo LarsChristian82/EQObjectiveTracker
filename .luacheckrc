@@ -24,8 +24,10 @@ read_globals = {
     -- Core UI
     "CreateFrame", "UIParent", "GameTooltip", "GameFontNormal", "GameFontNormalLarge",
     "GameFontNormalSmall", "GameFontHighlightSmall", "ObjectiveTrackerHeaderFont",
-    "InCombatLockdown", "IsModifiedClick", "GetCursorPosition", "GetTime",
-    "RAID_CLASS_COLORS", "GetQuestDifficultyColor", "CreateColor", "UISpecialFrames",
+    "InCombatLockdown", "IsModifiedClick", "GetCursorPosition", "GetTime", "hooksecurefunc",
+    -- UISpecialFrames is deliberately NOT here. Putting a frame name in that list taints
+    -- Blizzard's panel manager on every Escape press - see closeOnEscape in Options/Frame.lua.
+    "RAID_CLASS_COLORS", "GetQuestDifficultyColor", "CreateColor",
     "STANDARD_TEXT_FONT", "OpacitySliderFrame",
     "UnitClass", "GetZoneText", "PlaySound", "ReloadUI",
 

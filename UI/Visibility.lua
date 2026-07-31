@@ -17,6 +17,22 @@ local function inMythicPlus()
     return C_ChallengeMode.IsChallengeModeActive() and true or false
 end
 
+-- Installed lazily, and ONLY once the map rule is actually switched on. Hooking the world
+-- map unconditionally taints it for every player including those who never enable the rule,
+-- and Blizzard's own map pin code is then blamed on EQOT the moment it needs a protected
+-- call in combat - ADDON_ACTION_BLOCKED on Button:SetPassThroughButtons, reported 2026-07-30.
+-- hooksecurefunc rather than HookScript, because that is the taint-safe way to watch a
+-- Blizzard frame. Once taken the hook stays for the session, which is harmless.
+local function ensureMapHook()
+    if Visibility._mapHooked then return end
+    local g = cfg()
+    if not (g and g.hideOnMapOpen and WorldMapFrame) then return end
+    Visibility._mapHooked = true
+    local function onMapToggle() Visibility:Apply() end
+    hooksecurefunc(WorldMapFrame, "Show", onMapToggle)
+    hooksecurefunc(WorldMapFrame, "Hide", onMapToggle)
+end
+
 -- The manual hide is folded in here so one function owns every reason the tracker is not
 -- on screen, and /eqot toggle never has to fight an event that repaints it.
 local function shouldHide(f)
@@ -46,6 +62,7 @@ local function setVisible(f, visible)
 end
 
 function Visibility:Apply()
+    ensureMapHook()
     local Tracker = ns:GetModule("Tracker")
     local f = Tracker and Tracker.frame
     if not f then return end
@@ -101,16 +118,8 @@ function Visibility:OnEnable()
     Events:On("CHALLENGE_MODE_START",     apply)
     Events:On("CHALLENGE_MODE_COMPLETED", apply)
 
-    -- The map frame is load-on-demand, so the hook is taken at the first login rather than
-    -- here, and guarded so a second PLAYER_ENTERING_WORLD does not stack it.
-    Events:On("PLAYER_ENTERING_WORLD", function()
-        if WorldMapFrame and not Visibility._mapHooked then
-            Visibility._mapHooked = true
-            WorldMapFrame:HookScript("OnShow", apply)
-            WorldMapFrame:HookScript("OnHide", apply)
-        end
-        apply()
-    end)
+    -- The map frame is load-on-demand, so ensureMapHook retries here rather than at load.
+    Events:On("PLAYER_ENTERING_WORLD", apply)
 
     self:Apply()
 end

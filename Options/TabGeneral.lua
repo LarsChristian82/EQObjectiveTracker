@@ -82,7 +82,7 @@ Options:RegisterTab({
                 DB:Tracker().showItemButtons = v
                 ns:GetModule("Row"):Invalidate()
             end,
-            "Click to use the quest's item.")
+            "Puts a button on the tracker row of any quest that carries a usable item, so you can use it without opening your bags.")
 
         self:CreateCheckbox(content, "Show Quest Discovered popups",
             function() return DB:Tracker().showQuestPopups ~= false end,

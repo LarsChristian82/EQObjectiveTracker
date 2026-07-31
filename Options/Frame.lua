@@ -140,6 +140,33 @@ function Options:CreateSlider(content, label, minV, maxV, step, getter, setter, 
     return holder, slider
 end
 
+-- ⛔ Escape-to-close WITHOUT UISpecialFrames, and it must stay that way. Blizzard's panel
+-- manager walks that list by NAME and does _G[name], so an addon frame in it taints
+-- UIParentPanelManager on every single Escape press. That taint reaches the panel manager's
+-- own state, and from there the world map and its data providers - which on 2026-07-30
+-- blocked Button:SetPassThroughButtons() on map pins in combat and was blamed on EQOT. The
+-- taint log named EQOTOptionsFrame at UIParentPanelManager.lua:1044 as the only source.
+-- SetPropagateKeyboardInput is itself protected in combat, so the handler stands down there
+-- and Escape just falls through to the default UI.
+local function closeOnEscape(frame)
+    frame:EnableKeyboard(false)
+    frame:HookScript("OnShow", function(f)
+        if InCombatLockdown() then return end
+        f:EnableKeyboard(true)
+        f:SetPropagateKeyboardInput(true)
+    end)
+    frame:HookScript("OnHide", function(f) f:EnableKeyboard(false) end)
+    frame:SetScript("OnKeyDown", function(f, key)
+        if InCombatLockdown() then return end
+        if key == "ESCAPE" then
+            f:SetPropagateKeyboardInput(false)
+            f:Hide()
+        else
+            f:SetPropagateKeyboardInput(true)
+        end
+    end)
+end
+
 -- Hand-rolled rather than UIDropDownMenu: that was deprecated in favour of MenuUtil on
 -- current retail but is still the only option on Classic, and this addon loads on both.
 local DD_ROW = 18
@@ -165,7 +192,7 @@ local function dropdownPopup()
     c:SetSize(1, 1)
     sf:SetScrollChild(c)
     p.scroll, p.content, p.rows = sf, c, {}
-    tinsert(UISpecialFrames, "EQOTDropdownPopup")
+    closeOnEscape(p)
     Options._ddPopup = p
     return p
 end
@@ -435,7 +462,7 @@ function Options:Build()
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
     f:Hide()
-    tinsert(UISpecialFrames, "EQOTOptionsFrame")
+    closeOnEscape(f)
 
     if f.SetBackdrop then
         f:SetBackdrop({

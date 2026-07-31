@@ -21,27 +21,32 @@ function Blizzard:Suppress()
 
     silence(tracker)
 
-    -- The Midnight tracker is a container - each sub-module registers its own events,
-    -- so silencing only the parent leaves them updating an invisible frame.
-    if type(tracker.modules) == "table" then
-        for _, m in ipairs(tracker.modules) do silence(m) end
-    end
+    -- ⛔ The sub-modules are deliberately NOT silenced, and must not be. Unregistering their
+    -- events is an insecure write to eleven Blizzard frames that feed the quest POI system,
+    -- and it is the ONE thing EQOT did here that EQ does not - EQ touches only the parent.
+    -- EQ has never produced the SetPassThroughButtons taint that EQOT did on 2026-07-30.
+    -- Leaving them registered costs a little idle work on an invisible frame, which is what
+    -- EQ has always paid. Hiding the parent hides them, and the OnShow hook below catches
+    -- any attempt to re-show it.
 
     -- Hooking is the one part that must happen once, or every Suppress stacks another
     if not self._hooked then
         self._hooked = true
         tracker:HookScript("OnShow", function(f)
+            -- Hidden unconditionally, combat included, exactly as EQ does it. EQOT used to
+            -- bail out in combat believing the Hide was protected, which left Blizzard's
+            -- tracker on screen beside EQOT's for the rest of every fight. EQ has hidden it
+            -- this way for years without a blocked action, so the belief was wrong.
+            f:Hide()
+            -- Belt and braces: if a future build ever does protect it, the queued re-suppress
+            -- still catches the frame when combat ends.
             if InCombatLockdown() then
-                -- Hiding a frame hosting secure quest-item buttons is protected in
-                -- combat, so queue it rather than dropping the re-hide entirely
                 local Events = ns:GetModule("Events")
                 if Events and Events.RunWhenOutOfCombat then
                     self._reSuppress = self._reSuppress or function() self:Suppress() end
                     Events:RunWhenOutOfCombat("eqot.blizzardSuppress", self._reSuppress)
                 end
-                return
             end
-            f:Hide()
         end)
     end
 end
