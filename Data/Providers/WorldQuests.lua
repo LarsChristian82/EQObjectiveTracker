@@ -61,6 +61,8 @@ local function addWatched()
     end
 end
 
+local GROUP_RESOLVE_DELAY = 1
+
 -- C_TaskQuest.GetQuestsForPlayerByMapID was renamed to GetQuestsOnMap - try the new
 -- name first, since the old one is gone on current retail.
 local function taskQuestsForMap(mapID)
@@ -176,12 +178,48 @@ end
 
 -- CanCreateQuestGroup, never GetActivityIDForQuestID - the latter returns truthy for
 -- ordinary world quests too, which would put the eye on every row.
-local function canCreateGroup(questID)
+local groupCache = {}
+local pendingGroup, groupQueued = {}, false
+
+local function askCanCreateGroup(questID)
     if QuestUtil and QuestUtil.CanCreateQuestGroup then
         return QuestUtil.CanCreateQuestGroup(questID) and true or false
     end
     if C_LFGList and C_LFGList.CanCreateQuestGroup then
         return C_LFGList.CanCreateQuestGroup(questID) and true or false
+    end
+    return false
+end
+
+-- ⛔ Resolved on a TIMER, never inside a render pass, and do not "simplify" it back.
+-- Asking QuestUtil.CanCreateQuestGroup from inside the render taints the execution context,
+-- and opening the world map in combat then blocks protected mouse calls on Blizzard's map POI
+-- pins - ADDON_ACTION_BLOCKED on SetPassThroughButtons and SetPropagateMouseClicks, blamed on
+-- EQOT. Bisected over eight rounds on 2026-07-31: the call is at fault, the eye button is not,
+-- and call volume is irrelevant - EQ makes the same calls and is clean because it makes them
+-- straight from its own render function, while EQOT reaches this from a provider nested in
+-- Feed:Build inside Tracker:Render inside an event handler. Draining from a fresh timer puts
+-- nothing of ours above the call and is verified clean.
+local function drainGroupQueue()
+    groupQueued = false
+    local changed = false
+    for qid in pairs(pendingGroup) do
+        pendingGroup[qid] = nil
+        groupCache[qid] = askCanCreateGroup(qid)
+        changed = true
+    end
+    if changed and WorldQuests._notifyDirty then WorldQuests._notifyDirty() end
+end
+
+-- A quest is eyeless for one tick the first time it appears, which is invisible in practice
+local function canCreateGroup(questID)
+    local cached = groupCache[questID]
+    if cached ~= nil then return cached end
+
+    pendingGroup[questID] = true
+    if not groupQueued then
+        groupQueued = true
+        C_Timer.After(GROUP_RESOLVE_DELAY, drainGroupQueue)
     end
     return false
 end
@@ -210,6 +248,8 @@ function WorldQuests:IsAvailable()
 end
 
 function WorldQuests:GetEntries()
+    -- Level 5 emits nothing at all: a control that proves the ladder itself works, since it
+    -- must behave exactly like disabling the provider outright.
     wipe(candidates)
     wipe(seen)
     sourceStats.watched, sourceStats.inzone, sourceStats.questlog = 0, 0, 0
@@ -297,7 +337,10 @@ function WorldQuests:Enable(notifyDirty)
     -- Quest IDs get recycled, so drop the atlas or the next quest under that ID
     -- inherits this one's icon
     local function drop(_, questID)
-        if questID then atlasCache[questID] = nil end
+        if questID then
+            atlasCache[questID] = nil
+            groupCache[questID] = nil
+        end
         notifyDirty()
     end
 
@@ -310,6 +353,9 @@ function WorldQuests:Enable(notifyDirty)
     Events:On("QUEST_ACCEPTED",            notifyDirty)
     Events:On("ZONE_CHANGED_NEW_AREA",     notifyDirty)
     Events:On("PLAYER_ENTERING_WORLD",     notifyDirty)
+    -- The map lists go stale during a fight because taskQuestsForMap refuses to touch the
+    -- map APIs there, so re-read them the moment the lockdown lifts
+    Events:On("PLAYER_REGEN_ENABLED",      notifyDirty)
 end
 
 Registry:Register(WorldQuests)
