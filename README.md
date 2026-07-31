@@ -11,10 +11,12 @@ Everything Quests, and never will.
 In development, retail only. Tracks quests and campaign quests, world quests,
 scenarios and delves, achievements, professions, and Traveler's Log endeavors.
 
-Also included: a zone progress bar, a sound when a quest is ready to turn in, and a
+Also included: usable quest-item buttons, popups for newly discovered and completed
+quests, a zone progress bar, a sound when a quest is ready to turn in, and a
 highlight on the flight point nearest your tracked quest.
 
-Quest-item buttons are the main thing still missing.
+The scenario bonus objectives HUD, distance and manual sorting, and translations
+are the main things still missing.
 
 ## What it tracks
 
@@ -23,6 +25,8 @@ Quest-item buttons are the main thing still missing.
   colour-coded countdown, and a Find Group button where the game allows one
 - **Scenarios and delves**, with the stage banner and its criteria
 - **Achievements**, **professions** with reagent counts, and **endeavors**
+- **Quest items**, as a button on the row of any quest that carries one
+- **Quest popups** for newly discovered quests and ones ready to hand in remotely
 
 ## Usage
 
@@ -33,6 +37,8 @@ Quest-item buttons are the main thing still missing.
 | `/eqot reset` | Restore the default position and size |
 | `/eqot toggle` | Show or hide the tracker |
 | `/eqot status` | Print what each provider emitted and what reached the screen |
+| `/eqot modules` | List the optional parts, and which are switched off |
+| `/eqot disable <name>` | Switch off one part, or `all`, to narrow down a fault |
 
 Drag the strip along the top to move the tracker, and the corner grip to resize it.
 Left-click a quest to super-track it, right-click to untrack it, shift-click to hide it.
