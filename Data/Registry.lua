@@ -83,9 +83,15 @@ end
 
 function Registry:OnInitialize()
     for _, p in ipairs(self.order) do
-        p._available = (type(p.IsAvailable) ~= "function") or (p:IsAvailable() and true or false)
-        if p._available and p.Init then
-            xpcall(p.Init, geterrorhandler(), p)
+        if ns:IsProviderDisabled(p.id) then
+            -- Marked unavailable rather than removed, so it contributes no group, no option
+            -- and no events - the same path a provider its flavor cannot support takes.
+            p._available = false
+        else
+            p._available = (type(p.IsAvailable) ~= "function") or (p:IsAvailable() and true or false)
+            if p._available and p.Init then
+                xpcall(p.Init, geterrorhandler(), p)
+            end
         end
     end
 end

@@ -104,18 +104,87 @@ handlers.status = function()
     if ZB and ZB.DebugLine then ns:Print(ZB:DebugLine()) end
 end
 
+-- Bisection aid: skip a subsystem's OnEnable for a session so a fault can be narrowed to one
+-- module. Persisted per account so it survives the reload it needs to take effect.
+local function moduleCmd(cmd, rest)
+    local db = ns.db
+    if not db then ns:Print("database not ready."); return end
+    db.global.disabledModules = db.global.disabledModules or {}
+    local off = db.global.disabledModules
+    local list = ns:SkippableModules()
+
+    db.global.disabledProviders = db.global.disabledProviders or {}
+    local offP = db.global.disabledProviders
+    local Registry = ns:GetModule("Registry")
+
+    if cmd == "modules" then
+        ns:Print(("skippable modules (safe mode %s, /reload to apply):")
+            :format(db.global.safeMode and "|cffff5555ON|r" or "off"))
+        for _, name in ipairs(list) do
+            ns:Print(("  %-18s %s"):format(name, off[name] and "|cffff5555disabled|r" or "enabled"))
+        end
+        ns:Print("providers:")
+        for _, p in ipairs(Registry:Active()) do
+            ns:Print(("  %-18s %s"):format(p.id, offP[p.id] and "|cffff5555disabled|r" or "enabled"))
+        end
+        return
+    end
+
+    local want = strtrim(rest or "")
+    if want == "" then ns:Print("usage: /eqot " .. cmd .. " <module>  (see /eqot modules)"); return end
+
+    -- "all" is the first step of a bisection: everything optional off, including the two
+    -- subsystems that have no OnEnable and are driven from the render pass instead.
+    if want:lower() == "all" then
+        if cmd == "disable" then
+            db.global.safeMode = true
+            ns:Print("|cffff5555safe mode ON|r - every optional module, every provider, quest item buttons and quest popups are off. /reload to apply.")
+        else
+            db.global.safeMode = nil
+            wipe(off)
+            wipe(offP)
+            ns:Print("safe mode off, all modules and providers re-enabled. /reload to apply.")
+        end
+        return
+    end
+
+    for _, name in ipairs(list) do
+        if name:lower() == want:lower() then
+            off[name] = (cmd == "disable") or nil
+            ns:Print(("%s is now %s. /reload to apply."):format(name,
+                off[name] and "|cffff5555disabled|r" or "enabled"))
+            return
+        end
+    end
+
+    for _, p in ipairs(Registry:Active()) do
+        if p.id:lower() == want:lower() then
+            offP[p.id] = (cmd == "disable") or nil
+            ns:Print(("provider %s is now %s. /reload to apply."):format(p.id,
+                offP[p.id] and "|cffff5555disabled|r" or "enabled"))
+            return
+        end
+    end
+
+    ns:Print(("no module or provider %q. see /eqot modules"):format(want))
+end
+
 function Commands:OnEnable()
     SLASH_EQOT1 = "/eqot"
     SLASH_EQOT2 = "/eqobjectivetracker"
     SlashCmdList["EQOT"] = function(msg)
-        local cmd = strtrim((msg or ""):lower())
+        local raw = strtrim(msg or "")
+        local cmd, rest = raw:match("^(%S*)%s*(.-)$")
+        cmd = (cmd or ""):lower()
         local fn = handlers[cmd]
-        if fn then
+        if cmd == "disable" or cmd == "enable" or cmd == "modules" then
+            moduleCmd(cmd, rest)
+        elseif fn then
             fn()
         elseif cmd == "" then
             ns:GetModule("Options"):Toggle()
         else
-            ns:Print("commands: lock, unlock, reset, toggle, status, debug")
+            ns:Print("commands: lock, unlock, reset, toggle, status, debug, modules, disable <m>, enable <m>")
         end
     end
 end

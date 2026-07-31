@@ -28,6 +28,9 @@ local function getContainer()
 end
 
 local function enabled(cfg)
+    -- Safe mode has to reach in here as well as the module list: ItemButtons has no OnEnable
+    -- to skip, it is driven straight from Tracker:Render.
+    if ns:SafeMode() then return false end
     return not cfg or cfg.showItemButtons ~= false
 end
 

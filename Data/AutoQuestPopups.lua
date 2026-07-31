@@ -42,7 +42,8 @@ function Popups:Refresh()
     wipe(completeSet)
 
     local cfg = ns:GetModule("DB"):Tracker()
-    if not (self:Available() and (not cfg or cfg.showQuestPopups ~= false)) then
+    -- Safe mode reaches in here too - this has no OnEnable to skip, Tracker:Render drives it
+    if ns:SafeMode() or not (self:Available() and (not cfg or cfg.showQuestPopups ~= false)) then
         for i = #list, 1, -1 do list[i] = nil end
         return
     end

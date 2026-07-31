@@ -25,6 +25,49 @@ function ns:Print(...)
     print("|cffEBB706EQObjectiveTracker|r:", ...)
 end
 
+-- Modules whose OnEnable is skipped this session, for bisecting a fault to one subsystem.
+-- Driven by /eqot disable and persisted per account, so a reload keeps the choice. Core
+-- plumbing is never skippable - dropping DB or Events breaks the addon rather than the test.
+local NEVER_SKIP = {
+    Entry = true, Registry = true, Feed = true, DB = true, Events = true,
+    Media = true, Migrate = true, Commands = true, Tracker = true,
+}
+
+-- Read straight off the saved variable rather than through DB, so it answers correctly
+-- before AceDB has initialized and from inside a module's own load-time code.
+function ns:SafeMode()
+    local db = _G.EQObjectiveTrackerDB
+    return (db and db.global and db.global.safeMode) and true or false
+end
+
+function ns:IsModuleDisabled(name)
+    if NEVER_SKIP[name] then return false end
+    if self:SafeMode() then return true end
+    local db = _G.EQObjectiveTrackerDB
+    local off = db and db.global and db.global.disabledModules
+    return (off and off[name]) and true or false
+end
+
+-- Providers are a separate axis: Registry itself must stay enabled or Feed has nothing to
+-- iterate, but each provider can be marked unavailable so it registers no events and makes
+-- no game API calls at all.
+function ns:IsProviderDisabled(id)
+    if self:SafeMode() then return true end
+    local db = _G.EQObjectiveTrackerDB
+    local off = db and db.global and db.global.disabledProviders
+    return (off and off[id]) and true or false
+end
+
+function ns:SkippableModules()
+    local out = {}
+    for _, name in ipairs(self.moduleOrder) do
+        if not NEVER_SKIP[name] and self.modules[name].OnEnable then
+            out[#out + 1] = name
+        end
+    end
+    return out
+end
+
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function()
@@ -32,8 +75,18 @@ loader:SetScript("OnEvent", function()
         local m = ns.modules[name]
         if m.OnInitialize then xpcall(m.OnInitialize, geterrorhandler(), m) end
     end
+    ns.skipped = {}
     for _, name in ipairs(ns.moduleOrder) do
         local m = ns.modules[name]
-        if m.OnEnable then xpcall(m.OnEnable, geterrorhandler(), m) end
+        if m.OnEnable then
+            if ns:IsModuleDisabled(name) then
+                ns.skipped[#ns.skipped + 1] = name
+            else
+                xpcall(m.OnEnable, geterrorhandler(), m)
+            end
+        end
+    end
+    if #ns.skipped > 0 then
+        ns:Print("|cffff5555disabled this session:|r " .. table.concat(ns.skipped, ", "))
     end
 end)
