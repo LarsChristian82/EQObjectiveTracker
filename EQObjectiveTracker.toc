@@ -37,6 +37,7 @@ Data\QuestItems.lua
 Data\AutoQuestPopups.lua
 Data\ZoneRouting.lua
 Data\ZoneProgress.lua
+Data\ScenarioBonus.lua
 
 # Providers. THE ONLY FLAVOR-VARYING SECTION OF THIS FILE.
 Data\Providers\Quests.lua
@@ -58,6 +59,7 @@ UI\Scenario.lua
 UI\Tracker.lua
 UI\TaxiHighlight.lua
 UI\ZoneProgressBar.lua
+UI\ScenarioBonusHUD.lua
 UI\Visibility.lua
 
 # Options. Frame.lua defines RegisterTab and must load before any Tab file.

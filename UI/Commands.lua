@@ -102,6 +102,9 @@ handlers.status = function()
 
     local ZB = ns:GetModule("ZoneProgressBar")
     if ZB and ZB.DebugLine then ns:Print(ZB:DebugLine()) end
+
+    local BH = ns:GetModule("ScenarioBonusHUD")
+    if BH and BH.DebugLine then ns:Print(BH:DebugLine()) end
 end
 
 -- Bisection aid: skip a subsystem's OnEnable for a session so a fault can be narrowed to one
@@ -179,12 +182,15 @@ function Commands:OnEnable()
         local fn = handlers[cmd]
         if cmd == "disable" or cmd == "enable" or cmd == "modules" then
             moduleCmd(cmd, rest)
+        elseif cmd == "bonushud" then
+            local BH = ns:GetModule("ScenarioBonusHUD")
+            if strtrim(rest or ""):lower() == "test" then BH:ToggleTest() else BH:Dump() end
         elseif fn then
             fn()
         elseif cmd == "" then
             ns:GetModule("Options"):Toggle()
         else
-            ns:Print("commands: lock, unlock, reset, toggle, status, debug, modules, disable <m>, enable <m>")
+            ns:Print("commands: lock, unlock, reset, toggle, status, debug, bonushud [test], modules, disable <m>, enable <m>")
         end
     end
 end

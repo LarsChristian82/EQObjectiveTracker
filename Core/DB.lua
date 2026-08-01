@@ -134,6 +134,15 @@ DB.defaults = {
                 showBackground = true,
             },
 
+            scenarioBonusHUD = {
+                enabled = false,
+                point = "CENTER", relPoint = "CENTER", x = 0, y = -120,
+                scale = 1.0,
+                locked = false,
+                showBorder = true,
+                showBackground = true,
+            },
+
             autoListZoneWorldQuests      = false,
             worldQuestsPosition          = "bottom",
             worldQuestsPinnedMaxFraction = 0.40,

@@ -166,6 +166,27 @@ Options:RegisterTab({
             end,
             "Drag to move; right-click to lock or reset.")
 
+        -- Gated so the controls are absent rather than dead on a flavor with no bonus steps
+        if ns.Has.ScenarioBonus then
+            self:CreateHeading(content, "Scenario Bonus Objectives")
+
+            self:CreateCheckbox(content, "Show bonus objectives HUD",
+                function()
+                    local st = DB:Tracker().scenarioBonusHUD
+                    return st and st.enabled
+                end,
+                function(v) ns:GetModule("ScenarioBonusHUD"):SetEnabled(v) end,
+                "Shows a small movable checklist of the extra bonus objectives that appear during some scenarios and delves, so you do not miss their rewards. Drag to move, right-click to lock or reset. Off by default.")
+
+            self:CreateSlider(content, "HUD Scale", 0.5, 2.0, 0.05,
+                function()
+                    local st = DB:Tracker().scenarioBonusHUD
+                    return (st and st.scale) or 1.0
+                end,
+                function(v) ns:GetModule("ScenarioBonusHUD"):SetScale(v) end,
+                "Sizes the bonus objectives HUD.")
+        end
+
         self:CreateHeading(content, "Sorting")
 
         local sortBtn
