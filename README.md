@@ -12,11 +12,10 @@ In development, retail only. Tracks quests and campaign quests, world quests,
 scenarios and delves, achievements, professions, and Traveler's Log endeavors.
 
 Also included: usable quest-item buttons, popups for newly discovered and completed
-quests, a zone progress bar, a sound when a quest is ready to turn in, and a
-highlight on the flight point nearest your tracked quest.
+quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is
+ready to turn in, and a highlight on the flight point nearest your tracked quest.
 
-The scenario bonus objectives HUD, distance and manual sorting, and translations
-are the main things still missing.
+Distance and manual sorting, and translations, are the main things still missing.
 
 ## What it tracks
 
@@ -24,6 +23,8 @@ are the main things still missing.
 - **World quests** in their own capped area, with the quest type on the marker, a
   colour-coded countdown, and a Find Group button where the game allows one
 - **Scenarios and delves**, with the stage banner and its criteria
+- **Bonus objectives**, on their own movable HUD, including the bonus loot
+  mechanics inside a delve. Off by default
 - **Achievements**, **professions** with reagent counts, and **endeavors**
 - **Quest items**, as a button on the row of any quest that carries one
 - **Quest popups** for newly discovered quests and ones ready to hand in remotely
@@ -37,6 +38,7 @@ are the main things still missing.
 | `/eqot reset` | Restore the default position and size |
 | `/eqot toggle` | Show or hide the tracker |
 | `/eqot status` | Print what each provider emitted and what reached the screen |
+| `/eqot bonushud` | Print what the bonus objectives HUD can see, or `test` to place it |
 | `/eqot modules` | List the optional parts, and which are switched off |
 | `/eqot disable <name>` | Switch off one part, or `all`, to narrow down a fault |
 

@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-01
+
+Getting the tracker out of your way without missing anything. It can now hide itself in
+combat, in instances and while the map is open. Quests carrying a usable item get a button
+on their row, newly discovered and completed quests get popups, and bonus objectives get
+their own movable HUD. Two separate causes of a blocked-action error around the world map
+are also fixed.
+
+### New Features
+
+- Bonus objectives HUD, off by default. A small movable checklist of the extra bonus
+  objectives that appear during some scenarios and delves, so their rewards are not
+  missed. Inside a delve it follows the bonus loot mechanics as well. Drag it anywhere,
+  right-click to lock it or reset its position, and size it with its own scale slider.
+  Turn it on under General, Scenario Bonus Objectives.
+- Hovering a bonus objective's reward icon shows what that step pays out, with each item's
+  level and how it compares against what you have equipped.
+- Usable quest items now appear as a button on the row of any quest that carries one, with
+  its charges, its cooldown, and a tint while the target is out of range. Only rows that
+  have an item pay for the space.
+- Popups for newly discovered quests and for quests that can be handed in remotely, drawn
+  at the top of their section and counted in its header. On by default.
+- Accepted quests are now tracked automatically, matching the default UI. On by default.
+- Visibility rules: the tracker can hide itself during combat, inside instances, during a
+  Mythic+ run, and while the world map is open. Each is its own toggle.
+- The zone progress bar can be docked into the tracker as an ordinary section instead of
+  floating, and reordered along with the rest.
+- Zone progress bar appearance options: bar texture with a live preview of the artwork,
+  bar color, scale, font, zone name and count colors, background, border and border color.
+- `/eqot bonushud` reports what the bonus objectives HUD can see, and `/eqot bonushud test`
+  draws a sample so it can be positioned without being in a delve.
+- `/eqot modules`, `/eqot disable <name>` and `/eqot enable <name>` switch individual parts
+  of the addon off for a session, to narrow a fault down to one of them. `/eqot disable
+  all` is a safe mode that turns off every optional part at once.
+
+### Bug Fixes
+
+- Opening the world map in combat could produce a blocked-action error naming this addon,
+  from a stack containing none of its code. Two separate causes are fixed: the options
+  window no longer registers for Escape-to-close through the list the panel manager reads
+  by name, and the world quest group finder check now resolves off the render path.
+- Blizzard's tracker could reappear beside this one for the rest of a fight, because the
+  re-hide stood down while in combat. It now runs in combat as well.
+- The tracker no longer drifts across the screen as its scale changes. Positions are
+  stored in screen units, and a position saved under the old units is converted once.
+- The floating zone progress bar no longer drifts as its scale changes, for the same
+  reason.
+- Turning the scroll bar skin back off could erase the thumb outright rather than restore
+  it, where the stock thumb was neither an atlas nor a plain texture. A thumb whose width
+  was read before it had been sized also never got that width back.
+- An endeavor requirement beginning with a negative number lost its minus sign.
+
+### Improvements
+
+- The tracker is now hidden outright rather than only faded wherever the game allows it.
+  In the one case where it can only fade, it no longer swallows clicks, tooltips or the
+  mouse wheel.
+
+### Notes
+
+- Blizzard's tracker sub-modules are no longer silenced. Doing that meant writing to
+  eleven of its frames, which feed the quest marker system, and Everything Quests has
+  never done it.
+
 ## [0.2.0] - 2026-07-28
 
 A large step toward the parity needed before Everything Quests can drop its own tracker
