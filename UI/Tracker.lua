@@ -372,7 +372,7 @@ local function applyScrollBarSkin(sf, cfg)
         elseif bar._eqotThumbSkinned then
             if bar._eqotThumbAtlas then
                 thumbTex:SetAtlas(bar._eqotThumbAtlas, true)
-            else
+            elseif bar._eqotThumbTexture then
                 thumbTex:SetTexture(bar._eqotThumbTexture)
             end
             if bar._eqotThumbW and bar._eqotThumbW > 0 then thumbTex:SetWidth(bar._eqotThumbW) end
@@ -382,7 +382,9 @@ local function applyScrollBarSkin(sf, cfg)
         local tf = bar.Thumb or (bar.Track and bar.Track.Thumb)
         if tf then
             local skin = tf._eqotSkinTex
-            if not tf._eqotW then tf._eqotW = tf:GetWidth() end
+            -- 0 is truthy in Lua, so a width captured before the thumb was sized would
+            -- latch forever and the restore below could never run.
+            if not tf._eqotW or tf._eqotW <= 0 then tf._eqotW = tf:GetWidth() end
             if on then
                 if not skin then
                     skin = tf:CreateTexture(nil, "OVERLAY")

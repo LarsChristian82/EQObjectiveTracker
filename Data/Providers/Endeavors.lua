@@ -35,9 +35,10 @@ end
 
 -- requirementText arrives pre-bulleted and with padded fractions, like
 -- "- 1 / 15 Quests completed". Both are presentation the renderer owns, so they are
--- stripped here. EQ leaves the bullet in and prepends its own, giving a double dash.
+-- stripped here. The bullet must be followed by whitespace or the pattern eats the
+-- minus sign off a requirement that opens with a negative number.
 local function cleanRequirement(text)
-    text = (text or ""):gsub("^%s*%-%s*", "")
+    text = (text or ""):gsub("^%s*%-%s+", "")
     return (text:gsub("(%d+)%s*/%s*(%d+)", "%1/%2"))
 end
 
