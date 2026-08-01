@@ -34,6 +34,7 @@ Data\SuperTrackPersist.lua
 Data\AutoTrack.lua
 Data\QuestSound.lua
 Data\QuestItems.lua
+Data\QuestRewards.lua
 Data\AutoQuestPopups.lua
 Data\ZoneRouting.lua
 Data\ZoneProgress.lua
@@ -59,6 +60,7 @@ UI\Scenario.lua
 UI\Tracker.lua
 UI\TaxiHighlight.lua
 UI\ZoneProgressBar.lua
+UI\RewardTooltip.lua
 UI\ScenarioBonusHUD.lua
 UI\Visibility.lua
 
