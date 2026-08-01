@@ -45,6 +45,9 @@ Distance and manual sorting, and translations, are the main things still missing
 Drag the strip along the top to move the tracker, and the corner grip to resize it.
 Left-click a quest to super-track it, right-click to untrack it, shift-click to hide it.
 
+The tracker can hide itself while you are in combat, inside an instance, on a Mythic+ run,
+or while the world map is open. Each is its own toggle, and all are off by default.
+
 Almost everything is configurable: fonts (41 bundled, plus anything from
 LibSharedMedia), sizes, spacing, colours, a card layout, section order and visibility,
 filters by quest type, and five sort modes.
