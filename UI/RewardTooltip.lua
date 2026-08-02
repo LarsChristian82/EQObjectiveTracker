@@ -1,12 +1,12 @@
 local _, ns = ...
 
 local RT = ns:RegisterModule("RewardTooltip", {})
+local L  = ns.L
 
 local INDENT = "    "
--- Escaped rather than literal so this file stays ASCII: \226\128\148 is an em dash and
--- \195\151 a multiplication sign, matching EQ's strings byte for byte.
-local EM_DASH = "\226\128\148"
-local TIMES   = "\195\151"
+-- Escaped rather than literal so this file stays ASCII: \195\151 is a multiplication sign,
+-- matching EQ's string byte for byte.
+local TIMES = "\195\151"
 
 -- Both globals are deprecated in favour of the namespaced calls and may go away
 local function coinText(amount)
@@ -33,23 +33,25 @@ end
 
 local function addComparison(e)
     if e.cmpEmpty then
-        GameTooltip:AddLine(INDENT .. "Equip " .. EM_DASH .. " empty slot", 0.2, 1.0, 0.2)
+        -- The em dash escape sits INSIDE the key. Concatenated on, the phrase would never
+        -- reach the manifest and could never be translated.
+        GameTooltip:AddLine(INDENT .. L["Equip \226\128\148 empty slot"], 0.2, 1.0, 0.2)
         return
     end
     local lowest = e.cmpLowest
     if not lowest then return end
 
     local label = e.slotLabel or ""
-    GameTooltip:AddLine((INDENT .. "Equipped: ilvl %d"):format(lowest)
+    GameTooltip:AddLine((INDENT .. L["Equipped: ilvl %d"]):format(lowest)
         .. (label ~= "" and ("  (" .. label .. ")") or ""), 0.7, 0.7, 0.7)
 
     local delta = (e.ilvl or 0) - lowest
     if delta > 0 then
-        GameTooltip:AddLine((INDENT .. "+%d ilvl upgrade"):format(delta), 0.2, 1.0, 0.2)
+        GameTooltip:AddLine((INDENT .. L["+%d ilvl upgrade"]):format(delta), 0.2, 1.0, 0.2)
     elseif delta < 0 then
-        GameTooltip:AddLine((INDENT .. "%d ilvl lower"):format(delta), 1.0, 0.3, 0.3)
+        GameTooltip:AddLine((INDENT .. L["%d ilvl lower"]):format(delta), 1.0, 0.3, 0.3)
     else
-        GameTooltip:AddLine(INDENT .. "Same item level", 1.0, 0.82, 0.0)
+        GameTooltip:AddLine(INDENT .. L["Same item level"], 1.0, 0.82, 0.0)
     end
 end
 
@@ -57,7 +59,7 @@ local function addItem(e)
     local label = e.name or ""
     if e.count and e.count > 1 then label = label .. " " .. TIMES .. e.count end
     if e.showIlvl and e.ilvl then
-        label = label .. ("  |cff999999ilvl %d|r"):format(e.ilvl)
+        label = label .. ("  |cff999999" .. L["ilvl %d"] .. "|r"):format(e.ilvl)
     end
 
     GameTooltip:AddLine(label, qualityColor(e.quality))
@@ -88,11 +90,11 @@ function RT:Show(owner, questID)
         elseif e.kind == "money" then
             GameTooltip:AddLine(coinText(e.amount), 1, 1, 1)
         elseif e.kind == "xp" then
-            GameTooltip:AddLine(("%d XP"):format(e.amount), 1, 1, 1)
+            GameTooltip:AddLine((L["%d XP"]):format(e.amount), 1, 1, 1)
         elseif e.kind == "item" then
             addItem(e)
         elseif e.kind == "choices" then
-            GameTooltip:AddLine("Choose one:", 0.9, 0.8, 0.3)
+            GameTooltip:AddLine(L["Choose one:"], 0.9, 0.8, 0.3)
         elseif e.kind == "currency" then
             local label = e.name or ""
             if e.count and e.count > 1 then label = label .. " " .. TIMES .. e.count end

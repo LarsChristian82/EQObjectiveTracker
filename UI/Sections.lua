@@ -2,6 +2,7 @@ local _, ns = ...
 
 local Sections = ns:RegisterModule("Sections", {})
 local Util     = ns.Util
+local L        = ns.L
 
 local HEADER_H     = 26
 local HEADER_COLOR = { 0.93, 0.32, 0.10 }
@@ -13,14 +14,14 @@ local SOFT_MASK    = "Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\he
 -- Titles are display-side because a group is a display concept. A provider that
 -- declares a group nobody has titled still renders, under its raw id.
 Sections.TITLES = {
-    zoneprogress = "Zone Progress",
-    quests       = "Quests",
-    campaign     = "Campaign",
-    worldquests  = "World Quests",
-    achievements = "Achievements",
-    scenarios    = "Scenario",
-    endeavors    = "Endeavors",
-    profession   = "Profession",
+    zoneprogress = L["Zone Progress"],
+    quests       = L["Quests"],
+    campaign     = L["Campaign"],
+    worldquests  = L["World Quests"],
+    achievements = L["Achievements"],
+    scenarios    = L["Scenario"],
+    endeavors    = L["Endeavors"],
+    profession   = L["Profession"],
 }
 
 Sections.frames = {}

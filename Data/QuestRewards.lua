@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local QR = ns:RegisterModule("QuestRewards", {})
+local L  = ns.L
 
 local EQUIP_SLOTS = {
     INVTYPE_HEAD           = { "HEADSLOT" },
@@ -26,28 +27,31 @@ local EQUIP_SLOTS = {
     INVTYPE_HOLDABLE       = { "SECONDARYHANDSLOT" },
 }
 
+-- Wrapped here rather than at the lookup. EQ writes L[SLOT_LABEL[equipLoc]], which works
+-- at runtime but is a computed index, so docs/_gen_enus.py never sees the phrases and
+-- none of them are translatable in EQ to this day.
 local SLOT_LABEL = {
-    INVTYPE_HEAD           = "Head",
-    INVTYPE_NECK           = "Neck",
-    INVTYPE_SHOULDER       = "Shoulder",
-    INVTYPE_CLOAK          = "Back",
-    INVTYPE_CHEST          = "Chest",
-    INVTYPE_ROBE           = "Chest",
-    INVTYPE_WAIST          = "Waist",
-    INVTYPE_LEGS           = "Legs",
-    INVTYPE_FEET           = "Feet",
-    INVTYPE_WRIST          = "Wrist",
-    INVTYPE_HAND           = "Hands",
-    INVTYPE_FINGER         = "Finger",
-    INVTYPE_TRINKET        = "Trinket",
-    INVTYPE_WEAPON         = "Weapon",
-    INVTYPE_2HWEAPON       = "Two-Hand",
-    INVTYPE_WEAPONMAINHAND = "Main Hand",
-    INVTYPE_WEAPONOFFHAND  = "Off Hand",
-    INVTYPE_RANGED         = "Ranged",
-    INVTYPE_RANGEDRIGHT    = "Ranged",
-    INVTYPE_SHIELD         = "Off Hand",
-    INVTYPE_HOLDABLE       = "Off Hand",
+    INVTYPE_HEAD           = L["Head"],
+    INVTYPE_NECK           = L["Neck"],
+    INVTYPE_SHOULDER       = L["Shoulder"],
+    INVTYPE_CLOAK          = L["Back"],
+    INVTYPE_CHEST          = L["Chest"],
+    INVTYPE_ROBE           = L["Chest"],
+    INVTYPE_WAIST          = L["Waist"],
+    INVTYPE_LEGS           = L["Legs"],
+    INVTYPE_FEET           = L["Feet"],
+    INVTYPE_WRIST          = L["Wrist"],
+    INVTYPE_HAND           = L["Hands"],
+    INVTYPE_FINGER         = L["Finger"],
+    INVTYPE_TRINKET        = L["Trinket"],
+    INVTYPE_WEAPON         = L["Weapon"],
+    INVTYPE_2HWEAPON       = L["Two-Hand"],
+    INVTYPE_WEAPONMAINHAND = L["Main Hand"],
+    INVTYPE_WEAPONOFFHAND  = L["Off Hand"],
+    INVTYPE_RANGED         = L["Ranged"],
+    INVTYPE_RANGEDRIGHT    = L["Ranged"],
+    INVTYPE_SHIELD         = L["Off Hand"],
+    INVTYPE_HOLDABLE       = L["Off Hand"],
 }
 
 local lines, pool = {}, {}

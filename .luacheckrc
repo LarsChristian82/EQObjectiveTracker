@@ -30,6 +30,8 @@ read_globals = {
     "RAID_CLASS_COLORS", "GetQuestDifficultyColor", "CreateColor",
     "STANDARD_TEXT_FONT", "OpacitySliderFrame",
     "UnitClass", "UnitName", "GetRealmName", "GetZoneText", "PlaySound", "ReloadUI",
+    -- Locales/*.lua gate on the client language before touching ns.L
+    "GetLocale",
 
     -- Everything Quests' saved variable, read one way for the config import. Never its
     -- addon table: EQ depends on EQOT, so EQOT loads first and that table is always nil.

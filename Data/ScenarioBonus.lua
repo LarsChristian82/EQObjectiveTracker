@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Bonus = ns:RegisterModule("ScenarioBonus", {})
+local L     = ns.L
 
 -- Midnight can hand back "secret values" that error when matched by tainted addon code,
 -- even though they still report type "string"
@@ -266,7 +267,7 @@ local function gatherDelveModel()
     if not playerInDelve() then return false end
     pcall(scanVignettes)
 
-    local step = pushStep("Delve Bonus Loot", nil, nil)
+    local step = pushStep(L["Delve Bonus Loot"], nil, nil)
 
     if nemesisSeenCount > 0 then
         if not delveTier then delveTier = readTier() end
@@ -277,18 +278,18 @@ local function gatherDelveModel()
         elseif tier >= 4  then expected = 1 end
         local total  = math.max(expected, nemesisSeenCount)
         local killed = math.max(0, nemesisSeenCount - (nemesisRemaining or 0))
-        pushCriterion(step, ("Nemesis Strongbox: %d/%d packs"):format(killed, total),
+        pushCriterion(step, (L["Nemesis Strongbox: %d/%d packs"]):format(killed, total),
                       killed >= total)
     end
 
     if bannerState == "grand" then
-        pushCriterion(step, "Sanctified Banner: Grand Spoils earned", true)
+        pushCriterion(step, L["Sanctified Banner: Grand Spoils earned"], true)
     elseif bannerState == "buffed" or bannerState == "clicked" then
-        pushCriterion(step, "Sanctified Banner: bonus Spoils secured", true)
+        pushCriterion(step, L["Sanctified Banner: bonus Spoils secured"], true)
     elseif bannerState == "eliteUp" then
-        pushCriterion(step, "Sanctified Banner: kill the Voidfused Rager", false)
+        pushCriterion(step, L["Sanctified Banner: kill the Voidfused Rager"], false)
     elseif bannerState == "announced" then
-        pushCriterion(step, "Sanctified Banner: find it for bonus loot", false)
+        pushCriterion(step, L["Sanctified Banner: find it for bonus loot"], false)
     end
 
     if #step.criteria == 0 then resetModel(); return false end

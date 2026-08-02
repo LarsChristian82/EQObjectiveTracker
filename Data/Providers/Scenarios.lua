@@ -2,6 +2,7 @@ local _, ns = ...
 
 local Entry    = ns:GetModule("Entry")
 local Registry = ns:GetModule("Registry")
+local L        = ns.L
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 
@@ -40,31 +41,33 @@ local function categoryLabel(scenarioType, textureKit, scenarioName, instType, d
     -- Ritual Sites reuse the Delve scenarioType, so only the texture kit separates them
     if scenarioType == DELVE_TYPE then
         if textureKit and textureKit ~= "" and not textureKit:lower():find("delve") then
-            return "Ritual Site"
+            return L["Ritual Site"]
         end
-        return "Delves"
+        return L["Delves"]
     end
-    if textureKit and textureKit:lower():find("delve") then return "Delves" end
-    if scenarioType == MYTHIC_PLUS_TYPE then return "Mythic+" end
-    if scenarioType == DUNGEON_TYPE     then return "Dungeon" end
-    if scenarioType == WARFRONT_TYPE    then return "Warfront" end
-    if scenarioType == PROVING_TYPE     then return "Proving Grounds" end
+    if textureKit and textureKit:lower():find("delve") then return L["Delves"] end
+    if scenarioType == MYTHIC_PLUS_TYPE then return L["Mythic+"] end
+    if scenarioType == DUNGEON_TYPE     then return L["Dungeon"] end
+    if scenarioType == WARFRONT_TYPE    then return L["Warfront"] end
+    if scenarioType == PROVING_TYPE     then return L["Proving Grounds"] end
 
     -- Normal dungeons also report scenarioType 3, so only difficulty 205 means Follower Dungeon
-    if diffID == FOLLOWER_DUNGEON then return "Follower Dungeon" end
+    if diffID == FOLLOWER_DUNGEON then return L["Follower Dungeon"] end
 
+    -- Matched against the English name, so this misses on a non-English client. EQ has the
+    -- same gap. The fallbacks below still produce a sensible label.
     if scenarioName then
         local n = scenarioName:lower()
-        if n:find("void incursion") or n:find("void assault") then return "Void Incursion" end
+        if n:find("void incursion") or n:find("void assault") then return L["Void Incursion"] end
     end
 
-    if instType == "party" then return "Dungeon"      end
-    if instType == "raid"  then return "Raid"         end
-    if instType == "pvp"   then return "Battleground" end
-    if instType == "arena" then return "Arena"        end
+    if instType == "party" then return L["Dungeon"]      end
+    if instType == "raid"  then return L["Raid"]         end
+    if instType == "pvp"   then return L["Battleground"] end
+    if instType == "arena" then return L["Arena"]        end
 
     if scenarioName and scenarioName ~= "" then return scenarioName end
-    return "Scenario"
+    return L["Scenario"]
 end
 
 local function resolveName(scenarioName, instName, instType)
@@ -158,7 +161,7 @@ function Scenarios:GetEntries()
     -- The container draws the stage name on the banner and the category in its own
     -- sub-header, so the entry carries no subtitle and its title is never rendered.
     local e = store:Acquire(ENTRY_ID)
-    e.title = (stageName and stageName ~= "" and stageName) or name or "Scenario"
+    e.title = (stageName and stageName ~= "" and stageName) or name or L["Scenario"]
 
     local done, total = fillCriteria(e, numCriteria)
     e.state = (total > 0 and done == total) and STATE.COMPLETE or STATE.ACTIVE
@@ -212,7 +215,7 @@ function Scenarios:OnEntryTooltip(entry, tooltip)
     end
     tooltip:AddLine(facts.category, 0.6, 0.6, 0.6)
     if facts.numStages > 1 then
-        tooltip:AddLine(("Stage %d of %d"):format(facts.stage, facts.numStages), 0.6, 0.6, 0.6)
+        tooltip:AddLine((L["Stage %d of %d"]):format(facts.stage, facts.numStages), 0.6, 0.6, 0.6)
     end
 end
 

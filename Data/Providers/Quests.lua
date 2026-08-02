@@ -2,6 +2,7 @@ local _, ns = ...
 
 local Entry      = ns:GetModule("Entry")
 local Registry   = ns:GetModule("Registry")
+local L          = ns.L
 local QuestItems = ns:GetModule("QuestItems")
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
@@ -290,7 +291,7 @@ function Quests:OnEntryTooltip(entry, tooltip)
     tooltip:AddLine(entry.title, 1, 0.82, 0)
     if entry.zone then tooltip:AddLine(entry.zone, 0.6, 0.6, 0.6) end
     tooltip:AddLine(" ")
-    tooltip:AddLine("Left-click to super-track, right-click to untrack.", 0.5, 0.5, 0.5)
+    tooltip:AddLine(L["Left-click to super-track, right-click to untrack."], 0.5, 0.5, 0.5)
 end
 
 function Quests:Enable(notifyDirty)

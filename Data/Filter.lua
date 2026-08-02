@@ -1,17 +1,18 @@
 local _, ns = ...
 
 local Filter = ns:RegisterModule("Filter", {})
+local L      = ns.L
 
 -- First match wins, so this order is the precedence: a campaign daily filters as
 -- campaign. Adding a category is one row here plus the tag on the provider - no
 -- comparator, renderer, or branch anywhere else learns about it.
 Filter.CATEGORIES = {
-    { tag = "worldquest", key = "showWorld",    label = "World quests" },
-    { tag = "bonus",      key = "showBonus",    label = "Bonus objectives" },
-    { tag = "campaign",   key = "showCampaign", label = "Campaign"     },
-    { tag = "daily",      key = "showDaily",    label = "Daily"        },
-    { tag = "weekly",     key = "showWeekly",   label = "Weekly"       },
-    { tag = nil,          key = "showNormal",   label = "Normal"       },
+    { tag = "worldquest", key = "showWorld",    label = L["World quests"]     },
+    { tag = "bonus",      key = "showBonus",    label = L["Bonus Objectives"] },
+    { tag = "campaign",   key = "showCampaign", label = L["Campaign"]         },
+    { tag = "daily",      key = "showDaily",    label = L["Daily"]            },
+    { tag = "weekly",     key = "showWeekly",   label = L["Weekly"]           },
+    { tag = nil,          key = "showNormal",   label = L["Normal"]           },
 }
 
 -- Hidden is keyed by provider then entry id so two providers can never collide on a

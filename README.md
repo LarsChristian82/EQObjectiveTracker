@@ -18,7 +18,8 @@ ready to turn in, and a highlight on the flight point nearest your tracked quest
 If you already run Everything Quests, your tracker settings are imported the first time
 this addon loads, so it starts out looking the way yours already does.
 
-Translations are the main thing still missing.
+Partly translated into French, Russian and Korean. Anything not yet translated falls
+back to English on its own, so a partial translation is never a broken one.
 
 ## What it tracks
 
@@ -59,6 +60,13 @@ filters by quest type, and seven sort modes including by distance and by hand.
 
 Settings live in profiles, so you can keep separate setups and switch between them.
 Profiles are shared across all your characters.
+
+## Translations
+
+`Locales/enUS.lua` is the phrase list; `frFR`, `ruRU` and `koKR` carry the translations
+that exist so far. To add or correct one, edit the file for that language - a phrase left
+out simply stays English. To add a language, copy an existing file, change the locale code
+in both places at the top, and add it to both `.toc` files.
 
 ## Building
 

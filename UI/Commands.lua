@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Commands = ns:RegisterModule("Commands", {})
+local L        = ns.L
 
 local function tracker() return ns:GetModule("Tracker") end
 
@@ -9,18 +10,18 @@ local handlers = {}
 handlers.lock = function()
     ns:GetModule("DB"):General().lockTracker = true
     tracker():ApplyLockState()
-    ns:Print("tracker locked.")
+    ns:Print(L["tracker locked."])
 end
 
 handlers.unlock = function()
     ns:GetModule("DB"):General().lockTracker = false
     tracker():ApplyLockState()
-    ns:Print("tracker unlocked.")
+    ns:Print(L["tracker unlocked."])
 end
 
 handlers.reset = function()
     tracker():ResetPosition()
-    ns:Print("position and size reset.")
+    ns:Print(L["position and size reset."])
 end
 
 handlers.toggle = function()
@@ -187,17 +188,17 @@ end
 local function importEQ()
     local Migrate = ns:GetModule("Migrate")
     if not (Migrate and Migrate.HasEQConfig and Migrate:HasEQConfig()) then
-        ns:Print("no Everything Quests configuration found to import.")
+        ns:Print(L["no Everything Quests configuration found to import."])
         return
     end
 
     local Dialog = ns:GetModule("Dialog")
     if not Dialog then return end
     Dialog:Show({
-        title   = "Import from Everything Quests",
-        text    = "Reset this profile to defaults and replace it with your Everything Quests tracker settings?\n\nThis cannot be undone. Make a new profile first if you want to keep the current one.",
-        button1 = "Import",
-        button2 = "Cancel",
+        title   = L["Import from Everything Quests"],
+        text    = L["Reset this profile to defaults and replace it with your Everything Quests tracker settings?\n\nThis cannot be undone. Make a new profile first if you want to keep the current one."],
+        button1 = L["Import"],
+        button2 = L["Cancel"],
         onAccept = function()
             -- Reset first, because the import copies only the keys EQ actually saved. AceDB
             -- strips defaults at logout, so what survives there is the user's deviation, and
@@ -206,7 +207,7 @@ local function importEQ()
             -- offsets exactly as it does on a first run.
             if ns.db and ns.db.ResetProfile then ns.db:ResetProfile() end
             local n = Migrate:ImportFromEQ(ns.db)
-            ns:Print(("imported %d settings from Everything Quests."):format(n or 0))
+            ns:Print((L["imported %d settings from Everything Quests."]):format(n or 0))
             ReloadUI()
         end,
     })
@@ -232,7 +233,10 @@ function Commands:OnEnable()
         elseif cmd == "" then
             ns:GetModule("Options"):Toggle()
         else
-            ns:Print("commands: lock, unlock, reset, toggle, status, debug, bonushud [test], importeq, modules, disable <m>, enable <m>")
+            -- The subcommands are literals the dispatcher matches, so they stay outside
+            -- L. Only the word introducing them is translated.
+            ns:Print(L["commands:"] .. " lock, unlock, reset, toggle, status, debug, "
+                .. "bonushud [test], importeq, modules, disable <m>, enable <m>")
         end
     end
 end

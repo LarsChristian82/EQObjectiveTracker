@@ -2,6 +2,7 @@ local _, ns = ...
 
 local Entry    = ns:GetModule("Entry")
 local Registry = ns:GetModule("Registry")
+local L        = ns.L
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 
@@ -106,7 +107,7 @@ end
 
 function Achievements:OnEntryTooltip(entry, tooltip)
     tooltip:AddLine(entry.title, 1, 0.82, 0)
-    tooltip:AddLine("Left-click to open, right-click to untrack.", 0.6, 0.6, 0.6)
+    tooltip:AddLine(L["Left-click to open, right-click to untrack."], 0.6, 0.6, 0.6)
 end
 
 function Achievements:Enable(notifyDirty)

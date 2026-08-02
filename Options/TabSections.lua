@@ -1,9 +1,13 @@
 local _, ns = ...
 
 local Options = ns:GetModule("Options")
+local L       = ns.L
 
 local ROW_H = 26
-local WQ_POSITIONS = { "Top", "Bottom" }
+
+-- Both the list and the setter's comparison, so both sides must go through L.
+local WQ_TOP, WQ_BOTTOM = L["Top"], L["Bottom"]
+local WQ_POSITIONS = { WQ_TOP, WQ_BOTTOM }
 
 local function pct(v) return ("%d%%"):format(math.floor(v + 0.5)) end
 local function px(v)  return ("%dpx"):format(math.floor(v + 0.5)) end
@@ -34,7 +38,7 @@ end
 
 Options:RegisterTab({
     id    = "sections",
-    title = "Sections",
+    title = L["Sections"],
     order = 20,
     build = function(self, content)
         local DB       = ns:GetModule("DB")
@@ -42,9 +46,9 @@ Options:RegisterTab({
         local Filter   = ns:GetModule("Filter")
         local Registry = ns:GetModule("Registry")
 
-        self:CreateHeading(content, "Sections")
+        self:CreateHeading(content, L["Sections"])
         self:CreateLabel(content,
-            "Reorder the tracker's sections. A section only shows while it has something in it.",
+            L["Reorder the tracker's sections. A section only shows while it has something in it."],
             0.6, 0.6, 0.6)
 
         local list = CreateFrame("Frame", nil, content)
@@ -79,7 +83,7 @@ Options:RegisterTab({
             else
                 r.check:SetChecked(not Sections:IsHidden(id))
                 self:AttachTooltip(r.check, Sections:Title(id),
-                    "Hide this section entirely, even when it has entries.")
+                    L["Hide this section entirely, even when it has entries."])
                 r.check:SetScript("OnClick", function(btn)
                     Sections:SetHidden(id, not btn:GetChecked())
                     ns:GetModule("Tracker"):Render()
@@ -98,56 +102,56 @@ Options:RegisterTab({
 
         local pinned = Sections:Pinned()
         if #pinned > 0 then
-            self:CreateHeading(content, "World Quests")
+            self:CreateHeading(content, L["World Quests"])
             self:CreateLabel(content,
-                "Pinned to its own capped area, so it is not in the list above.",
+                L["Pinned to its own capped area, so it is not in the list above."],
                 0.6, 0.6, 0.6)
 
             for _, id in ipairs(pinned) do
-                self:CreateCheckbox(content, ("Show %s"):format(Sections:Title(id)),
+                self:CreateCheckbox(content, L["Show %s"]:format(Sections:Title(id)),
                     function() return not Sections:IsHidden(id) end,
                     function(v) Sections:SetHidden(id, not v) end,
-                    "Hide this section entirely, even when it has entries.")
+                    L["Hide this section entirely, even when it has entries."])
             end
 
-            self:CreateCheckbox(content, "List every world quest in your zone",
+            self:CreateCheckbox(content, L["List every world quest in your zone"],
                 function() return DB:Tracker().autoListZoneWorldQuests end,
                 function(v) DB:Tracker().autoListZoneWorldQuests = v end,
-                "Shows every world quest on your current map without having to track each one. Only the map you are standing on, not the whole continent.")
+                L["Shows every world quest on your current map without having to track each one. Only the map you are standing on, not the whole continent."])
 
-            self:CreateDropdown(content, "Position",
+            self:CreateDropdown(content, L["Position"],
                 function() return WQ_POSITIONS end,
-                function() return DB:Tracker().worldQuestsPosition == "top" and "Top" or "Bottom" end,
+                function() return DB:Tracker().worldQuestsPosition == "top" and WQ_TOP or WQ_BOTTOM end,
                 function(v)
-                    ns:GetModule("Tracker"):SetWorldQuestsPosition(v == "Top" and "top" or "bottom")
+                    ns:GetModule("Tracker"):SetWorldQuestsPosition(v == WQ_TOP and "top" or "bottom")
                 end,
-                "Whether the world quest area sits above or below the scrolling quest list.")
+                L["Whether the world quest area sits above or below the scrolling quest list."])
 
-            self:CreateSlider(content, "Maximum height", 10, 80, 5,
+            self:CreateSlider(content, L["Maximum height"], 10, 80, 5,
                 function() return (DB:Tracker().worldQuestsPinnedMaxFraction or 0.40) * 100 end,
                 function(v)
                     DB:Tracker().worldQuestsPinnedMaxFraction = v / 100
                     ns:GetModule("Tracker"):Render()
                 end,
-                "The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation.",
+                L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation."],
                 pct)
 
-            self:CreateCheckbox(content, "Set a custom height",
+            self:CreateCheckbox(content, L["Set a custom height"],
                 function() return DB:Tracker().worldQuestsHeightOverride end,
                 function(v) DB:Tracker().worldQuestsHeightOverride = v end,
-                "By default the world quest area shares space with the quest list and gets squeezed when you have a lot of quests. Turn this on to give it a fixed height instead.")
+                L["By default the world quest area shares space with the quest list and gets squeezed when you have a lot of quests. Turn this on to give it a fixed height instead."])
 
-            self:CreateSlider(content, "Custom height", 40, 400, 10,
+            self:CreateSlider(content, L["Custom height"], 40, 400, 10,
                 function() return DB:Tracker().worldQuestsHeight or 120 end,
                 function(v)
                     DB:Tracker().worldQuestsHeight = v
                     ns:GetModule("Tracker"):Render()
                 end,
-                "Fixed height for the world quest area. Only used while Set a custom height is on.",
+                L["Fixed height for the world quest area. Only used while Set a custom height is on."],
                 px)
         end
 
-        self:CreateHeading(content, "Show quest types")
+        self:CreateHeading(content, L["Show quest types"])
 
         for i = 1, #Filter.CATEGORIES do
             local c = Filter.CATEGORIES[i]
@@ -156,13 +160,13 @@ Options:RegisterTab({
                 self:CreateCheckbox(content, c.label,
                     function() return DB:Tracker().filters[c.key] ~= false end,
                     function(v) DB:Tracker().filters[c.key] = v end,
-                    ("Show or hide %s entries in the tracker."):format(c.label:lower()))
+                    L["Show or hide %s entries in the tracker."]:format(c.label:lower()))
             end
         end
 
-        self:CreateCheckbox(content, "This zone only",
+        self:CreateCheckbox(content, L["This zone only"],
             function() return DB:Tracker().filters.onlyCurrentZone end,
             function(v) DB:Tracker().filters.onlyCurrentZone = v end,
-            "Only show entries with an objective on your current map. Entries whose provider cannot tell are always shown.")
+            L["Only show entries with an objective on your current map. Entries whose provider cannot tell are always shown."])
     end,
 })

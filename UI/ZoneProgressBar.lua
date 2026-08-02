@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local ZoneBar = ns:RegisterModule("ZoneProgressBar", {})
+local L       = ns.L
 
 local FRAME_W     = 220
 local FRAME_H     = 38
@@ -89,20 +90,20 @@ end
 function ZoneBar:_ContextMenu()
     if not (MenuUtil and MenuUtil.CreateContextMenu and self.frame) then return end
     MenuUtil.CreateContextMenu(self.frame, function(_, root)
-        root:CreateTitle("Zone Progress Bar")
+        root:CreateTitle(L["Zone Progress Bar"])
         local st = barState() or {}
-        root:CreateButton(st.locked and "Unlock (allow moving)" or "Lock position", function()
+        root:CreateButton(st.locked and L["Unlock (allow moving)"] or L["Lock position"], function()
             local s = barState()
             if s then s.locked = not s.locked end
             ZoneBar:ApplySettings()
         end)
-        root:CreateButton("Reset position", function()
+        root:CreateButton(L["Reset position"], function()
             local s = barState()
             if s then s.point, s.relPoint, s.x, s.y = "CENTER", "CENTER", 0, 220 end
             ZoneBar:ApplySettings()
         end)
         root:CreateDivider()
-        root:CreateButton("Cancel", function() end)
+        root:CreateButton(L["Cancel"], function() end)
     end)
 end
 

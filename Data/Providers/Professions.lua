@@ -2,6 +2,7 @@ local _, ns = ...
 
 local Entry    = ns:GetModule("Entry")
 local Registry = ns:GetModule("Registry")
+local L        = ns.L
 
 local ICON = Entry.ICON
 
@@ -186,7 +187,7 @@ local function recipeLabel(name, isRecraft)
     if PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER then
         return PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER:format(name)
     end
-    return name .. " (Recraft)"
+    return L["%s (Recraft)"]:format(name)
 end
 
 function Professions:IsAvailable()
@@ -228,7 +229,7 @@ end
 function Professions:OnEntryTooltip(entry, tooltip)
     tooltip:AddLine(entry.title, 1, 0.82, 0)
     tooltip:AddLine(" ")
-    tooltip:AddLine("Left-click to open the recipe, right-click to untrack.", 0.5, 0.5, 0.5)
+    tooltip:AddLine(L["Left-click to open the recipe, right-click to untrack."], 0.5, 0.5, 0.5)
 end
 
 function Professions:DebugLine()

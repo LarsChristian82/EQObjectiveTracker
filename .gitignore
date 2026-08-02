@@ -13,3 +13,7 @@ Desktop.ini
 # Backup files
 *.bak
 *.orig
+
+# Bytecode from the docs/ tooling
+__pycache__/
+*.pyc

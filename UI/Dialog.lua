@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Dialog = ns:RegisterModule("Dialog", {})
+local L      = ns.L
 
 -- Own frame rather than StaticPopup: that system recycles a small shared pool, so an
 -- insecure handler here could taint the frame the logout or quit dialog later reuses.
@@ -118,7 +119,7 @@ function Dialog:Show(opts)
     f.title:SetText(opts.title or "EQ Objective Tracker")
     f.text:SetText(opts.text or "")
 
-    fitButton(f.accept, opts.button1 or "OK")
+    fitButton(f.accept, opts.button1 or L["OK"])
     if opts.button2 then
         fitButton(f.cancel, opts.button2)
         f.cancel:Show()

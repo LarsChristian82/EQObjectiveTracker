@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE_DIRS = ("Core", "Data", "UI", "Options")
+SOURCE_DIRS = ("Locales", "Core", "Data", "UI", "Options")
 REFERENCE_TOC = "EQObjectiveTracker_Mainline.toc"
 
 

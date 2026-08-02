@@ -3,6 +3,7 @@ local _, ns = ...
 local Row   = ns:RegisterModule("Row", {})
 local Entry = ns:GetModule("Entry")
 local Util  = ns.Util
+local L     = ns.L
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 
@@ -348,8 +349,8 @@ function Row:Build()
     r.groupFinder:SetScript("OnEnter", function(btn)
         if clickThrough() then return end
         GameTooltip:SetOwner(btn, "ANCHOR_LEFT")
-        GameTooltip:SetText("Find Group", 1, 1, 1)
-        GameTooltip:AddLine("Open the Premade Group Finder for this quest.", 0.7, 0.7, 0.7, true)
+        GameTooltip:SetText(L["Find Group"], 1, 1, 1)
+        GameTooltip:AddLine(L["Open the Premade Group Finder for this quest."], 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
     end)
     r.groupFinder:SetScript("OnLeave", onLeave)

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-02
+
+The tracker speaks more than English now.
+
+### New Features
+
+- Translations. The addon is partly translated into French, Russian and Korean, and picks
+  the language up from your game client automatically. Anything not yet translated shows in
+  English on its own, so a partial translation is never a broken one.
+- `Locales/` holds the phrase list and one file per language. Adding or correcting a
+  translation is a matter of editing the file for that language, and adding a new language
+  is a matter of copying one.
+
+### Improvements
+
+- Every dropdown in the options panel now keeps the setting it saves separate from the text
+  it shows. Picking an option stores the same value whatever language you play in.
+- The Sort button reads Sort: Zone rather than Sort: zone, and the sort names translate with
+  the rest of the panel.
+
+### Notes
+
+- A handful of labels changed capitalization to match Everything Quests exactly, such as
+  Font Size and Border Color. This is what lets the two addons share translations.
+- Fonts, status bar textures and sound names are deliberately left untranslated. Your
+  profile stores them by name, so translating them would silently reset your choices.
+
 ## [0.6.0] - 2026-08-01
 
 The last of the display options from Everything Quests.

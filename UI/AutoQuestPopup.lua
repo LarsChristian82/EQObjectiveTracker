@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Popup = ns:RegisterModule("AutoQuestPopup", {})
+local L     = ns.L
 
 local PAD       = 7
 local LINE_GAP  = 2
@@ -81,7 +82,7 @@ local function buildBox()
 
     box.hint = box:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     box.hint:SetJustifyH("CENTER")
-    box.hint:SetText("Click to view quest")
+    box.hint:SetText(L["Click to view quest"])
 
     box.header:SetPoint("TOP", box, "TOP", 0, -PAD)
     box.title:SetPoint("TOP", box.header, "BOTTOM", 0, -LINE_GAP)
@@ -129,7 +130,7 @@ function Popup:Render(content, contentWidth, yStart, groupID)
             box.questID   = p.questID
             box.popUpType = p.popUpType
 
-            box.header:SetText(p.popUpType == "COMPLETE" and "Quest Complete!" or "Quest Discovered!")
+            box.header:SetText(p.popUpType == "COMPLETE" and L["Quest Complete!"] or L["Quest Discovered!"])
             box.title:SetText(p.title or "")
             Row:ApplyGenericQuestIcon(box.iconGlow, box.icon)
 

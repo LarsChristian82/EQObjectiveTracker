@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local HUD = ns:RegisterModule("ScenarioBonusHUD", {})
+local L   = ns.L
 
 local FRAME_W   = 240
 local PAD       = 8
@@ -131,20 +132,20 @@ end
 function HUD:_ContextMenu()
     if not (MenuUtil and MenuUtil.CreateContextMenu and self.frame) then return end
     MenuUtil.CreateContextMenu(self.frame, function(_, root)
-        root:CreateTitle("Bonus Objectives")
+        root:CreateTitle(L["Bonus Objectives"])
         local st = hudState() or {}
-        root:CreateButton(st.locked and "Unlock (allow moving)" or "Lock position", function()
+        root:CreateButton(st.locked and L["Unlock (allow moving)"] or L["Lock position"], function()
             local s = hudState()
             if s then s.locked = not s.locked end
             HUD:ApplySettings()
         end)
-        root:CreateButton("Reset position", function()
+        root:CreateButton(L["Reset position"], function()
             local s = hudState()
             if s then s.point, s.relPoint, s.x, s.y = "CENTER", "CENTER", 0, DEFAULT_Y end
             HUD:ApplySettings()
         end)
         root:CreateDivider()
-        root:CreateButton("Cancel", function() end)
+        root:CreateButton(L["Cancel"], function() end)
     end)
 end
 
@@ -182,7 +183,7 @@ function HUD:_Acquire()
     f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     f.title:SetPoint("TOPLEFT", PAD, -6)
     f.title:SetJustifyH("LEFT")
-    f.title:SetText("Bonus Objectives")
+    f.title:SetText(L["Bonus Objectives"])
     f.title:SetTextColor(TITLE_GOLD[1], TITLE_GOLD[2], TITLE_GOLD[3])
 
     self.frame = f

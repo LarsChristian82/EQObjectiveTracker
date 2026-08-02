@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Migrate = ns:RegisterModule("Migrate", {})
+local L       = ns.L
 
 Migrate.CURRENT_SCHEMA = 1
 
@@ -201,7 +202,7 @@ function Migrate:Run(db, isFreshInstall)
     if isFreshInstall and self:HasEQConfig() then
         local n = self:ImportFromEQ(db)
         if n > 0 then
-            ns:Print(("imported %d settings from Everything Quests."):format(n))
+            ns:Print((L["imported %d settings from Everything Quests."]):format(n))
         end
     end
 

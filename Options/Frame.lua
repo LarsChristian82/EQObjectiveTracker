@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Options = ns:RegisterModule("Options", {})
+local L       = ns.L
 
 local W, H        = 580, 460
 local TAB_H       = 24
@@ -315,7 +316,7 @@ function Options:CreateDropdown(content, label, getList, getter, setter, tooltip
     return holder
 end
 
--- SetupColorPickerAndShow is the current retail entry point; the field-assignment form
+-- SetupColorPickerAndShow is the current retail entry point. The field-assignment form
 -- is the only one Classic has. Feature-detect, never version-detect.
 function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange)
     local cp = ColorPickerFrame
@@ -387,7 +388,7 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
         clear = CreateFrame("Button", nil, holder, "UIPanelButtonTemplate")
         clear:SetSize(54, 18)
         clear:SetPoint("LEFT", text, "RIGHT", 8, 0)
-        clear:SetText("Clear")
+        clear:SetText(L["Clear"])
         clear:SetScript("OnClick", function()
             onClear()
             refresh()

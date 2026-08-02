@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local Tracker = ns:RegisterModule("Tracker", {})
+local L       = ns.L
 
 local CONTENT_PAD      = 4
 local SCROLLBAR_GUTTER = 26
@@ -181,11 +182,11 @@ function Tracker:BuildFrame()
         GameTooltip:SetOwner(drag, "ANCHOR_BOTTOM")
         GameTooltip:SetText("EQ Objective Tracker", 0.92, 0.72, 0.02)
         if Tracker:IsLocked() then
-            GameTooltip:AddLine("Tracker locked", 1, 0.3, 0.3)
-            GameTooltip:AddLine("Use /eqot unlock to move it.", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine(L["Tracker locked"], 1, 0.3, 0.3)
+            GameTooltip:AddLine(L["Use /eqot unlock to move it."], 0.8, 0.8, 0.8)
         else
-            GameTooltip:AddLine("Drag to move, corner grip to resize.", 1, 1, 1)
-            GameTooltip:AddLine("/eqot for options", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine(L["Drag to move, corner grip to resize."], 1, 1, 1)
+            GameTooltip:AddLine(L["/eqot for options"], 0.8, 0.8, 0.8)
         end
         GameTooltip:Show()
     end)
@@ -207,7 +208,7 @@ function Tracker:BuildFrame()
         if Tracker:IsClickThrough() then return end
         cogTex:SetAlpha(1)
         GameTooltip:SetOwner(btn, "ANCHOR_BOTTOMLEFT")
-        GameTooltip:AddLine("Open the options panel")
+        GameTooltip:AddLine(L["Open the options panel"])
         GameTooltip:Show()
     end)
     cog:SetScript("OnLeave", function()
@@ -947,7 +948,7 @@ function Tracker:Toggle()
     if V then
         V:Apply()
         if not f._eqotUserHidden and V:IsRuleHiding() then
-            ns:Print("a visibility rule is keeping the tracker hidden - see /eqot, General.")
+            ns:Print(L["a visibility rule is keeping the tracker hidden - see /eqot, General."])
         end
         return
     end

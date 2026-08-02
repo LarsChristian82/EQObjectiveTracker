@@ -22,6 +22,13 @@ jobs:
       - name: Check TOC coverage
         run: python3 docs/check_toc.py
 
+      # Fails on a wrapped string missing from the manifest, a translation keyed on a
+      # phrase the code no longer uses, or a translation carrying more format
+      # specifiers than its English key - the last of which errors at runtime, in one
+      # language only, where testing in English never sees it.
+      - name: Check locales
+        run: python3 docs/_verify_locale.py
+
       - name: Lint
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq lua-check

@@ -3,6 +3,7 @@ local _, ns = ...
 local Scenario = ns:RegisterModule("Scenario", {})
 local Entry    = ns:GetModule("Entry")
 local Util     = ns.Util
+local L        = ns.L
 
 local LINE = Entry.LINE
 
@@ -297,9 +298,9 @@ function Scenario:_DrawBanner(info, cfg)
     banner.Stage:ClearAllPoints()
     banner.Stage:SetPoint("TOP", banner, "TOP", 0, -10)
     if info.isFinalStage then
-        banner.Stage:SetText("Final Stage")
+        banner.Stage:SetText(L["Final Stage"])
     elseif info.numStages > 1 then
-        banner.Stage:SetFormattedText("Stage %d", info.stage)
+        banner.Stage:SetFormattedText(L["Stage %d"], info.stage)
     else
         banner.Stage:SetText("")
     end
