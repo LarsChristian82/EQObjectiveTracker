@@ -207,5 +207,97 @@ Options:RegisterTab({
         sortBtn:HookScript("OnClick", function()
             desc:SetText(SORT_DESC[DB:Tracker().sortMode or "zone"] or "")
         end)
+
+        self:CreateHeading(content, "Profiles")
+
+        -- CreateDropdown takes a flat list of strings and hands the picked string straight
+        -- to the setter. EQ's dropdown takes {value=, label=} pairs - do not copy that shape.
+        local function profileList()
+            local out = {}
+            if not (DB.db and DB.db.GetProfiles) then return out end
+            for _, name in ipairs(DB.db:GetProfiles()) do
+                out[#out + 1] = name
+            end
+            -- AceDB builds that list with pairs(), so its order is arbitrary and can differ
+            -- between sessions with nothing having changed. EQ leaves it unsorted.
+            table.sort(out)
+            return out
+        end
+
+        local function currentProfile()
+            return (DB.db and DB.db.GetCurrentProfile and DB.db:GetCurrentProfile()) or "Default"
+        end
+
+        local function profileExists(name)
+            if not (DB.db and DB.db.GetProfiles) then return false end
+            for _, p in ipairs(DB.db:GetProfiles()) do
+                if p == name then return true end
+            end
+            return false
+        end
+
+        -- Every one of these reloads, exactly as EQ does. Migrate:Run only fires from
+        -- DB:OnInitialize, so swapping a profile in place would leave it unconverted.
+        local function setProfile(name)
+            if not (DB.db and DB.db.SetProfile) then return end
+            DB.db:SetProfile(name)
+            ReloadUI()
+        end
+
+        local function createProfileCopiedFromCurrent(name)
+            if not DB.db then return end
+            local source = DB.db:GetCurrentProfile()
+            DB.db:SetProfile(name)
+            if source and source ~= name and DB.db.CopyProfile then
+                DB.db:CopyProfile(source, true)
+            end
+            ReloadUI()
+        end
+
+        self:CreateDropdown(content, "Active profile", profileList, currentProfile, setProfile,
+            "Switching profiles reloads the UI. Profiles are shared across characters, so use them to keep different setups such as raid and solo.")
+
+        self:CreateButton(content, "New profile", 190, function()
+            local Dialog = ns:GetModule("Dialog")
+            if not Dialog then return end
+            Dialog:Show({
+                title      = "New Profile",
+                text       = "Profile name:",
+                hasEditBox = true,
+                maxLetters = 32,
+                button1    = "Create",
+                button2    = "Cancel",
+                onAccept = function(text)
+                    local name = (text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+                    if name == "" then return end
+                    if name ~= currentProfile() and profileExists(name) then
+                        Dialog:Show({
+                            title    = "Overwrite profile?",
+                            text     = ("A profile named \"%s\" already exists. Overwrite it with a copy of your current settings?"):format(name),
+                            button1  = "Overwrite",
+                            button2  = "Cancel",
+                            onAccept = function() createProfileCopiedFromCurrent(name) end,
+                        })
+                    else
+                        createProfileCopiedFromCurrent(name)
+                    end
+                end,
+            })
+        end, "Prompts for a name, then creates a profile holding a copy of your current settings and switches to it.")
+
+        self:CreateButton(content, "Reset all settings", 190, function()
+            local Dialog = ns:GetModule("Dialog")
+            if not Dialog then return end
+            Dialog:Show({
+                title    = "EQ Objective Tracker",
+                text     = "Reset every EQ Objective Tracker setting to defaults?",
+                button1  = "Reset",
+                button2  = "Cancel",
+                onAccept = function()
+                    if DB.db and DB.db.ResetProfile then DB.db:ResetProfile() end
+                    ReloadUI()
+                end,
+            })
+        end, "Restores every setting on every tab to its default. Only the active profile is affected.")
     end,
 })
