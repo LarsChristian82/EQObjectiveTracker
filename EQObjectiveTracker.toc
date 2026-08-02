@@ -28,6 +28,7 @@ Data\Entry.lua
 Data\Registry.lua
 Data\Filter.lua
 Data\Sort.lua
+Data\ManualOrder.lua
 Data\Feed.lua
 Data\WatchPersist.lua
 Data\SuperTrackPersist.lua
@@ -52,6 +53,7 @@ Data\Providers\Professions.lua
 UI\Blizzard.lua
 UI\RowPool.lua
 UI\Card.lua
+UI\DragDrop.lua
 UI\Row.lua
 UI\ItemButtons.lua
 UI\AutoQuestPopup.lua

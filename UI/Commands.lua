@@ -83,6 +83,9 @@ handlers.status = function()
     local IB = ns:GetModule("ItemButtons")
     if IB and IB.DebugLine then ns:Print(IB:DebugLine()) end
 
+    local MO = ns:GetModule("ManualOrder")
+    if MO and MO.DebugLine then ns:Print(MO:DebugLine()) end
+
     local AQP = ns:GetModule("AutoQuestPopups")
     if AQP and AQP.DebugLine then ns:Print(AQP:DebugLine()) end
 

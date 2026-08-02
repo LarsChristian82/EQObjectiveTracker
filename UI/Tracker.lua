@@ -582,6 +582,14 @@ end
 -- allocate garbage proportional to the tracker's length on every repaint.
 local _buildRow, _resetRow
 
+-- Rendered draggable rows in visual order, rebuilt every pass. RowPool is a two-level map
+-- with no ordering of its own, and manual sort needs to know which row a cursor is over.
+local _dragRows, _dragCount = {}, 0
+
+function Tracker:DragRows()
+    return _dragRows
+end
+
 -- World quests live outside the main scroll area in a region capped to a fraction of the
 -- tracker, so a long world quest list can never push the quest sections off screen.
 function Tracker:_RenderPinnedWorldQuests(group, cap, width, cfg)
@@ -756,6 +764,7 @@ function Tracker:Render()
 
     RowPool:Begin()
     ItemButtons:Begin()
+    _dragCount = 0
     PopupBoxes:ReleaseAll()
     Sections:HideAll()
 
@@ -765,6 +774,8 @@ function Tracker:Render()
 
     local byGroup  = Feed:Build()
     local Card     = ns:GetModule("Card")
+    local DragDrop = ns:GetModule("DragDrop")
+    local dragProvider = DragDrop and DragDrop.PROVIDER
     local gap      = Card:Gap(math.max(0, (cfg and cfg.blockSpacing) or 2), (Card:State(cfg)))
 
     local scenarioH = self:_RenderScenario(byGroup[CONTAINER_GROUP], cfg)
@@ -804,11 +815,21 @@ function Tracker:Render()
                         row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
                         if entry.hasItem then ItemButtons:Want(entry.id, row) end
                         y = y + Row:Render(row, entry, width, cfg) + gap
+                        -- After Render, which is what stamps row._entry - DragDrop reads it
+                        -- back off the row to scope a drag to its own section.
+                        if entry.providerID == dragProvider then
+                            _dragCount = _dragCount + 1
+                            _dragRows[_dragCount] = row
+                        end
                     end
                 end
             end
         end
     end
+
+    -- collectScope walks the whole array, so a row left over from a longer previous pass
+    -- would put a retired frame in the drop-index scan.
+    for i = _dragCount + 1, #_dragRows do _dragRows[i] = nil end
 
     local questContentH = y
     if not locked then content:SetHeight(math.max(1, questContentH)) end

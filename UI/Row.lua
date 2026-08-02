@@ -219,6 +219,9 @@ local function dispatch(row, fnName, ...)
 end
 
 local function onMouseUp(row, button)
+    local wasDragging = row._wasDragging
+    row._wasDragging = nil
+    if wasDragging then return end
     if not row._entry or clickThrough() then return end
     if IsModifiedClick and IsModifiedClick("QUESTWATCHTOGGLE") then
         local Filter = ns:GetModule("Filter")
@@ -231,6 +234,7 @@ local function onMouseUp(row, button)
 end
 
 local function onEnter(row)
+    if row._wasDragging then return end
     if not row._entry or clickThrough() then return end
     local Registry = ns:GetModule("Registry")
     local provider = row._providerID and Registry:Get(row._providerID)
@@ -306,11 +310,15 @@ function Row:Build()
     r:SetScript("OnEnter", onEnter)
     r:SetScript("OnLeave", onLeave)
 
+    local DragDrop = ns:GetModule("DragDrop")
+    if DragDrop then DragDrop:Wire(r) end
+
     return r
 end
 
 function Row:Reset(row)
     row._entry, row._providerID = nil, nil
+    row._wasDragging = nil
     row._sTitle, row._sSub, row._sState  = nil, nil, nil
     row._sFocus, row._sWidth, row._sText = nil, nil, nil
     row._sTime, row._sGen, row._sCardBg  = nil, nil, nil

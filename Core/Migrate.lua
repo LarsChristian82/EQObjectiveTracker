@@ -24,8 +24,14 @@ end
 -- EQOT, so EQOT loads first and any EQ table would always be nil at this point.
 -- Every tracker key copies across by name except one: EQ's achievements-only
 -- simplifyAchievements becomes simplifyGroups.achievements here.
+-- Runs once from DB:OnInitialize, never on an AceDB profile change. That is complete only
+-- because every profile switch reloads the UI, as EQ's does - a profiles tab that swaps in
+-- place would leave the new profile unconverted.
 function Migrate:Run(db)
     normalizeTrackerPosition(db)
+
+    local ManualOrder = ns:GetModule("ManualOrder")
+    if ManualOrder then ManualOrder:Reconcile() end
 
     local g = db and db.global
     if not g then return end

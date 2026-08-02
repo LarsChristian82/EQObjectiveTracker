@@ -33,6 +33,7 @@ DB.defaults = {
 
             showOnlyWatched      = true,
             sortMode             = "zone",
+            manualOrder          = {},
             simplifyMode         = false,
             simplifyGroups       = {},
 

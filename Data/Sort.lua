@@ -35,17 +35,35 @@ local function byRecent(a, b)
     return byTitle(a, b)
 end
 
+local UNRANKED = 99999
+local activeOrder
+
+local function byManual(a, b)
+    local ra = (activeOrder and activeOrder[a.id]) or UNRANKED
+    local rb = (activeOrder and activeOrder[b.id]) or UNRANKED
+    if ra ~= rb then return ra < rb end
+    -- Only quest rows are draggable, so every entry in the other groups shares the
+    -- unranked fallback. Without this fall-through table.sort sees them all as equal and
+    -- leaves their order unspecified, which reshuffles those sections on every repaint.
+    return byTitle(a, b)
+end
+
 local MODES = {
     zone   = byZone,
     title  = byTitle,
     status = byStatus,
     level  = byLevel,
     recent = byRecent,
+    manual = byManual,
 }
 
--- "distance" and "manual" are deliberately absent in v1: distance needs a position
--- ticker and a per-provider GetDistanceSq, manual needs the drag-drop reorder UI.
-function Sort:For(mode)
+-- "distance" is still absent: it needs a position ticker and a per-provider GetDistanceSq.
+function Sort:For(mode, orderMap)
+    if mode == "manual" then
+        activeOrder = orderMap
+        return byManual
+    end
+    activeOrder = nil
     return MODES[mode or "zone"] or byZone
 end
 

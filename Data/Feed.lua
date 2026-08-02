@@ -85,7 +85,8 @@ function Feed:Build()
         end
     end
 
-    local cmp = Sort:For(cfg and cfg.sortMode)
+    local ManualOrder = ns:GetModule("ManualOrder")
+    local cmp = Sort:For(cfg and cfg.sortMode, ManualOrder and ManualOrder:Get())
     for _, g in pairs(self.byGroup) do
         table.sort(g.entries, cmp)
     end
