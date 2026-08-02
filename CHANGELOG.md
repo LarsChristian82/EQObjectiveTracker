@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-01
+
+Bringing your setup with you. Settings can now live in named profiles, and if you already run
+Everything Quests your tracker settings come across on first install.
+
+### New Features
+
+- Distance sorting. Pick Distance under Sorting on the General tab and quests order by how
+  close their objective is, re-sorting as you move. Quests ready to hand in sort by where you
+  hand them in, rather than dropping to the bottom of the list.
+- Profiles. Keep separate setups and switch between them from the General tab, with a New
+  profile button that starts from a copy of your current settings. Profiles are shared across
+  all your characters.
+- Reset all settings, which returns the active profile to defaults behind a confirmation.
+- Everything Quests settings are imported automatically the first time this addon runs, if
+  Everything Quests is installed. Position, size, fonts, colors, filters, section order,
+  sorting and your manual quest order all come across. Nothing is imported over an existing
+  setup, and `/eqot importeq` runs it by hand if you want it later.
+- `/eqot status` reports distance sorting state, and whether an Everything Quests
+  configuration was found and imported.
+
+### Notes
+
+- Switching, creating or resetting a profile reloads the interface, matching Everything
+  Quests.
+- The profile list is sorted by name. The library underneath returns it in no particular
+  order, which meant it could rearrange itself between sessions on its own.
+
 ## [0.4.0] - 2026-08-01
 
 Put the quests in whatever order you want them.
