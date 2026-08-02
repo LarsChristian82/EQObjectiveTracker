@@ -19,15 +19,190 @@ local function normalizeTrackerPosition(db)
     t.positionInScreenUnits = true
 end
 
--- The EQ config import lands here, still unimplemented. Read the EverythingQuestsDB
--- global directly and never probe for an EQ addon table - EQ declares a dependency on
--- EQOT, so EQOT loads first and any EQ table would always be nil at this point.
--- Every tracker key copies across by name except one: EQ's achievements-only
--- simplifyAchievements becomes simplifyGroups.achievements here.
+-- Keys whose name and meaning are identical on both sides. EQOT's defaults deliberately
+-- match EQ's value for value, and AceDB strips defaults at logout, so whatever survives in
+-- EQ's saved variables IS the user's deviation - copying it onto EQOT's defaults reproduces
+-- their tracker without needing to reason about defaults at all.
+local TRACKER_KEYS = {
+    "anchor", "relativePoint", "xOffset", "yOffset", "width", "maxHeight", "scale",
+    "simplifyMode", "sortMode", "manualOrder", "showOnlyWatched",
+    "showBackground", "backgroundColor", "showBorder", "borderColor", "borderSize",
+    "font", "fontSize", "fontOutline", "titleSizeDelta",
+    "textShadow", "textShadowColor", "textShadowStrength",
+    "scenarioTextShadow", "scenarioTextShadowColor", "scenarioTextShadowStrength",
+    "scenarioTextAlign", "scenarioTextSizeDelta", "scenarioFontSize",
+    "colorByDifficulty", "showItemButtons", "showQuestPopups",
+    "questSoundEnabled", "questCompleteSound",
+    "showZoneTag", "showObjectiveNumbers", "showQuestTotal",
+    "titleColorOverride", "titleColorUseClass", "overrideCompleteGreen",
+    "headerColor", "headerColorUseClass", "headerDividerColor", "headerSizeDelta",
+    "headerBar", "headerBarColor", "headerBarHeight", "headerBarStyle",
+    "headerBarSoftEdges", "headerBarSoftEdgeStrength",
+    "blockSpacing", "lineSpacing", "headerSpacing",
+    "blockLayout", "cardColor", "cardBorderColor", "cardBorderSize", "cardPadding",
+    "cardTintByType", "cardTintCampaign", "cardTintLegendary", "cardTintDungeon",
+    "cardTintRaid",
+    "scrollBarBg", "scrollBarBgColor", "hideScrollBar", "skinScrollBar",
+    "scrollBarThumbColor", "scrollBarThumbWidth", "hideScrollArrows",
+    "worldQuestsPosition", "autoListZoneWorldQuests", "worldQuestsPinnedMaxFraction",
+    "worldQuestsHeightOverride", "worldQuestsHeight",
+    "showZoneProgressBar", "zoneProgressLocation",
+}
+
+local GENERAL_KEYS = {
+    "lockTracker", "hideInCombat", "hideInInstances", "hideOnMapOpen", "hideInMythicPlus",
+    "autoTrackAccepted", "restoreSuperTrackOnLogin",
+}
+
+-- showBonus is EQOT-only, so it keeps its own default rather than being invented here.
+local FILTER_KEYS = {
+    "showNormal", "showDaily", "showWeekly", "showCampaign", "showWorld", "onlyCurrentZone",
+}
+
+local FRAME_KEYS = { "point", "relPoint", "locked", "showBorder", "showBackground" }
+
+local SECTION_VISIBILITY = {
+    showProfessionSection   = "profession",
+    showAchievementsSection = "achievements",
+    showWorldQuestsSection  = "worldquests",
+}
+
+-- EQ's own default, needed verbatim: AceDB strips array indices that match the default, so a
+-- saved order arrives as a SPARSE fragment and a hole means "EQ's default at this index".
+local EQ_SECTION_ORDER = {
+    "zoneprogress", "campaign", "quests", "profession", "endeavors", "achievements",
+}
+local SECTION_SCAN = 20
+
+local function copyValue(v)
+    if type(v) ~= "table" then return v end
+    local out = {}
+    for k, sub in pairs(v) do out[k] = copyValue(sub) end
+    return out
+end
+
+-- Never probe for an EQ addon table: EQ declares a dependency on EQOT, so EQOT loads first
+-- and any EQ namespace would always be nil here. The saved variable is the only source.
+local function eqProfile()
+    local sv = _G.EverythingQuestsDB
+    if type(sv) ~= "table" or type(sv.profiles) ~= "table" then return nil end
+
+    local name
+    if type(sv.profileKeys) == "table" and UnitName and GetRealmName then
+        local char, realm = UnitName("player"), GetRealmName()
+        if char and realm then name = sv.profileKeys[char .. " - " .. realm] end
+    end
+
+    return (name and sv.profiles[name]) or sv.profiles["Default"]
+end
+
+-- EQ SetPoints these offsets raw and only then scales the frame, so what it stores lives in
+-- the frame's own scaled space. EQOT stores UIParent units, so multiply through on the way in.
+local function importFrame(dst, src)
+    if type(src) ~= "table" or type(dst) ~= "table" then return 0 end
+
+    local n = 0
+    for i = 1, #FRAME_KEYS do
+        local k = FRAME_KEYS[i]
+        if src[k] ~= nil then dst[k] = src[k]; n = n + 1 end
+    end
+    if src.enabled ~= nil then dst.enabled = src.enabled; n = n + 1 end
+
+    local s = src.scale or 1
+    if src.scale ~= nil then dst.scale = src.scale; n = n + 1 end
+    if src.x then dst.x = src.x * s; n = n + 1 end
+    if src.y then dst.y = src.y * s; n = n + 1 end
+    return n
+end
+
+local function importSectionOrder(t, st)
+    if type(st.sectionOrder) ~= "table" then return 0 end
+
+    local seen, order = {}, {}
+    for i = 1, SECTION_SCAN do
+        local id = st.sectionOrder[i] or EQ_SECTION_ORDER[i]
+        if id and not seen[id] then
+            seen[id] = true
+            order[#order + 1] = id
+        end
+    end
+    t.sectionOrder = order
+    return 1
+end
+
+-- The tracker offsets are left in EQ's frame-space units on purpose. positionInScreenUnits
+-- stays absent, so normalizeTrackerPosition converts them immediately after - which is why
+-- this must run before it rather than after.
+function Migrate:ImportFromEQ(db)
+    local src = eqProfile()
+    local p = db and db.profile
+    if not (src and p) then return 0 end
+
+    local n = 0
+    local st = src.tracker
+    if type(st) == "table" then
+        local t = p.tracker
+        for i = 1, #TRACKER_KEYS do
+            local k = TRACKER_KEYS[i]
+            if st[k] ~= nil then t[k] = copyValue(st[k]); n = n + 1 end
+        end
+
+        if type(st.filters) == "table" then
+            t.filters = t.filters or {}
+            for i = 1, #FILTER_KEYS do
+                local k = FILTER_KEYS[i]
+                if st.filters[k] ~= nil then t.filters[k] = st.filters[k]; n = n + 1 end
+            end
+        end
+
+        n = n + importFrame(t.zoneProgressBar, st.zoneProgressBar)
+        n = n + importFrame(t.scenarioBonusHUD, st.scenarioBonusHUD)
+        n = n + importSectionOrder(t, st)
+
+        -- The one semantic translation: EQ's achievements-only flag becomes a per-group table.
+        if st.simplifyAchievements ~= nil then
+            t.simplifyGroups = t.simplifyGroups or {}
+            t.simplifyGroups.achievements = st.simplifyAchievements and true or false
+            n = n + 1
+        end
+
+        -- EQ stores three "show this section" booleans; EQOT stores the inverse, keyed by
+        -- group id, so only an explicit false carries across.
+        for eqKey, groupID in pairs(SECTION_VISIBILITY) do
+            if st[eqKey] == false then
+                t.sectionsHidden = t.sectionsHidden or {}
+                t.sectionsHidden[groupID] = true
+                n = n + 1
+            end
+        end
+    end
+
+    local sg = src.general
+    if type(sg) == "table" then
+        local g = p.general
+        for i = 1, #GENERAL_KEYS do
+            local k = GENERAL_KEYS[i]
+            if sg[k] ~= nil then g[k] = copyValue(sg[k]); n = n + 1 end
+        end
+    end
+
+    if db.global then db.global.eqConfigImported = true end
+    return n
+end
+
 -- Runs once from DB:OnInitialize, never on an AceDB profile change. That is complete only
 -- because every profile switch reloads the UI, as EQ's does - a profiles tab that swaps in
 -- place would leave the new profile unconverted.
-function Migrate:Run(db)
+function Migrate:Run(db, isFreshInstall)
+    -- Only ever on a first run. An existing profile is somebody's tuned tracker, and a
+    -- silent overwrite of it would be indistinguishable from data loss.
+    if isFreshInstall and self:HasEQConfig() then
+        local n = self:ImportFromEQ(db)
+        if n > 0 then
+            ns:Print(("imported %d settings from Everything Quests."):format(n))
+        end
+    end
+
     normalizeTrackerPosition(db)
 
     local ManualOrder = ns:GetModule("ManualOrder")
@@ -45,4 +220,11 @@ end
 
 function Migrate:HasEQConfig()
     return type(_G.EverythingQuestsDB) == "table"
+end
+
+function Migrate:DebugLine()
+    local g = ns.db and ns.db.global
+    return ("eq import: config %s, imported %s")
+        :format(self:HasEQConfig() and "present" or "absent",
+                (g and g.eqConfigImported) and "yes" or "no")
 end

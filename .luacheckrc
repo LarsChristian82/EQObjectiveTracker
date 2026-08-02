@@ -29,7 +29,11 @@ read_globals = {
     -- Blizzard's panel manager on every Escape press - see closeOnEscape in Options/Frame.lua.
     "RAID_CLASS_COLORS", "GetQuestDifficultyColor", "CreateColor",
     "STANDARD_TEXT_FONT", "OpacitySliderFrame",
-    "UnitClass", "GetZoneText", "PlaySound", "ReloadUI",
+    "UnitClass", "UnitName", "GetRealmName", "GetZoneText", "PlaySound", "ReloadUI",
+
+    -- Everything Quests' saved variable, read one way for the config import. Never its
+    -- addon table: EQ depends on EQOT, so EQOT loads first and that table is always nil.
+    "EverythingQuestsDB",
 
     -- Namespaced API
     "C_Timer", "C_Map", "C_QuestLog", "C_QuestInfoSystem", "C_CampaignInfo",

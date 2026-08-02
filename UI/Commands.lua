@@ -89,6 +89,9 @@ handlers.status = function()
     local DIST = ns:GetModule("Distance")
     if DIST and DIST.DebugLine then ns:Print(DIST:DebugLine()) end
 
+    local MIG = ns:GetModule("Migrate")
+    if MIG and MIG.DebugLine then ns:Print(MIG:DebugLine()) end
+
     local AQP = ns:GetModule("AutoQuestPopups")
     if AQP and AQP.DebugLine then ns:Print(AQP:DebugLine()) end
 
@@ -178,6 +181,37 @@ local function moduleCmd(cmd, rest)
     ns:Print(("no module or provider %q. see /eqot modules"):format(want))
 end
 
+-- The automatic import only ever fires on a first run, so this is the only way to exercise
+-- it without deleting the saved variables, and the only way back for someone who moved to
+-- EQOT before installing it alongside EQ.
+local function importEQ()
+    local Migrate = ns:GetModule("Migrate")
+    if not (Migrate and Migrate.HasEQConfig and Migrate:HasEQConfig()) then
+        ns:Print("no Everything Quests configuration found to import.")
+        return
+    end
+
+    local Dialog = ns:GetModule("Dialog")
+    if not Dialog then return end
+    Dialog:Show({
+        title   = "Import from Everything Quests",
+        text    = "Reset this profile to defaults and replace it with your Everything Quests tracker settings?\n\nThis cannot be undone. Make a new profile first if you want to keep the current one.",
+        button1 = "Import",
+        button2 = "Cancel",
+        onAccept = function()
+            -- Reset first, because the import copies only the keys EQ actually saved. AceDB
+            -- strips defaults at logout, so what survives there is the user's deviation, and
+            -- laying that over a tuned profile would leave a hybrid of the two. Resetting
+            -- also drops positionInScreenUnits, so the reload converts EQ's frame-space
+            -- offsets exactly as it does on a first run.
+            if ns.db and ns.db.ResetProfile then ns.db:ResetProfile() end
+            local n = Migrate:ImportFromEQ(ns.db)
+            ns:Print(("imported %d settings from Everything Quests."):format(n or 0))
+            ReloadUI()
+        end,
+    })
+end
+
 function Commands:OnEnable()
     SLASH_EQOT1 = "/eqot"
     SLASH_EQOT2 = "/eqobjectivetracker"
@@ -191,12 +225,14 @@ function Commands:OnEnable()
         elseif cmd == "bonushud" then
             local BH = ns:GetModule("ScenarioBonusHUD")
             if strtrim(rest or ""):lower() == "test" then BH:ToggleTest() else BH:Dump() end
+        elseif cmd == "importeq" then
+            importEQ()
         elseif fn then
             fn()
         elseif cmd == "" then
             ns:GetModule("Options"):Toggle()
         else
-            ns:Print("commands: lock, unlock, reset, toggle, status, debug, bonushud [test], modules, disable <m>, enable <m>")
+            ns:Print("commands: lock, unlock, reset, toggle, status, debug, bonushud [test], importeq, modules, disable <m>, enable <m>")
         end
     end
 end

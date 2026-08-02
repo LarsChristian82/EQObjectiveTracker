@@ -162,11 +162,17 @@ DB.defaults = {
 }
 
 function DB:OnInitialize()
+    -- The saved variable global exists only once this addon has written one, so its absence
+    -- is what marks a genuinely first run. That is the only safe moment to import EQ's
+    -- config: overwriting a profile somebody has already tuned is indistinguishable from
+    -- data loss. Must be read BEFORE AceDB:New, which creates the table.
+    local freshInstall = (_G.EQObjectiveTrackerDB == nil)
+
     self.db = LibStub("AceDB-3.0"):New("EQObjectiveTrackerDB", self.defaults, true)
     ns.db = self.db
 
     local Migrate = ns:GetModule("Migrate")
-    if Migrate and Migrate.Run then Migrate:Run(self.db) end
+    if Migrate and Migrate.Run then Migrate:Run(self.db, freshInstall) end
 end
 
 function DB:Profile()
