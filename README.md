@@ -15,7 +15,10 @@ Also included: usable quest-item buttons, popups for newly discovered and comple
 quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is
 ready to turn in, and a highlight on the flight point nearest your tracked quest.
 
-Distance and manual sorting, and translations, are the main things still missing.
+If you already run Everything Quests, your tracker settings are imported the first time
+this addon loads, so it starts out looking the way yours already does.
+
+Translations are the main thing still missing.
 
 ## What it tracks
 
@@ -39,18 +42,23 @@ Distance and manual sorting, and translations, are the main things still missing
 | `/eqot toggle` | Show or hide the tracker |
 | `/eqot status` | Print what each provider emitted and what reached the screen |
 | `/eqot bonushud` | Print what the bonus objectives HUD can see, or `test` to place it |
+| `/eqot importeq` | Replace this profile with your Everything Quests tracker settings |
 | `/eqot modules` | List the optional parts, and which are switched off |
 | `/eqot disable <name>` | Switch off one part, or `all`, to narrow down a fault |
 
 Drag the strip along the top to move the tracker, and the corner grip to resize it.
 Left-click a quest to super-track it, right-click to untrack it, shift-click to hide it.
+In manual sort mode you can also drag quests into whatever order you like.
 
 The tracker can hide itself while you are in combat, inside an instance, on a Mythic+ run,
 or while the world map is open. Each is its own toggle, and all are off by default.
 
 Almost everything is configurable: fonts (41 bundled, plus anything from
 LibSharedMedia), sizes, spacing, colours, a card layout, section order and visibility,
-filters by quest type, and five sort modes.
+filters by quest type, and seven sort modes including by distance and by hand.
+
+Settings live in profiles, so you can keep separate setups and switch between them.
+Profiles are shared across all your characters.
 
 ## Building
 
