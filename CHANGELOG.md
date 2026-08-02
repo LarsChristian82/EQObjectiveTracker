@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-01
+
+The last of the display options from Everything Quests.
+
+### New Features
+
+- Show a quest's level in front of its title, as [60] Title. Off by default.
+- Show a quest's ID after its title, which is handy when reporting a bug. Off by default.
+- A NEW tag on quests accepted in the last hour. On by default.
+- Split quest click: click a quest's icon to focus it, click its title to open the quest log
+  instead. Off by default, so a click anywhere on the row still focuses the quest.
+- A cogwheel at the top-right of the tracker that opens the options panel. On by default,
+  and it can be turned off under General.
+
+### Notes
+
+- The level, ID and NEW tag appear on quests and campaign quests only, matching Everything
+  Quests. Achievements, professions, endeavors and world quests are unaffected.
+
 ## [0.5.0] - 2026-08-01
 
 Bringing your setup with you. Settings can now live in named profiles, and if you already run
