@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-02
+
+Fixes to the drag ghost and to how equipment slots are named, found by comparing notes with
+Everything Quests after v0.7.0 shipped.
+
+### Bug Fixes
+
+- The drag ghost is now genuinely see-through, so you can read the quest you are dropping
+  onto. It had a gold outline but a solid interior, which hid the row underneath.
+- The drag ghost is now the right width when the tracker is scaled. It was sized in the
+  row's own space rather than the screen's, so it came out too narrow on a scaled-up
+  tracker and too wide on a scaled-down one.
+- Equipment slot names in the quest reward tooltip now come from the game itself, so they
+  appear in your language and match the wording on the item tooltip you are comparing
+  against. They were previously an English list that only ever showed English.
+
+### Notes
+
+- Three slot names change wording slightly to match the game's own terms.
+- The locale check used by the release build now understands the game's numbered format
+  placeholders, so a translation that reorders them is no longer reported as an error.
+
 ## [0.7.0] - 2026-08-02
 
 The tracker speaks more than English now.

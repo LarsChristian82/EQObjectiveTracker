@@ -39,12 +39,13 @@ LOCALES = [
 # is merely stylistically off. "Daily"/"Weekly" are deliberately NOT excluded - EQ uses
 # them for a History time-granularity toggle rather than a quest-type filter, so ruRU
 # gets adverbs where adjectives would read better, but the meaning still lands.
-AMBIGUOUS = {
-    # EQOT: the cloak equipment slot, in the reward tooltip's ilvl comparison.
-    # EQ: the Chain Guide's go-back navigation button (Modules/ChainGuide/Frame.lua).
-    # Inherited "Retour" / "Назад" / "뒤로" all mean "go back", not the body slot.
-    'Back',
-}
+# Empty today, and that is the point: the phrase that created this guard - "Back" for the
+# cloak slot, which inherited EQ's Chain Guide go-back button and read "Retour" in French -
+# was fixed at the source instead. Data/QuestRewards.lua now resolves slot names through
+# Blizzard's own _G[equipLoc] globals, so the phrase is not in the manifest at all and is
+# right in every client language rather than the ones we ship. Prefer that shape when it
+# exists; reach for this list only when there is no Blizzard string to defer to.
+AMBIGUOUS = set()
 
 PAIR = re.compile(r'^\s*L\["((?:[^"\\]|\\.)*)"\]\s*=\s*"((?:[^"\\]|\\.)*)"\s*$')
 MANIFEST = re.compile(r'^L\["((?:[^"\\]|\\.)*)"\]\s*=\s*true\s*$')

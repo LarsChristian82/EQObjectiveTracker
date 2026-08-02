@@ -337,25 +337,6 @@ L["Stage %d of %d"] = true
 L["Ready to turn in"] = true
 L["%s remaining"] = true
 
--- Data/QuestRewards.lua
-L["Head"] = true
-L["Neck"] = true
-L["Shoulder"] = true
-L["Back"] = true
-L["Chest"] = true
-L["Waist"] = true
-L["Legs"] = true
-L["Feet"] = true
-L["Wrist"] = true
-L["Hands"] = true
-L["Finger"] = true
-L["Trinket"] = true
-L["Weapon"] = true
-L["Two-Hand"] = true
-L["Main Hand"] = true
-L["Off Hand"] = true
-L["Ranged"] = true
-
 -- Data/ScenarioBonus.lua
 L["Delve Bonus Loot"] = true
 L["Nemesis Strongbox: %d/%d packs"] = true

@@ -11,19 +11,75 @@ import re, io, glob, sys
 
 KEY = re.compile(r'L\["((?:[^"\\]|\\.)*)"\]')
 PAIR = re.compile(r'^\s*L\["((?:[^"\\]|\\.)*)"\]\s*=\s*"((?:[^"\\]|\\.)*)"\s*$')
-# %% must be matched FIRST so it is consumed as a literal percent rather than having its
-# second % start a bogus spec - in "%d%% done" the flag class would otherwise eat the
-# space and match "% d", counting two specifiers where there is one.
-SPEC = re.compile(r'%%|%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?([diouxXeEfgGqcs])')
+ANY_ENTRY = re.compile(r'^\s*L\[')
+SPEC = re.compile(r'%(?:(\d+)\$)?([-+ #0]*)(\d*)(?:\.(\d+))?([a-zA-Z])')
+# %c takes a number in Lua 5.1, so it belongs with the numeric conversions
+NUMERIC = set('diouxXeEfgGc')
+VALID = set('diouxXeEfgGqsc')
 
 
-def specs(s):
-    """The ordered list of conversion types, ignoring %% literals.
+def parse_format(fmt):
+    """Map argument index -> conversion type, plus counts and malformed specifiers.
 
-    Compared as a SEQUENCE, not a count: swapping %s for %d keeps the count identical
-    and still makes string.format raise on the argument it is handed.
+    Compared by ARGUMENT INDEX rather than as a flat list, because WoW's string.format
+    supports Blizzard's positional extension (%1$s, %2$d) and reordering is the entire
+    point of it - a translator who moves the arguments around is correct, not broken.
     """
-    return [m.group(1) for m in SPEC.finditer(s) if m.group(1)]
+    args, bad = {}, []
+    positional = plain = 0
+    nxt = 1
+    stripped = fmt.replace('%%', '')
+    consumed = set()
+    for m in SPEC.finditer(stripped):
+        idx, _flags, width, prec, conv = m.groups()
+        consumed.add(m.start())
+        if conv not in VALID or len(width or '') > 2 or len(prec or '') > 2:
+            bad.append(m.group(0))
+            continue
+        if idx:
+            positional += 1
+            i = int(idx)
+        else:
+            plain += 1
+            i = nxt
+            nxt += 1
+        args[i] = conv
+    # A '%' the pattern did not consume is a malformed escape - '%$d', a stray '%z', or a
+    # lone trailing '%' where the translator meant '%%'. Lua raises on all three.
+    for pos, ch in enumerate(stripped):
+        if ch == '%' and pos not in consumed:
+            bad.append(stripped[pos:pos + 3])
+    return args, positional, plain, bad
+
+
+def format_problems(key, val):
+    """(fails, notes). Only fails are gated - a note is legitimate and common."""
+    fails, notes = [], []
+    kargs, _kp, _kn, kbad = parse_format(key)
+    vargs, vpos, vplain, vbad = parse_format(val)
+
+    for b in vbad:
+        fails.append("invalid specifier %r" % b)
+    if kbad:
+        fails.append("invalid specifier in the ENGLISH KEY: %s" % kbad)
+    if vpos and vplain:
+        fails.append("mixes positional and plain specifiers in one string")
+
+    for i, conv in sorted(vargs.items()):
+        kconv = kargs.get(i)
+        if kconv is None:
+            fails.append("uses argument %d (%%%s) but the key supplies only %d"
+                         % (i, conv, len(kargs)))
+        elif conv in NUMERIC and kconv not in NUMERIC:
+            fails.append("argument %d is %%%s but the key passes a string (%%%s)"
+                         % (i, conv, kconv))
+
+    # Dropping an argument is fine: Lua ignores the surplus one that gets passed, and
+    # Russian and Korean have no use for English's "%s" plural suffix.
+    missing = sorted(set(kargs) - set(vargs))
+    if missing and not fails:
+        notes.append("does not use argument(s) " + ", ".join(str(i) for i in missing))
+    return fails, notes
 
 
 def strip_comments(s):
@@ -69,31 +125,43 @@ for path in sorted(glob.glob('Locales/*.lua')):
     ks = keyset(p)
     orphans = sorted(k for k in ks if k not in manifest)
 
-    # A translation whose format specifiers differ from its English key makes
+    # A translation whose format specifiers cannot satisfy its English key makes
     # string.format() raise the first time that line is drawn - at runtime, in one
-    # language only, where nobody testing in English ever sees it. An added specifier
-    # raises "no value"; a changed type raises on the argument it is handed.
-    badfmt = []
+    # language only, where nobody testing in English ever sees it.
+    badfmt, noted, unread = [], [], 0
     for line in io.open(p, encoding='utf-8').read().splitlines():
         if line.lstrip().startswith('--'):
             continue
-        m = PAIR.match(line)
-        if not m:
+        if not ANY_ENTRY.match(line):
             continue
-        want, got = specs(m.group(1)), specs(m.group(2))
-        if got != want:
-            badfmt.append((m.group(1), want, got))
+        m = PAIR.match(line)
+        # An L[...] line the parser cannot read would be skipped silently and pass. A
+        # false negative in a gate is the dangerous kind, so it counts as a problem.
+        if not m:
+            unread += 1
+            continue
+        fails, notes = format_problems(m.group(1), m.group(2))
+        if fails:
+            badfmt.append((m.group(1), fails))
+        if notes:
+            noted.append((m.group(1), notes))
 
-    print("   %-18s %4d phrases, %d orphaned, %d bad format" %
-          (p, len(ks), len(orphans), len(badfmt)))
+    print("   %-18s %4d phrases, %d orphaned, %d bad format, %d note(s)" %
+          (p, len(ks), len(orphans), len(badfmt), len(noted)))
     if orphans:
         problems += len(orphans)
         for k in orphans:
             print("      ! orphan:", repr(k[:60]))
-    if badfmt:
-        problems += len(badfmt)
-        for k, want, got in badfmt:
-            print("      ! format specifiers %s do not match the English key's %s: %s"
-                  % (got, want, repr(k[:50])))
+    if unread:
+        problems += unread
+        print("      ! %d L[...] line(s) the parser could not read, so they were NOT "
+              "checked" % unread)
+    for k, why in badfmt:
+        problems += 1
+        print("      ! %s" % repr(k[:55]))
+        for w in why:
+            print("        -> %s" % w)
+    for k, why in noted:
+        print("      - note: %s (%s)" % (repr(k[:50]), "; ".join(why)))
 
 sys.exit(1 if problems else 0)

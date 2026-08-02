@@ -1,7 +1,6 @@
 local _, ns = ...
 
 local QR = ns:RegisterModule("QuestRewards", {})
-local L  = ns.L
 
 local EQUIP_SLOTS = {
     INVTYPE_HEAD           = { "HEADSLOT" },
@@ -27,32 +26,15 @@ local EQUIP_SLOTS = {
     INVTYPE_HOLDABLE       = { "SECONDARYHANDSLOT" },
 }
 
--- Wrapped here rather than at the lookup. EQ writes L[SLOT_LABEL[equipLoc]], which works
--- at runtime but is a computed index, so docs/_gen_enus.py never sees the phrases and
--- none of them are translatable in EQ to this day.
-local SLOT_LABEL = {
-    INVTYPE_HEAD           = L["Head"],
-    INVTYPE_NECK           = L["Neck"],
-    INVTYPE_SHOULDER       = L["Shoulder"],
-    INVTYPE_CLOAK          = L["Back"],
-    INVTYPE_CHEST          = L["Chest"],
-    INVTYPE_ROBE           = L["Chest"],
-    INVTYPE_WAIST          = L["Waist"],
-    INVTYPE_LEGS           = L["Legs"],
-    INVTYPE_FEET           = L["Feet"],
-    INVTYPE_WRIST          = L["Wrist"],
-    INVTYPE_HAND           = L["Hands"],
-    INVTYPE_FINGER         = L["Finger"],
-    INVTYPE_TRINKET        = L["Trinket"],
-    INVTYPE_WEAPON         = L["Weapon"],
-    INVTYPE_2HWEAPON       = L["Two-Hand"],
-    INVTYPE_WEAPONMAINHAND = L["Main Hand"],
-    INVTYPE_WEAPONOFFHAND  = L["Off Hand"],
-    INVTYPE_RANGED         = L["Ranged"],
-    INVTYPE_RANGEDRIGHT    = L["Ranged"],
-    INVTYPE_SHIELD         = L["Off Hand"],
-    INVTYPE_HOLDABLE       = L["Off Hand"],
-}
+-- An equipLoc token IS the name of a Blizzard global string, so the client already holds
+-- the slot name in the player's own language. That beats a hand-maintained table wrapped
+-- in L: it is right in every locale rather than the ones we ship, it matches the wording
+-- on the item tooltip being compared against, and it keeps ~20 phrases out of the manifest.
+-- It also removes L["Back"] for the cloak slot, which a translator with no context would
+-- have rendered as the navigation word - the exact defect this port found in EQ.
+local function slotLabel(equipLoc)
+    return (equipLoc and _G[equipLoc]) or ""
+end
 
 local lines, pool = {}, {}
 
@@ -130,7 +112,7 @@ local function addItem(questID, kind, index, name, count, quality, itemID, rewar
         local lowest, hasEmpty = lowestEquipped(equipLoc)
         e.cmpEmpty  = hasEmpty
         e.cmpLowest = (not hasEmpty) and lowest or nil
-        e.slotLabel = SLOT_LABEL[equipLoc] or ""
+        e.slotLabel = slotLabel(equipLoc)
     end
 end
 

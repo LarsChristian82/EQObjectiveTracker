@@ -43,7 +43,10 @@ local function buildRow(parent)
     row.reward:SetSize(16, 16)
     row.reward:EnableMouse(true)
     -- The HUD frame is mouse-enabled for its own drag, so the button has to sit clearly
-    -- above it or the drag region swallows the hover. EQ leaves this to the default level.
+    -- above it or the drag region swallows the hover. EQ sets this too, but from its row
+    -- acquire, because its pooling calls SetParent unconditionally and that resets the
+    -- level. Ours only reparents when the parent differs and the HUD frame is a singleton,
+    -- so build time is enough.
     row.reward:SetFrameLevel(parent:GetFrameLevel() + 5)
     row.reward.tex = row.reward:CreateTexture(nil, "ARTWORK")
     row.reward.tex:SetAllPoints()

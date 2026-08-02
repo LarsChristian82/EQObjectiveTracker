@@ -20,22 +20,24 @@ local GHOST_BORDER = 1
 local function ensureGhost()
     if DragDrop.ghost then return DragDrop.ghost end
 
-    local g = CreateFrame("Frame", nil, UIParent)
+    local g = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     g:SetSize(220, GHOST_H)
     g:SetFrameStrata("TOOLTIP")
     g:Hide()
 
-    -- The rim is a full-size texture with the fill inset over it, so the gold shows only as
-    -- a border. Both drawn edge to edge would just stack, and the upper one would win.
-    local rim = g:CreateTexture(nil, "BACKGROUND")
-    rim:SetAllPoints()
-    rim:SetColorTexture(0.92, 0.72, 0.02, 1)
-
-    -- Translucent so the row being dropped onto stays readable underneath the ghost.
-    local fill = g:CreateTexture(nil, "BORDER")
-    fill:SetPoint("TOPLEFT", GHOST_BORDER, -GHOST_BORDER)
-    fill:SetPoint("BOTTOMRIGHT", -GHOST_BORDER, GHOST_BORDER)
-    fill:SetColorTexture(0.09, 0.10, 0.12, 0.85)
+    -- A backdrop, not two textures. An opaque full-size rim with an inset fill over it
+    -- makes the fill composite against the RIM rather than against the row underneath, so
+    -- the ghost stays opaque however low the fill's alpha is - which is how this started
+    -- out and it hid the drop target exactly as EQ's old red box did.
+    if g.SetBackdrop then
+        g:SetBackdrop({
+            bgFile   = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = GHOST_BORDER,
+        })
+        g:SetBackdropColor(0.09, 0.10, 0.12, 0.80)
+        g:SetBackdropBorderColor(0.92, 0.72, 0.02, 1)
+    end
 
     g.text = g:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     g.text:SetPoint("LEFT", 6, 0)
@@ -115,8 +117,12 @@ function DragDrop:OnDragStart(row)
     self.dropIndex = nil
 
     local g = ensureGhost()
-    -- Sized to the row it was lifted from, so it reads as that row rather than a loose label.
-    g:SetSize(math.max(GHOST_MIN_W, row:GetWidth() or GHOST_MIN_W), GHOST_H)
+    -- Sized to the row it was lifted from, so it reads as that row rather than a loose
+    -- label. GetWidth is in the ROW's scaled space and the ghost hangs off UIParent, so
+    -- without converting through both effective scales it is off by 1/scale at any tracker
+    -- scale but 1 - the same trap the drop-index scan below documents for the cursor.
+    local rowW = (row:GetWidth() or 0) * row:GetEffectiveScale() / g:GetEffectiveScale()
+    g:SetSize(math.max(GHOST_MIN_W, rowW), GHOST_H)
     g.text:SetText(e.title or ("Quest #" .. tostring(e.id)))
     g:Show()
     ensureIndicator():Show()
