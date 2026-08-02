@@ -34,6 +34,8 @@ local TRACKER_KEYS = {
     "colorByDifficulty", "showItemButtons", "showQuestPopups",
     "questSoundEnabled", "questCompleteSound",
     "showZoneTag", "showObjectiveNumbers", "showQuestTotal",
+    "showLevelInTracker", "showQuestID", "showRecentlyAddedTag", "showOptionsIcon",
+    "splitQuestClick",
     "titleColorOverride", "titleColorUseClass", "overrideCompleteGreen",
     "headerColor", "headerColorUseClass", "headerDividerColor", "headerSizeDelta",
     "headerBar", "headerBarColor", "headerBarHeight", "headerBarStyle",

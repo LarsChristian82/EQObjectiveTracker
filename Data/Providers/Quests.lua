@@ -275,6 +275,17 @@ function Quests:OnEntryClick(entry, button)
     end
 end
 
+-- Only implemented here, which is also what gates the split-click option: Row offers it
+-- solely to a provider that answers this, matching EQ having it on quest blocks alone.
+function Quests:OnEntryOpenLog(entry)
+    if C_AddOns and C_AddOns.LoadAddOn then C_AddOns.LoadAddOn("Blizzard_QuestLog") end
+    if QuestMapFrame_OpenToQuestDetails then
+        QuestMapFrame_OpenToQuestDetails(entry.id)
+    elseif ToggleQuestLog then
+        ToggleQuestLog()
+    end
+end
+
 function Quests:OnEntryTooltip(entry, tooltip)
     tooltip:AddLine(entry.title, 1, 0.82, 0)
     if entry.zone then tooltip:AddLine(entry.zone, 0.6, 0.6, 0.6) end

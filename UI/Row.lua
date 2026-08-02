@@ -205,6 +205,29 @@ local function buildLineText(entry, cfg)
     return table.concat(_scratch, "\n", 1, n)
 end
 
+-- EQ applies all three of these inside _RenderQuestGroup, so only quest and campaign rows
+-- get them - the same set that pays for the item-button gutter, for the same reason.
+local TITLE_META_PROVIDER = "quests"
+local NEW_WINDOW = 3600
+local NEW_TAG    = "|cff6BAFFFNEW|r "
+
+local function decorateTitle(entry, cfg)
+    local text = entry.title or ""
+    if not cfg or entry.providerID ~= TITLE_META_PROVIDER then return text end
+
+    if cfg.showLevelInTracker and entry.level and entry.level > 0 then
+        text = ("[%d] %s"):format(entry.level, text)
+    end
+    if cfg.showQuestID and entry.id then
+        text = text .. (" |cff666666(#%d)|r"):format(entry.id)
+    end
+    if cfg.showRecentlyAddedTag ~= false and entry.addedAt and entry.addedAt > 0
+       and (time() - entry.addedAt) < NEW_WINDOW then
+        text = NEW_TAG .. text
+    end
+    return text
+end
+
 local function clickThrough()
     local Tracker = ns:GetModule("Tracker")
     return (Tracker and Tracker.IsClickThrough and Tracker:IsClickThrough()) and true or false
@@ -218,6 +241,27 @@ local function dispatch(row, fnName, ...)
     provider[fnName](provider, row._entry, ...)
 end
 
+local function splitClickWanted(row)
+    local DB  = ns:GetModule("DB")
+    local cfg = DB and DB:Tracker()
+    if not (cfg and cfg.splitQuestClick) then return false end
+    local Registry = ns:GetModule("Registry")
+    local provider = row._providerID and Registry:Get(row._providerID)
+    return (provider and provider.OnEntryOpenLog) and true or false
+end
+
+-- Hit-tested by cursor X rather than by parenting the click to the icon: a mouse-enabled
+-- icon child would swallow drags that start on it. GetCursorPosition returns raw pixels, so
+-- it needs dividing by the effective scale before comparing against GetRight.
+local function overIcon(row)
+    local ih = row.iconHolder
+    if not (ih and ih:IsShown()) then return false end
+    local iconRight = ih:GetRight()
+    if not iconRight then return false end
+    local mx = GetCursorPosition() / (row:GetEffectiveScale() or 1)
+    return mx <= iconRight
+end
+
 local function onMouseUp(row, button)
     local wasDragging = row._wasDragging
     row._wasDragging = nil
@@ -228,6 +272,11 @@ local function onMouseUp(row, button)
         Filter:SetHidden(row._entry, not Filter:IsHidden(row._entry))
         local Tracker = ns:GetModule("Tracker")
         if Tracker then Tracker:Refresh() end
+        return
+    end
+
+    if button == "LeftButton" and splitClickWanted(row) and not overIcon(row) then
+        dispatch(row, "OnEntryOpenLog")
         return
     end
     dispatch(row, "OnEntryClick", button)
@@ -336,6 +385,7 @@ function Row:Render(row, entry, width, cfg)
     row._entry      = entry
     row._providerID = entry.providerID
 
+    local titleText = decorateTitle(entry, cfg)
     local subtitle = (cfg and cfg.showZoneTag ~= false) and entry.subtitle or nil
     local lineText = buildLineText(entry, cfg)
     local showEye  = entry.canGroup and true or false
@@ -366,7 +416,7 @@ function Row:Render(row, entry, width, cfg)
     -- The resolved colour is compared by table identity, which is stable per option and
     -- changes whenever a setter assigns a new one, so tint swaps repaint without a bump.
     local unchanged =
-           row._sTitle == entry.title
+           row._sTitle == titleText
        and row._sSub   == subtitle
        and row._sState == entry.state
        and row._sFocus == entry.isFocused
@@ -439,7 +489,7 @@ function Row:Render(row, entry, width, cfg)
     row.subtitle:ClearAllPoints()
     row.subtitle:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -TITLE_TO_SUB)
 
-    row.title:SetText(entry.title or "")
+    row.title:SetText(titleText)
     local ovR, ovG, ovB = Util.EffectiveTitleColor(cfg)
     -- Recolouring completed entries needs a colour to recolour them TO, so the toggle is
     -- inert until an override or class colour is set.
@@ -486,7 +536,7 @@ function Row:Render(row, entry, width, cfg)
 
     row:SetHeight(math.max(1, h))
 
-    row._sTitle, row._sSub, row._sState = entry.title, subtitle, entry.state
+    row._sTitle, row._sSub, row._sState = titleText, subtitle, entry.state
     row._sFocus, row._sWidth, row._sText = entry.isFocused, width, lineText
     row._sTime = timeText
     row._sCardBg = cardBg

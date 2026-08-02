@@ -66,6 +66,19 @@ Options:RegisterTab({
             function(v) DB:General().autoTrackAccepted = v end,
             "Matches Blizzard's default.")
 
+        self:CreateCheckbox(content, "Show Options icon on the tracker",
+            function() return DB:Tracker().showOptionsIcon ~= false end,
+            function(v)
+                DB:Tracker().showOptionsIcon = v
+                ns:GetModule("Tracker"):ApplyHeaderIcons()
+            end,
+            "A small cogwheel at the top-right of the tracker that opens the options panel.")
+
+        self:CreateCheckbox(content, "Split quest click",
+            function() return DB:Tracker().splitQuestClick end,
+            function(v) DB:Tracker().splitQuestClick = v end,
+            "Click the icon to focus, click the title to open the quest log.")
+
         self:CreateHeading(content, "What to show")
 
         self:CreateCheckbox(content, "Only show tracked quests",
@@ -131,6 +144,31 @@ Options:RegisterTab({
                 ns:GetModule("Row"):Invalidate()
             end,
             "Keep the leading count, for example 3/10, at the start of each objective.")
+
+        self:CreateCheckbox(content, "Show quest level prefix",
+            function() return DB:Tracker().showLevelInTracker end,
+            function(v)
+                DB:Tracker().showLevelInTracker = v
+                ns:GetModule("Row"):Invalidate()
+            end,
+            "For example, [60] Title.")
+
+        self:CreateCheckbox(content, "Show quest ID",
+            function() return DB:Tracker().showQuestID end,
+            function(v)
+                DB:Tracker().showQuestID = v
+                ns:GetModule("Row"):Invalidate()
+            end,
+            "Useful for bug reports.")
+
+        self:CreateCheckbox(content, "Show NEW tag on recently accepted quests",
+            function() return DB:Tracker().showRecentlyAddedTag ~= false end,
+            function(v)
+                DB:Tracker().showRecentlyAddedTag = v
+                ns:GetModule("Row"):Invalidate()
+            end,
+            "For about an hour after accepting.")
+
 
         self:CreateHeading(content, "Quest Sound")
 

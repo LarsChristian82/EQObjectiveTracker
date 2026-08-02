@@ -6,6 +6,7 @@ local CONTENT_PAD      = 4
 local SCROLLBAR_GUTTER = 26
 local DRAG_HANDLE_H    = 14
 local GRIP_SIZE        = 14
+local HEADER_ICON_SZ   = 13
 local REFRESH_THROTTLE = 0.25
 
 local WQ_PIN_FRACTION  = 0.40
@@ -59,6 +60,17 @@ end
 -- button makes it protected, so the tracker is invisible but still on screen. Every mouse
 -- handler in the tracker checks this. Without it an alpha-0 tracker keeps taking clicks,
 -- tooltips and the wheel, which is the trap EQ leaves open on all but two of its paths.
+function Tracker:ApplyHeaderIcons()
+    local f = self.frame
+    if not (f and f.headerIcons) then return end
+    local DB  = ns:GetModule("DB")
+    local cfg = DB and DB:Tracker()
+    for i = 1, #f.headerIcons do
+        local b = f.headerIcons[i]
+        if cfg and b._dbKey and cfg[b._dbKey] == false then b:Hide() else b:Show() end
+    end
+end
+
 function Tracker:IsClickThrough()
     local f = self.frame
     return (f and f._eqotHidden and f:IsShown()) and true or false
@@ -181,6 +193,33 @@ function Tracker:BuildFrame()
         hint:SetColorTexture(1, 1, 1, 0)
         GameTooltip:Hide()
     end)
+
+    -- Above the drag handle's frame level so the handle does not eat the click.
+    local cog = CreateFrame("Button", nil, f)
+    cog:SetSize(HEADER_ICON_SZ, HEADER_ICON_SZ)
+    cog:SetFrameLevel(f:GetFrameLevel() + 10)
+    cog:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -1)
+    local cogTex = cog:CreateTexture(nil, "ARTWORK")
+    cogTex:SetAllPoints()
+    cogTex:SetTexture("Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\cogwheel.tga")
+    cogTex:SetAlpha(0.85)
+    cog:SetScript("OnEnter", function(btn)
+        if Tracker:IsClickThrough() then return end
+        cogTex:SetAlpha(1)
+        GameTooltip:SetOwner(btn, "ANCHOR_BOTTOMLEFT")
+        GameTooltip:AddLine("Open the options panel")
+        GameTooltip:Show()
+    end)
+    cog:SetScript("OnLeave", function()
+        cogTex:SetAlpha(0.85)
+        GameTooltip:Hide()
+    end)
+    cog:SetScript("OnClick", function()
+        if Tracker:IsClickThrough() then return end
+        ns:GetModule("Options"):Toggle()
+    end)
+    f.headerIcons = { cog }
+    cog._dbKey = "showOptionsIcon"
 
     local function stopDrag()
         if not f._dragging then return end
@@ -943,5 +982,6 @@ function Tracker:OnEnable()
     local Distance = ns:GetModule("Distance")
     if Distance then Distance:OnDirty(function() self:Refresh() end) end
 
+    self:ApplyHeaderIcons()
     self:Render()
 end
