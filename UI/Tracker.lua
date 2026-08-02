@@ -940,5 +940,8 @@ function Tracker:OnEnable()
     local Registry = ns:GetModule("Registry")
     Registry:OnDirty(function() self:Refresh() end)
 
+    local Distance = ns:GetModule("Distance")
+    if Distance then Distance:OnDirty(function() self:Refresh() end) end
+
     self:Render()
 end

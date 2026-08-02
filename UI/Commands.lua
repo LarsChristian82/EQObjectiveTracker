@@ -86,6 +86,9 @@ handlers.status = function()
     local MO = ns:GetModule("ManualOrder")
     if MO and MO.DebugLine then ns:Print(MO:DebugLine()) end
 
+    local DIST = ns:GetModule("Distance")
+    if DIST and DIST.DebugLine then ns:Print(DIST:DebugLine()) end
+
     local AQP = ns:GetModule("AutoQuestPopups")
     if AQP and AQP.DebugLine then ns:Print(AQP:DebugLine()) end
 

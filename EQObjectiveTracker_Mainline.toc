@@ -29,6 +29,7 @@ Data\Registry.lua
 Data\Filter.lua
 Data\Sort.lua
 Data\ManualOrder.lua
+Data\Distance.lua
 Data\Feed.lua
 Data\WatchPersist.lua
 Data\SuperTrackPersist.lua

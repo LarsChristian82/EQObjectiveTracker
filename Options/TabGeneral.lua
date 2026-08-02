@@ -2,14 +2,15 @@ local _, ns = ...
 
 local Options = ns:GetModule("Options")
 
-local SORT_ORDER = { "zone", "title", "status", "level", "recent", "manual" }
+local SORT_ORDER = { "zone", "title", "status", "level", "distance", "recent", "manual" }
 local SORT_DESC  = {
-    zone   = "Group by the quest log heading.",
-    title  = "Alphabetical by name.",
-    status = "Ready to turn in first.",
-    level  = "Lowest quest level first.",
-    recent = "Most recently accepted first.",
-    manual = "Drag and drop the quests in the tracker to reorder them however you like.",
+    zone     = "Group by the quest log heading.",
+    title    = "Alphabetical by name.",
+    status   = "Ready to turn in first.",
+    level    = "Lowest quest level first.",
+    distance = "Nearest objective first. Updates as you move.",
+    recent   = "Most recently accepted first.",
+    manual   = "Drag and drop the quests in the tracker to reorder them however you like.",
 }
 
 Options:RegisterTab({

@@ -35,6 +35,25 @@ local function byRecent(a, b)
     return byTitle(a, b)
 end
 
+local INF = math.huge
+local distances
+
+-- Pushed by Data/Distance.lua rather than threaded through For, because the map is harvested
+-- on a ticker independent of any sort call. ManualOrder's is read fresh per build instead, so
+-- Feed passes that one as an argument.
+function Sort:SetDistances(map)
+    distances = map
+end
+
+local function byDistance(a, b)
+    local da = (distances and distances[a.id]) or INF
+    local db = (distances and distances[b.id]) or INF
+    if da ~= db then return da < db end
+    local za, zb = a.zone or "~", b.zone or "~"
+    if za ~= zb then return za < zb end
+    return byTitle(a, b)
+end
+
 local UNRANKED = 99999
 local activeOrder
 
@@ -49,15 +68,15 @@ local function byManual(a, b)
 end
 
 local MODES = {
-    zone   = byZone,
-    title  = byTitle,
-    status = byStatus,
-    level  = byLevel,
-    recent = byRecent,
-    manual = byManual,
+    zone     = byZone,
+    title    = byTitle,
+    status   = byStatus,
+    level    = byLevel,
+    recent   = byRecent,
+    manual   = byManual,
+    distance = byDistance,
 }
 
--- "distance" is still absent: it needs a position ticker and a per-provider GetDistanceSq.
 function Sort:For(mode, orderMap)
     if mode == "manual" then
         activeOrder = orderMap
