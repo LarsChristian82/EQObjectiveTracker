@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-01
+
+Put the quests in whatever order you want them.
+
+### New Features
+
+- Manual sorting. Pick Manual under Sorting on the General tab, then drag any quest or
+  campaign quest to where you want it. A gold line shows where it will land, and the order
+  survives logging out. Quests you are not currently showing keep their place in the order,
+  so filtering the tracker and rearranging it no longer discards the rest.
+- `/eqot status` reports how many quests carry a manual position and how many of those are
+  still in your log.
+
+### Notes
+
+- Only quests and campaign quests can be dragged, matching Everything Quests. The drop line
+  stays inside the section you picked the quest up from, since a quest cannot move between
+  Campaign and Quests.
+- The dragged quest is shown on a translucent panel with a gold edge, so the row you are
+  dropping it onto stays readable underneath it. Everything Quests draws that panel opaque,
+  which covers the row you are aiming at.
+
 ## [0.3.0] - 2026-08-01
 
 Getting the tracker out of your way without missing anything. It can now hide itself in
