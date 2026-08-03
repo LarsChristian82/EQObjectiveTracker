@@ -30,7 +30,7 @@ HEADER = '''-- Locales/enUS.lua
 
 # Friendly ordering so the manifest reads top-down like the UI.
 PREFERRED = [
-    'Options/TabGeneral.lua', 'Options/TabSections.lua', 'Options/TabAppearance.lua',
+    'Options/TabGeneral.lua', 'Options/TabTracker.lua', 'Options/TabAppearance.lua',
     'Options/TabAbout.lua', 'Options/Frame.lua',
 ]
 

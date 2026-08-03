@@ -3,42 +3,49 @@ local _, ns = ...
 local Options = ns:GetModule("Options")
 local L       = ns.L
 
--- Each dropdown list is both what the user sees and what the setter compares against,
--- so every entry goes through L on both sides. Comparing a translated pick against an
--- English literal would silently always take the else branch.
-local NONE_LABEL = L["None"]
--- OUTLINE and THICKOUTLINE are stored raw and handed to SetFont, so translating them
--- would write an unusable font flag into the profile.
-local OUTLINES   = { NONE_LABEL, "OUTLINE", "THICKOUTLINE" }
+-- Values go straight to SetFont, which takes a comma-joined combo and ignores unknown
+-- tokens, so "" means no outline.
+-- The space after each comma is EQ's, and it is copied rather than tidied: fontOutline is
+-- one of the keys Core/Migrate.lua lifts from EQ by name, so an imported value has to be
+-- one this list can represent or the dropdown reads blank.
+local OUTLINES = {
+    { value = "",                         label = L["None"] },
+    { value = "OUTLINE",                  label = L["Outline"] },
+    { value = "THICKOUTLINE",             label = L["Thick"] },
+    { value = "MONOCHROME",               label = L["Mono"] },
+    { value = "MONOCHROME, OUTLINE",      label = L["Mono Outline"] },
+    { value = "MONOCHROME, THICKOUTLINE", label = L["Mono Thick"] },
+}
 
-local LAYOUT_PLAIN, LAYOUT_CARD = L["Plain"], L["Card"]
-local LAYOUTS    = { LAYOUT_PLAIN, LAYOUT_CARD }
+local LAYOUTS = {
+    { value = "classic", label = L["Plain"] },
+    { value = "card",    label = L["Card"] },
+}
 
-local BAR_H, BAR_V = L["Horizontal"], L["Vertical"]
-local BAR_STYLES = { BAR_H, BAR_V }
+local BAR_STYLES = {
+    { value = 1, label = L["Header Bar 1"] },
+    { value = 2, label = L["Header Bar 2"] },
+}
 
-local ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = L["Left"], L["Center"], L["Right"]
-local SCENARIO_ALIGN = { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT }
+local SCENARIO_ALIGN = {
+    { value = "LEFT",   label = L["Left"] },
+    { value = "CENTER", label = L["Center"] },
+    { value = "RIGHT",  label = L["Right"] },
+}
 
-local function alignLabel(v)
-    if v == "LEFT"  then return ALIGN_LEFT  end
-    if v == "RIGHT" then return ALIGN_RIGHT end
-    return ALIGN_CENTER
+-- Anything unrecognized normalizes to CENTER. A profile written before the align value was
+-- separated from its display label can hold a translated word like "GAUCHE".
+local function alignValue(v)
+    return (v == "LEFT" or v == "RIGHT") and v or "CENTER"
 end
 
--- The stored value stays the English enum. Deriving it with label:upper() would break
--- the moment a translation is loaded, and would write garbage into the profile.
-local function alignValue(label)
-    if label == ALIGN_LEFT  then return "LEFT"  end
-    if label == ALIGN_RIGHT then return "RIGHT" end
-    return "CENTER"
-end
-
-local function pct(v) return ("%d%%"):format(math.floor(v * 100 + 0.5)) end
-local function px(v)  return ("%dpx"):format(math.floor(v + 0.5)) end
-local function signed(v)
-    v = math.floor(v + 0.5)
-    return v > 0 and ("+%d"):format(v) or tostring(v)
+-- Media names are a migration contract - a profile stores the font or bar by name - so
+-- value and label are deliberately the same string.
+local function mediaOptions(names, first)
+    local out = {}
+    if first then out[1] = first end
+    for _, n in ipairs(names) do out[#out + 1] = { value = n, label = n } end
+    return out
 end
 
 local function DB() return ns:GetModule("DB"):Tracker() end
@@ -53,6 +60,12 @@ end
 
 local function relayout(key, v)
     DB()[key] = v
+    ns:GetModule("Tracker"):Render()
+end
+
+local function bannerRestyle(key, v)
+    DB()[key] = v
+    ns:GetModule("Scenario"):ApplyBannerShadow()
     ns:GetModule("Tracker"):Render()
 end
 
@@ -81,380 +94,474 @@ local function barTextureSwatch(frame, name)
     frame.swatch:SetVertexColor(0.26, 0.42, 1.0)
 end
 
+-- EQ's two columns are nothing but a second anchor chain rooted this far right of the
+-- first header, sharing its y. There is no column API on either side.
+local COLUMN_X = 460
+
 Options:RegisterTab({
     id    = "appearance",
     title = L["Appearance"],
     order = 30,
     build = function(self, content)
-        self:CreateHeading(content, L["Text"])
+        local h = self:CreateHeading(content, L["Appearance"])
+        h:SetPoint("TOPLEFT", 8, -8)
 
-        self:CreateDropdown(content, L["Font"],
-            function() return ns:GetModule("Media"):GetFontList() end,
+        local fontDD = self:CreateDropdown(content, L["Font"],
+            function() return mediaOptions(ns:GetModule("Media"):GetFontList()) end,
             function() return DB().font end,
             function(v) restyle("font", v) end,
             L["Fonts registered through LibSharedMedia, so anything from ElvUI or SharedMedia appears here too."])
+        fontDD:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -16)
 
-        self:CreateSlider(content, L["Font Size"], 8, 24, 1,
+        local sizeSlider = self:CreateSlider(content, L["Font Size"], 8, 24, 0.5,
             function() return DB().fontSize or 15 end,
             function(v) restyle("fontSize", v) end,
-            L["Base size for objective text. Titles and headers offset from this."], px)
+            L["Base size for objective text. Titles and headers offset from this."])
+        sizeSlider:SetPoint("TOPLEFT", fontDD, "BOTTOMLEFT", 0, -16)
 
-        self:CreateDropdown(content, L["Outline"],
-            function() return OUTLINES end,
-            function() local o = DB().fontOutline; return (o == nil or o == "") and NONE_LABEL or o end,
-            function(v) restyle("fontOutline", v == NONE_LABEL and "" or v) end,
-            L["Outlines keep small text legible over bright terrain."])
-
-        self:CreateSlider(content, L["Title Size Offset"], -4, 10, 1,
+        local titleSizeSlider = self:CreateSlider(content, L["Title Size Offset"], -6, 12, 0.5,
             function() return DB().titleSizeDelta or 0 end,
             function(v) restyle("titleSizeDelta", v) end,
-            L["Size difference between quest titles and their objective lines."], signed)
+            L["Sizes quest and achievement titles separately from the objective text. This value is added to the Font Size above: 0 keeps titles the same size as the base font, positive makes them larger, negative smaller."])
+        titleSizeSlider:SetPoint("TOPLEFT", sizeSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateCheckbox(content, L["Text Shadow"],
+        local headerSizeSlider = self:CreateSlider(content, L["Header Size Offset"], -8, 12, 0.5,
+            function() return DB().headerSizeDelta or 4 end,
+            function(v) relayout("headerSizeDelta", v) end,
+            L["Sizes the section headers (Quests, Campaign, and so on) independently of the quest text. Added on top of the Font Size above: the default 4 keeps headers at their current size, lower shrinks them (handy on a low UI scale), higher enlarges them."])
+        headerSizeSlider:SetPoint("TOPLEFT", titleSizeSlider, "BOTTOMLEFT", 0, -16)
+
+        local outlineDD = self:CreateDropdown(content, L["Font Outline"],
+            OUTLINES,
+            function() return DB().fontOutline or "" end,
+            function(v) restyle("fontOutline", v) end,
+            L["Outlines keep small text legible over bright terrain."])
+        outlineDD:SetPoint("TOPLEFT", headerSizeSlider, "BOTTOMLEFT", 0, -16)
+
+        local shadowCheck = self:CreateCheckbox(content, L["Text Shadow"],
             function() return DB().textShadow end,
             function(v) restyle("textShadow", v) end,
-            L["Drop shadow behind all tracker text. Helps a lot without an outline."])
+            L["Draws a soft drop-shadow behind all tracker text so it stays readable over bright or busy backgrounds. Use Shadow Color to tint it and Shadow Size to set how far it's cast."])
+        shadowCheck:SetPoint("TOPLEFT", outlineDD, "BOTTOMLEFT", 0, -16)
 
-        self:CreateColorPicker(content, L["Shadow Color"],
+        local shadowPicker = self:CreateColorPicker(content, L["Shadow Color"],
             function() return DB().textShadowColor end,
             function(v) restyle("textShadowColor", v) end,
             L["Shadow color and opacity."], true)
+        shadowPicker:SetPoint("LEFT", shadowCheck, "RIGHT", 120, 0)
 
-        self:CreateSlider(content, L["Shadow distance"], 1, 5, 1,
+        local shadowSizeSlider = self:CreateSlider(content, L["Shadow Size"], 1, 6, 0.5,
             function() return DB().textShadowStrength or 2 end,
             function(v) restyle("textShadowStrength", v) end,
-            L["How far the shadow is offset from the text."], px)
+            L["How far the text drop-shadow is cast behind the letters. Higher values give a larger, more pronounced shadow; lower values keep it tight. Only applies while Text Shadow is on."])
+        shadowSizeSlider:SetPoint("TOPLEFT", shadowCheck, "BOTTOMLEFT", 0, -14)
 
-        self:CreateHeading(content, L["Scenario"])
+        local scenarioHeader = self:CreateHeading(content, L["Scenario"])
+        scenarioHeader:SetPoint("TOPLEFT", shadowSizeSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateCheckbox(content, L["Text Shadow"],
+        local scShadowCheck = self:CreateCheckbox(content, L["Text Shadow"],
             function() return DB().scenarioTextShadow ~= false end,
-            function(v)
-                DB().scenarioTextShadow = v
-                ns:GetModule("Scenario"):ApplyBannerShadow()
-                ns:GetModule("Tracker"):Render()
-            end,
-            L["Draws a drop shadow behind the scenario and delve banner text, the Stage and name lines. This is SEPARATE from the Text Shadow above, which affects only the quest and objective text - the banner is styled on its own."])
+            function(v) bannerRestyle("scenarioTextShadow", v) end,
+            L["Draws a drop-shadow behind the scenario / delve banner text (the Stage and name lines). This is SEPARATE from the Text Shadow above, which affects only the quest and objective text \226\128\148 the banner is styled on its own."])
+        scShadowCheck:SetPoint("TOPLEFT", scenarioHeader, "BOTTOMLEFT", 0, -10)
 
-        self:CreateColorPicker(content, L["Shadow Color"],
+        local scShadowPicker = self:CreateColorPicker(content, L["Shadow Color"],
             function() return DB().scenarioTextShadowColor end,
             function(v)
                 DB().scenarioTextShadowColor = v
                 ns:GetModule("Scenario"):ApplyBannerShadow()
             end,
             L["Color and opacity of the banner's drop shadow."], true)
+        scShadowPicker:SetPoint("LEFT", scShadowCheck, "RIGHT", 120, 0)
 
-        self:CreateSlider(content, L["Shadow distance"], 1, 6, 0.5,
+        local scShadowSizeSlider = self:CreateSlider(content, L["Shadow Size"], 1, 6, 0.5,
             function() return DB().scenarioTextShadowStrength or 1 end,
-            function(v)
-                DB().scenarioTextShadowStrength = v
-                ns:GetModule("Scenario"):ApplyBannerShadow()
-                ns:GetModule("Tracker"):Render()
-            end,
-            L["How far the banner's drop shadow is cast. Only used while the Scenario Text Shadow above is on."], px)
+            function(v) bannerRestyle("scenarioTextShadowStrength", v) end,
+            L["How far the scenario banner's drop-shadow is cast. Higher values give a larger, more pronounced shadow; lower values keep it tight. Only applies while the Scenario Text Shadow above is on."])
+        scShadowSizeSlider:SetPoint("TOPLEFT", scShadowCheck, "BOTTOMLEFT", 0, -14)
 
-        self:CreateDropdown(content, L["Banner Alignment"],
-            function() return SCENARIO_ALIGN end,
-            function() return alignLabel(DB().scenarioTextAlign) end,
-            function(v) relayout("scenarioTextAlign", alignValue(v)) end,
+        local scAlignDD = self:CreateDropdown(content, L["Banner Alignment"],
+            SCENARIO_ALIGN,
+            function() return alignValue(DB().scenarioTextAlign) end,
+            function(v) relayout("scenarioTextAlign", v) end,
             L["Positions the scenario / delve banner within the tracker. Left lines it up with the quest text, Center keeps it centered (the default), and Right pushes it to the tracker's right edge."])
+        scAlignDD:SetPoint("TOPLEFT", scShadowSizeSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateSlider(content, L["Banner Text Size"], -4, 6, 0.5,
+        local scSizeSlider = self:CreateSlider(content, L["Banner Text Size"], -4, 6, 0.5,
             function() return DB().scenarioTextSizeDelta or 0 end,
             function(v) relayout("scenarioTextSizeDelta", v) end,
-            L["Grows or shrinks the scenario / delve banner's Stage and name text. 0 is the default size. The banner artwork is a fixed size, so large values may overflow it."], signed)
+            L["Grows or shrinks the scenario / delve banner's Stage and name text. 0 is the default size. The banner artwork is a fixed size, so large values may overflow it."])
+        scSizeSlider:SetPoint("TOPLEFT", scAlignDD, "BOTTOMLEFT", 0, -16)
 
-        self:CreateSlider(content, L["Criteria Text Size"], 8, 24, 0.5,
+        local scCritSizeSlider = self:CreateSlider(content, L["Criteria Text Size"], 8, 24, 0.5,
             function() return DB().scenarioFontSize or 13 end,
             function(v) relayout("scenarioFontSize", v) end,
-            L["Sizes the scenario and delve objective lines under the banner, separately from the Banner Text Size above."], px)
+            L["Sizes the scenario / delve objective (criteria) lines shown under the banner, separately from the Banner Text Size above. Raise it if the criteria text looks small next to your quest and World Quest text."])
+        scCritSizeSlider:SetPoint("TOPLEFT", scSizeSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateHeading(content, L["Title colors"])
+        -- Built here but anchored at the very bottom of this builder, because it re-homes
+        -- the Tracker group under a section written further down. Screen order is not file
+        -- order in EQ either, and the mirror is of the screen.
+        local trackerHeader = self:CreateHeading(content, L["Tracker"])
 
-        self:CreateCheckbox(content, L["Color titles by difficulty"],
-            function() return DB().colorByDifficulty ~= false end,
-            function(v) restyle("colorByDifficulty", v) end,
-            L["Tints each title by how hard the quest is for your level, the same way the quest log does. Turn it off for plain gold titles."])
+        local skinsHeader = self:CreateHeading(content, L["Tracker Skins"])
+        skinsHeader:SetPoint("TOPLEFT", scCritSizeSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateColorPicker(content, L["Title color override"],
+        local sbCheck = self:CreateCheckbox(content, L["Scroll Bar Background"],
+            function() return DB().scrollBarBg ~= false end,
+            function(v) relayout("scrollBarBg", v) end,
+            L["Draws a track behind the scroll bar so it stays visible over bright terrain."])
+        sbCheck:SetPoint("TOPLEFT", skinsHeader, "BOTTOMLEFT", 0, -10)
+
+        local sbPicker = self:CreateColorPicker(content, L["Scroll Bar Color"],
+            function() return DB().scrollBarBgColor end,
+            function(v) relayout("scrollBarBgColor", v) end,
+            L["Color and opacity of the scroll bar track."], true)
+        sbPicker:SetPoint("LEFT", sbCheck, "RIGHT", 170, 0)
+
+        local thumbSkinCheck = self:CreateCheckbox(content, L["Solid color thumb"],
+            function() return DB().skinScrollBar end,
+            function(v) relayout("skinScrollBar", v) end,
+            L["Replaces the tracker scroll bar's textured thumb (the draggable block) with a flat single-colour block. Use the Thumb Color and Thumb Width controls to style it. Off restores the stock Blizzard bar."])
+        thumbSkinCheck:SetPoint("TOPLEFT", sbCheck, "BOTTOMLEFT", 0, -12)
+
+        local thumbColorPicker = self:CreateColorPicker(content, L["Thumb Color"],
+            function() return DB().scrollBarThumbColor end,
+            function(v) relayout("scrollBarThumbColor", v) end,
+            L["Color and opacity of the draggable block. Only used while Solid color thumb is on."], true)
+        thumbColorPicker:SetPoint("LEFT", thumbSkinCheck, "RIGHT", 170, 0)
+        self:AlignSwatchTo(thumbColorPicker, sbPicker)
+
+        local thumbWidthSlider = self:CreateSlider(content, L["Thumb Width"], 4, 16, 0.5,
+            function() return DB().scrollBarThumbWidth or 8 end,
+            function(v) relayout("scrollBarThumbWidth", v) end,
+            L["How wide the draggable block is. Only used while Solid color thumb is on."])
+        thumbWidthSlider:SetPoint("TOPLEFT", thumbSkinCheck, "BOTTOMLEFT", 0, -14)
+
+        local hideArrowsCheck = self:CreateCheckbox(content, L["Hide scroll bar arrows"],
+            function() return DB().hideScrollArrows end,
+            function(v) relayout("hideScrollArrows", v) end,
+            L["Hides the up and down arrow buttons at the ends of the tracker scroll bar. The bar still scrolls by dragging the thumb or using the mouse wheel."])
+        hideArrowsCheck:SetPoint("TOPLEFT", thumbWidthSlider, "BOTTOMLEFT", 0, -14)
+
+        local bgCheck = self:CreateCheckbox(content, L["Background"],
+            function() return DB().showBackground end,
+            function(v) relayout("showBackground", v) end,
+            L["Fills the tracker behind the text. Useful over bright terrain."])
+        bgCheck:SetPoint("TOPLEFT", trackerHeader, "BOTTOMLEFT", 0, -10)
+
+        local bgPicker = self:CreateColorPicker(content, L["Background Color"],
+            function() return DB().backgroundColor end,
+            function(v) relayout("backgroundColor", v) end,
+            L["Background color and opacity."], true)
+        bgPicker:SetPoint("LEFT", bgCheck, "RIGHT", 120, 0)
+
+        local borderCheck = self:CreateCheckbox(content, L["Border"],
+            function() return DB().showBorder end,
+            function(v) relayout("showBorder", v) end,
+            L["Draws a border around the tracker."])
+        borderCheck:SetPoint("TOPLEFT", bgCheck, "BOTTOMLEFT", 0, -10)
+
+        local borderPicker = self:CreateColorPicker(content, L["Border Color"],
+            function() return DB().borderColor end,
+            function(v) relayout("borderColor", v) end,
+            L["Border color and opacity."], true)
+        borderPicker:SetPoint("TOPLEFT", bgPicker, "BOTTOMLEFT", 0, -8)
+        self:AlignSwatchTo(borderPicker, bgPicker)
+
+        local borderThickSlider = self:CreateSlider(content, L["Border Thickness"], 1, 5, 0.5,
+            function() return DB().borderSize or 1 end,
+            function(v) relayout("borderSize", v) end,
+            L["Border thickness in pixels."])
+        borderThickSlider:SetPoint("TOPLEFT", borderCheck, "BOTTOMLEFT", 0, -20)
+
+        local hbBarHeader = self:CreateHeading(content, L["Header Bar"])
+        hbBarHeader:SetPoint("TOPLEFT", borderThickSlider, "BOTTOMLEFT", 0, -20)
+
+        local hbCheck = self:CreateCheckbox(content, L["Header bar"],
+            function() return DB().headerBar end,
+            function(v) relayout("headerBar", v) end,
+            L["Draws a coloured gradient bar behind each section header (Quests, Campaign, World Quests, and so on), for a look closer to the default Blizzard tracker. Off by default."])
+        hbCheck:SetPoint("TOPLEFT", hbBarHeader, "BOTTOMLEFT", 0, -10)
+
+        local hbPicker = self:CreateColorPicker(content, L["Bar Color"],
+            function() return DB().headerBarColor end,
+            function(v) relayout("headerBarColor", v) end,
+            L["Brightest end of the bar gradient. The other end is the same color darkened."], true)
+        hbPicker:SetPoint("LEFT", hbCheck, "RIGHT", 120, 0)
+        self:AlignSwatchTo(hbPicker, bgPicker)
+
+        local hbStyleDD = self:CreateDropdown(content, L["Bar Style"],
+            BAR_STYLES,
+            function() return (DB().headerBarStyle or 1) == 2 and 2 or 1 end,
+            function(v) relayout("headerBarStyle", v) end,
+            L["Header Bar 1 is a horizontal gradient (bright on the left, dark on the right). Header Bar 2 is a vertical gradient (bright at the top, dark at the bottom). Bar Color, Bar Height, and Soft edges all apply to whichever style you pick."])
+        hbStyleDD:SetWidth(150)
+        hbStyleDD:SetPoint("TOPLEFT", hbCheck, "BOTTOMLEFT", 0, -14)
+
+        local hbSoftCheck = self:CreateCheckbox(content, L["Soft edges"],
+            function() return DB().headerBarSoftEdges end,
+            function(v) relayout("headerBarSoftEdges", v) end,
+            L["Feathers the top, left, and right edges of the header bar so it blends into the UI instead of sitting in a hard box. The gradient colour is unchanged. Only applies while Header bar is on; off by default."])
+        hbSoftCheck.label:ClearAllPoints()
+        hbSoftCheck.label:SetPoint("RIGHT", hbSoftCheck, "LEFT", -4, 1)
+        hbSoftCheck:SetPoint("LEFT", hbStyleDD.button, "RIGHT",
+                             24 + (hbSoftCheck.label:GetStringWidth() or 70), 1)
+        -- The label sits LEFT here, so flip the hit rect AttachTooltip widened to the right.
+        hbSoftCheck:SetHitRectInsets(-((hbSoftCheck.label:GetStringWidth() or 70) + 8), 0, 0, 0)
+
+        local hbHeightSlider = self:CreateSlider(content, L["Bar Height"], 6, 26, 0.5,
+            function() return DB().headerBarHeight or 22 end,
+            function(v) relayout("headerBarHeight", v) end,
+            L["How tall the section-header bar is. The bar is centred on the header row, so larger values fill more of it."])
+        hbHeightSlider:SetPoint("TOPLEFT", hbStyleDD, "BOTTOMLEFT", 0, -14)
+
+        local hbSoftSlider = self:CreateSlider(content, L["Edge Softness"], 1, 10, 0.5,
+            function() return DB().headerBarSoftEdgeStrength or 10 end,
+            function(v) relayout("headerBarSoftEdgeStrength", v) end,
+            L["How soft the header bar's feathered edges are when Soft edges is on. Higher is softer; lower tightens toward a hard edge."])
+        hbSoftSlider:SetPoint("TOPLEFT", hbHeightSlider, "BOTTOMLEFT", 0, -14)
+
+        local colorsHeader = self:CreateHeading(content, L["Colors & Dimensions"])
+        colorsHeader:SetPoint("TOPLEFT", h, "TOPLEFT", COLUMN_X, 0)
+
+        local resetBtn = self:CreateButton(content, L["Reset to Defaults"], 160, function()
+            local Dialog = ns:GetModule("Dialog")
+            if not Dialog then return end
+            Dialog:Show({
+                title    = "EQ Objective Tracker",
+                text     = L["Reset all Appearance settings to defaults?"],
+                button1  = L["Reset"],
+                button2  = L["Cancel"],
+                onAccept = function()
+                    ns:GetModule("DB"):ResetTrackerAppearance()
+                    ReloadUI()
+                end,
+            })
+        end)
+        resetBtn:SetSize(160, 24)
+        resetBtn:SetPoint("LEFT", colorsHeader, "LEFT", 320, 0)
+
+        local titlePicker = self:CreateColorPicker(content, L["Quest Title Color Override"],
             function() return DB().titleColorOverride end,
             function(v) restyle("titleColorOverride", v) end,
-            L["Forces every title to one color. Clear it to go back to difficulty coloring, or to plain gold when that is off."],
-            false,
-            function() restyle("titleColorOverride", nil) end)
+            L["When cleared, falls back to difficulty coloring or default yellow."])
+        titlePicker:SetPoint("TOPLEFT", colorsHeader, "BOTTOMLEFT", 0, -16)
 
-        self:CreateCheckbox(content, L["Use class color for titles"],
+        local clearBtn = self:CreateButton(content, L["Clear"], 60, function()
+            restyle("titleColorOverride", nil)
+            titlePicker.paint()
+        end)
+        clearBtn:SetSize(60, 18)
+        clearBtn:SetPoint("LEFT", titlePicker, "RIGHT", 8, 0)
+
+        local titleClassCheck = self:CreateCheckbox(content, L["Use class color"],
             function() return DB().titleColorUseClass end,
             function(v) restyle("titleColorUseClass", v) end,
-            L["Colors titles with the class color of the character you are logged in on. Wins over the override above while it is on."])
+            L["Colors quest, achievement, and endeavor titles with the class color of the character you are currently logged in on. Overrides the color above while it is on. Off by default."])
+        titleClassCheck:SetPoint("TOPLEFT", titlePicker, "BOTTOMLEFT", 0, -10)
 
-        self:CreateCheckbox(content, L["Use title color when complete"],
+        local recolorCheck = self:CreateCheckbox(content, L["Use title color for completed quests"],
             function() return DB().overrideCompleteGreen ~= false end,
             function(v) restyle("overrideCompleteGreen", v) end,
-            L["Completed entries and finished objectives use your title color instead of green. Does nothing until a color override or class color is set, since it needs a color to use."])
+            L["Instead of green."])
+        recolorCheck:SetPoint("TOPLEFT", titleClassCheck, "BOTTOMLEFT", 0, -8)
 
-        self:CreateHeading(content, L["Size and spacing"])
+        local headerPicker = self:CreateColorPicker(content, L["Section Header Color"],
+            function() return DB().headerColor end,
+            function(v) relayout("headerColor", v) end,
+            L["Color of the Quests, Campaign and World Quests headings."])
+        headerPicker:SetPoint("TOPLEFT", recolorCheck, "BOTTOMLEFT", 0, -16)
+        self:AlignSwatchTo(headerPicker, titlePicker)
 
-        self:CreateSlider(content, L["Tracker Scale"], 0.5, 2.0, 0.05,
+        local headerClassCheck = self:CreateCheckbox(content, L["Use class color"],
+            function() return DB().headerColorUseClass end,
+            function(v) relayout("headerColorUseClass", v) end,
+            L["Colors the section headers (Quests, Campaign, and so on) with the class color of the character you are currently logged in on. Overrides the color above while it is on. Off by default."])
+        headerClassCheck:SetPoint("TOPLEFT", headerPicker, "BOTTOMLEFT", 0, -10)
+
+        local dividerPicker = self:CreateColorPicker(content, L["Divider Line Color"],
+            function() return DB().headerDividerColor end,
+            function(v) relayout("headerDividerColor", v) end,
+            L["Sets the color of the thin line under each section header. Defaults to the original gold."], true)
+        dividerPicker:SetPoint("TOPLEFT", headerClassCheck, "BOTTOMLEFT", 0, -14)
+        self:AlignSwatchTo(dividerPicker, titlePicker)
+
+        local scaleSlider = self:CreateSlider(content, L["Tracker Scale"], 0.7, 1.5, 0.05,
             function() return DB().scale or 1 end,
             function(v)
                 DB().scale = v
                 ns:GetModule("Tracker"):ApplyScale()
             end,
-            L["Scales the whole tracker. Takes effect immediately out of combat."], pct)
+            L["Scales the whole tracker. Takes effect immediately out of combat."])
+        scaleSlider:SetPoint("TOPLEFT", dividerPicker, "BOTTOMLEFT", 0, -32)
 
-        self:CreateSlider(content, L["Space between entries"], 0, 20, 1,
+        local spacingSlider = self:CreateSlider(content, L["Block Spacing"], 0, 12, 0.5,
             function() return DB().blockSpacing or 2 end,
             function(v) relayout("blockSpacing", v) end,
-            L["Vertical gap between each entry and between sections."], px)
+            L["Vertical gap between each entry and between sections."])
+        spacingSlider:SetPoint("TOPLEFT", scaleSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateSlider(content, L["Space between objective lines"], -8, 24, 1,
+        local lineSpacingSlider = self:CreateSlider(content, L["Line Spacing"], 0, 12, 1,
             function() return DB().lineSpacing or 0 end,
             function(v) restyle("lineSpacing", v) end,
-            L["Extra spacing between the objective lines within one entry."], signed)
+            L["Adds vertical space between a quest's objective lines, across the whole tracker. 0 keeps the default spacing."])
+        lineSpacingSlider:SetPoint("TOPLEFT", spacingSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateSlider(content, L["Space under titles"], -8, 24, 1,
+        local headerSpacingSlider = self:CreateSlider(content, L["Header Spacing"], -2, 12, 1,
             function() return DB().headerSpacing or 0 end,
             function(v) restyle("headerSpacing", v) end,
-            L["Gap between an entry's title and its first objective line."], signed)
+            L["Adds or removes space around section headers and beneath each quest's title. 0 keeps the default spacing."])
+        headerSpacingSlider:SetPoint("TOPLEFT", lineSpacingSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateHeading(content, L["Entry rows"])
+        local cardHeader = self:CreateHeading(content, L["Quest Rows"])
+        cardHeader:SetPoint("TOPLEFT", headerSpacingSlider, "BOTTOMLEFT", 0, -20)
 
-        self:CreateDropdown(content, L["Row Layout"],
-            function() return LAYOUTS end,
-            function() return DB().blockLayout == "card" and LAYOUT_CARD or LAYOUT_PLAIN end,
-            function(v) restyle("blockLayout", v == LAYOUT_CARD and "card" or "classic") end,
-            L["Plain draws text straight on the tracker background. Card gives every entry its own panel, which makes long lists easier to tell apart."])
+        local layout = self:CreateRadioGroup(content, L["Row Layout"],
+            LAYOUTS,
+            function() return DB().blockLayout or "classic" end,
+            function(v) restyle("blockLayout", v) end,
+            300, 14,
+            L["Row Layout"],
+            L["How each quest is drawn in the tracker. |cffffffffPlain|r is the default look - text straight on the tracker background. |cffffffffCard|r gives every quest its own panel with a background and border, which makes long lists easier to read apart."])
+        layout:SetPoint("TOPLEFT", cardHeader, "BOTTOMLEFT", 0, -8)
 
-        self:CreateColorPicker(content, L["Card background color"],
+        local cardColorPicker = self:CreateColorPicker(content, L["Background Color"],
             function() return DB().cardColor end,
             function(v) restyle("cardColor", v) end,
-            L["Fill behind each card. Only used while Row Layout is Card."], true)
+            L["Fill color behind each quest card. Only used while Row Layout is set to Card."], true)
+        cardColorPicker:SetPoint("TOPLEFT", layout, "BOTTOMLEFT", 0, -8)
 
-        self:CreateColorPicker(content, L["Card border color"],
+        local cardBorderPicker = self:CreateColorPicker(content, L["Border Color"],
             function() return DB().cardBorderColor end,
             function(v) restyle("cardBorderColor", v) end,
-            L["Outline around each card. Only used while Row Layout is Card."], true)
+            L["Outline color around each quest card. Only used while Row Layout is set to Card."], true)
+        cardBorderPicker:SetPoint("TOPLEFT", cardColorPicker, "BOTTOMLEFT", 0, -10)
+        self:AlignSwatchTo(cardBorderPicker, cardColorPicker)
 
-        self:CreateSlider(content, L["Card border thickness"], 0, 4, 1,
+        local cardBorderSlider = self:CreateSlider(content, L["Border Thickness"], 0, 4, 1,
             function() return DB().cardBorderSize or 1 end,
             function(v) restyle("cardBorderSize", v) end,
-            L["0 hides the outline and leaves just the fill."], px)
+            L["How thick the card outline is, in pixels. 0 hides the outline and leaves just the fill."])
+        cardBorderSlider:SetPoint("TOPLEFT", cardBorderPicker, "BOTTOMLEFT", 0, -20)
 
-        self:CreateSlider(content, L["Card Padding"], 2, 14, 1,
+        local cardPaddingSlider = self:CreateSlider(content, L["Card Padding"], 2, 14, 1,
             function() return DB().cardPadding or 6 end,
             function(v) restyle("cardPadding", v) end,
-            L["Breathing room between a card's edge and the text inside it. Larger values make taller cards."], px)
+            L["Breathing room between a card's edge and the text inside it. Larger values make taller cards."])
+        cardPaddingSlider:SetPoint("TOPLEFT", cardBorderSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateCheckbox(content, L["Tint cards by type"],
+        local tintCheck = self:CreateCheckbox(content, L["Tint cards by quest type"],
             function() return DB().cardTintByType end,
             function(v) restyle("cardTintByType", v) end,
             L["Gives campaign, legendary, dungeon and raid entries their own card color. Anything else uses the plain background color above."])
+        tintCheck:SetPoint("TOPLEFT", cardPaddingSlider, "BOTTOMLEFT", 0, -16)
 
-        self:CreateColorPicker(content, L["Campaign tint"],
+        local campaignTint = self:CreateColorPicker(content, L["Campaign"],
             function() return DB().cardTintCampaign end,
             function(v) restyle("cardTintCampaign", v) end,
-            L["Card color for campaign entries. Needs Tint cards by type switched on."], true)
+            L["Card color for campaign entries. Needs Tint cards by quest type switched on."], true)
+        campaignTint:SetPoint("TOPLEFT", tintCheck, "BOTTOMLEFT", 0, -10)
 
-        self:CreateColorPicker(content, L["Legendary tint"],
+        local legendaryTint = self:CreateColorPicker(content, L["Legendary"],
             function() return DB().cardTintLegendary end,
             function(v) restyle("cardTintLegendary", v) end,
-            L["Card color for legendary entries. Needs Tint cards by type switched on."], true)
+            L["Card color for legendary entries. Needs Tint cards by quest type switched on."], true)
+        legendaryTint:SetPoint("TOPLEFT", campaignTint, "BOTTOMLEFT", 0, -10)
+        self:AlignSwatchTo(legendaryTint, campaignTint)
 
-        self:CreateColorPicker(content, L["Dungeon tint"],
+        local dungeonTint = self:CreateColorPicker(content, L["Dungeon"],
             function() return DB().cardTintDungeon end,
             function(v) restyle("cardTintDungeon", v) end,
-            L["Card color for dungeon entries. Needs Tint cards by type switched on."], true)
+            L["Card color for dungeon entries. Needs Tint cards by quest type switched on."], true)
+        dungeonTint:SetPoint("TOPLEFT", legendaryTint, "BOTTOMLEFT", 0, -10)
+        self:AlignSwatchTo(dungeonTint, campaignTint)
 
-        self:CreateColorPicker(content, L["Raid tint"],
+        local raidTint = self:CreateColorPicker(content, L["Raid"],
             function() return DB().cardTintRaid end,
             function(v) restyle("cardTintRaid", v) end,
-            L["Card color for raid entries. Needs Tint cards by type switched on."], true)
+            L["Card color for raid entries. Needs Tint cards by quest type switched on."], true)
+        raidTint:SetPoint("TOPLEFT", dungeonTint, "BOTTOMLEFT", 0, -10)
+        self:AlignSwatchTo(raidTint, campaignTint)
 
-        self:CreateHeading(content, L["Section headers"])
-
-        self:CreateColorPicker(content, L["Header Color"],
-            function() return DB().headerColor end,
-            function(v) relayout("headerColor", v) end,
-            L["Color of the Quests, Campaign and World Quests headings."])
-
-        self:CreateCheckbox(content, L["Use class color for headers"],
-            function() return DB().headerColorUseClass end,
-            function(v) relayout("headerColorUseClass", v) end,
-            L["Colors the section headings with your character's class color. Wins over the Header Color above while it is on."])
-
-        self:CreateColorPicker(content, L["Header divider color"],
-            function() return DB().headerDividerColor end,
-            function(v) relayout("headerDividerColor", v) end,
-            L["The thin rule under each section heading."], true)
-
-        self:CreateSlider(content, L["Header Size Offset"], -4, 12, 1,
-            function() return DB().headerSizeDelta or 4 end,
-            function(v) relayout("headerSizeDelta", v) end,
-            L["Size difference between section headings and objective text."], signed)
-
-        self:CreateCheckbox(content, L["Header bar"],
-            function() return DB().headerBar end,
-            function(v) relayout("headerBar", v) end,
-            L["Draws a colored gradient bar behind each section heading, for a look closer to the default Blizzard tracker."])
-
-        self:CreateColorPicker(content, L["Bar Color"],
-            function() return DB().headerBarColor end,
-            function(v) relayout("headerBarColor", v) end,
-            L["Brightest end of the bar gradient. The other end is the same color darkened."], true)
-
-        self:CreateDropdown(content, L["Bar Style"],
-            function() return BAR_STYLES end,
-            function() return (DB().headerBarStyle or 1) == 2 and BAR_V or BAR_H end,
-            function(v) relayout("headerBarStyle", v == BAR_V and 2 or 1) end,
-            L["Horizontal runs bright on the left to dark on the right. Vertical runs bright at the top to dark at the bottom."])
-
-        self:CreateSlider(content, L["Bar Height"], 6, 26, 1,
-            function() return DB().headerBarHeight or 22 end,
-            function(v) relayout("headerBarHeight", v) end,
-            L["The bar is centered on the heading row, so larger values fill more of it."], px)
-
-        self:CreateCheckbox(content, L["Soft bar edges"],
-            function() return DB().headerBarSoftEdges end,
-            function(v) relayout("headerBarSoftEdges", v) end,
-            L["Feathers the top, left and right edges so the bar blends into the UI instead of sitting in a hard box. The bottom stays flush with the divider line."])
-
-        self:CreateSlider(content, L["Edge Softness"], 1, 10, 1,
-            function() return DB().headerBarSoftEdgeStrength or 10 end,
-            function(v) relayout("headerBarSoftEdgeStrength", v) end,
-            L["Higher is softer. Only applies while Soft bar edges is on."])
-
-        self:CreateHeading(content, L["Scroll bar"])
-
-        self:CreateCheckbox(content, L["Hide scroll bar"],
-            function() return DB().hideScrollBar end,
-            function(v) relayout("hideScrollBar", v) end,
-            L["Removes the scroll bar entirely and gives its gutter back to the text. The tracker still scrolls with the mouse wheel."])
-
-        self:CreateCheckbox(content, L["Scroll Bar Background"],
-            function() return DB().scrollBarBg ~= false end,
-            function(v) relayout("scrollBarBg", v) end,
-            L["Draws a track behind the scroll bar so it stays visible over bright terrain."])
-
-        self:CreateColorPicker(content, L["Scroll Bar Color"],
-            function() return DB().scrollBarBgColor end,
-            function(v) relayout("scrollBarBgColor", v) end,
-            L["Color and opacity of the scroll bar track."], true)
-
-        self:CreateCheckbox(content, L["Solid color thumb"],
-            function() return DB().skinScrollBar end,
-            function(v) relayout("skinScrollBar", v) end,
-            L["Replaces the textured draggable block with a flat single color one. Turning this off restores the stock Blizzard look."])
-
-        self:CreateColorPicker(content, L["Thumb Color"],
-            function() return DB().scrollBarThumbColor end,
-            function(v) relayout("scrollBarThumbColor", v) end,
-            L["Color and opacity of the draggable block. Only used while Solid color thumb is on."], true)
-
-        self:CreateSlider(content, L["Thumb Width"], 4, 16, 1,
-            function() return DB().scrollBarThumbWidth or 8 end,
-            function(v) relayout("scrollBarThumbWidth", v) end,
-            L["How wide the draggable block is. Only used while Solid color thumb is on."], px)
-
-        self:CreateCheckbox(content, L["Hide scroll bar arrows"],
-            function() return DB().hideScrollArrows end,
-            function(v) relayout("hideScrollArrows", v) end,
-            L["Hides the up and down buttons at the ends of the bar. It still scrolls by dragging the thumb or using the mouse wheel."])
-
-        self:CreateHeading(content, L["Frame"])
-
-        self:CreateCheckbox(content, L["Show background"],
-            function() return DB().showBackground end,
-            function(v) relayout("showBackground", v) end,
-            L["Fills the tracker behind the text. Useful over bright terrain."])
-
-        self:CreateColorPicker(content, L["Background Color"],
-            function() return DB().backgroundColor end,
-            function(v) relayout("backgroundColor", v) end,
-            L["Background color and opacity."], true)
-
-        self:CreateCheckbox(content, L["Show border"],
-            function() return DB().showBorder end,
-            function(v) relayout("showBorder", v) end,
-            L["Draws a border around the tracker."])
-
-        self:CreateColorPicker(content, L["Border Color"],
-            function() return DB().borderColor end,
-            function(v) relayout("borderColor", v) end,
-            L["Border color and opacity."], true)
-
-        self:CreateSlider(content, L["Border Thickness"], 1, 8, 1,
-            function() return DB().borderSize or 1 end,
-            function(v) relayout("borderSize", v) end,
-            L["Border thickness in pixels."], px)
-
-        self:CreateHeading(content, L["Zone Bar Appearance"])
-
-        self:CreateDropdown(content, L["Bar Texture"],
-            function() return ns:GetModule("Media"):GetStatusBarList() end,
-            function() local st = zbState(); return (st and st.barTexture) or "Blizzard" end,
-            function(v) zbSet("barTexture", v, true) end,
-            L["Fill texture for the zone progress bar. Textures registered through LibSharedMedia, so anything from ElvUI, SharedMedia or Details appears here too."],
-            barTextureSwatch)
-
-        self:CreateColorPicker(content, L["Bar Color"],
-            function()
-                local st = zbState()
-                return (st and st.barColor) or { r = 0.26, g = 0.42, b = 1.0, a = 1 }
-            end,
-            function(v) zbSet("barColor", v, true) end,
-            L["Fill color and opacity of the bar itself."], true)
-
-        self:CreateSlider(content, L["Scale"], 0.5, 2.0, 0.05,
+        -- Renders under Quest Rows, above the Zone Bar Appearance header that owns it.
+        -- That is where EQ puts it, so it is where the mirror puts it.
+        local zbScaleSlider = self:CreateSlider(content, L["Zone Bar Scale"], 0.5, 2.0, 0.05,
             function() local st = zbState(); return (st and st.scale) or 1.0 end,
             function(v) zbSet("scale", v) end,
-            L["Size of the floating bar. The docked section follows the tracker's own scale instead."],
-            pct)
+            L["Size of the floating bar. The docked section follows the tracker's own scale instead."])
+        zbScaleSlider:SetPoint("TOPLEFT", raidTint, "BOTTOMLEFT", 0, -20)
 
-        self:CreateDropdown(content, L["Font"],
-            function()
-                local list = { SAME_FONT }
-                for _, n in ipairs(ns:GetModule("Media"):GetFontList()) do
-                    list[#list + 1] = n
-                end
-                return list
-            end,
-            function() local st = zbState(); return (st and st.font) or SAME_FONT end,
-            function(v) zbSet("font", v ~= SAME_FONT and v or nil) end,
-            L["Font for the floating bar's zone name, count and percentage. The docked section uses the tracker font."])
+        local zbHeader = self:CreateHeading(content, L["Zone Bar Appearance"])
+        zbHeader:SetPoint("TOPLEFT", zbScaleSlider, "BOTTOMLEFT", 0, -20)
 
-        self:CreateColorPicker(content, L["Zone name color"],
-            function()
-                local st = zbState()
-                return (st and st.headerColor) or { r = 0.93, g = 0.32, b = 0.10, a = 1 }
-            end,
-            function(v) zbSet("headerColor", v) end,
-            L["Color of the zone name on the floating bar. The docked section uses the section header color."], true)
-
-        self:CreateColorPicker(content, L["Count Color"],
-            function()
-                local st = zbState()
-                return (st and st.countColor) or { r = 0.92, g = 0.72, b = 0.02, a = 1 }
-            end,
-            function(v) zbSet("countColor", v) end,
-            L["Color of the completed-of-total count on the floating bar."], true)
-
-        self:CreateCheckbox(content, L["Show background"],
+        local zbBgCheck = self:CreateCheckbox(content, L["Background"],
             function() local st = zbState(); return not (st and st.showBackground == false) end,
             function(v) zbSet("showBackground", v) end,
             L["Fills the floating bar behind its text. It fades slightly once the bar is locked."])
+        zbBgCheck:SetPoint("TOPLEFT", zbHeader, "BOTTOMLEFT", 0, -12)
 
-        self:CreateCheckbox(content, L["Show border"],
+        local zbBorderCheck = self:CreateCheckbox(content, L["Border"],
             function() local st = zbState(); return not (st and st.showBorder == false) end,
             function(v) zbSet("showBorder", v) end,
             L["Draws a border around the floating bar."])
+        zbBorderCheck:SetPoint("TOPLEFT", zbBgCheck, "BOTTOMLEFT", 0, -12)
 
-        self:CreateColorPicker(content, L["Border Color"],
+        local zbBorderPicker = self:CreateColorPicker(content, L["Border Color"],
             function()
                 local st = zbState()
                 return (st and st.borderColor) or { r = 0.635, g = 0.000, b = 0.039, a = 1 }
             end,
             function(v) zbSet("borderColor", v) end,
             L["Border color and opacity for the floating bar."], true)
+        zbBorderPicker:SetPoint("LEFT", zbBorderCheck, "LEFT", 90, 0)
+
+        local zbFontDD = self:CreateDropdown(content, L["Font"],
+            function()
+                return mediaOptions(ns:GetModule("Media"):GetFontList(),
+                                    { value = "", label = SAME_FONT })
+            end,
+            function() local st = zbState(); return (st and st.font) or "" end,
+            function(v) zbSet("font", v ~= "" and v or nil) end,
+            L["Font for the floating bar's zone name, count and percentage. The docked section uses the tracker font."])
+        zbFontDD:SetPoint("TOPLEFT", zbBorderCheck, "BOTTOMLEFT", 0, -14)
+
+        local zbTexDD = self:CreateDropdown(content, L["Bar Texture"],
+            function() return mediaOptions(ns:GetModule("Media"):GetStatusBarList()) end,
+            function() local st = zbState(); return (st and st.barTexture) or "Blizzard" end,
+            function(v) zbSet("barTexture", v, true) end,
+            L["Sets the fill texture of the zone progress bar. Textures added by other media addons (such as SharedMedia, ElvUI, or Details) appear here too."],
+            barTextureSwatch)
+        zbTexDD:SetPoint("TOPLEFT", zbFontDD, "BOTTOMLEFT", 0, -14)
+
+        local zbBarColorPicker = self:CreateColorPicker(content, L["Bar Color"],
+            function()
+                local st = zbState()
+                return (st and st.barColor) or { r = 0.26, g = 0.42, b = 1.0, a = 1 }
+            end,
+            function(v) zbSet("barColor", v, true) end,
+            L["Fill color and opacity of the bar itself."], true)
+        zbBarColorPicker:SetPoint("TOPLEFT", zbTexDD, "BOTTOMLEFT", 0, -16)
+
+        local zbHeaderPicker = self:CreateColorPicker(content, L["Header Color"],
+            function()
+                local st = zbState()
+                return (st and st.headerColor) or { r = 0.93, g = 0.32, b = 0.10, a = 1 }
+            end,
+            function(v) zbSet("headerColor", v) end,
+            L["Color of the zone name on the floating bar. The docked section uses the section header color."], true)
+        zbHeaderPicker:SetPoint("TOPLEFT", zbBarColorPicker, "BOTTOMLEFT", 0, -16)
+
+        local zbCountPicker = self:CreateColorPicker(content, L["Count Color"],
+            function()
+                local st = zbState()
+                return (st and st.countColor) or { r = 0.92, g = 0.72, b = 0.02, a = 1 }
+            end,
+            function(v) zbSet("countColor", v) end,
+            L["Color of the completed-of-total count on the floating bar."], true)
+        zbCountPicker:SetPoint("TOPLEFT", zbHeaderPicker, "BOTTOMLEFT", 0, -12)
+        self:AlignSwatchTo(zbCountPicker, zbHeaderPicker)
+
+        trackerHeader:SetPoint("TOPLEFT", hideArrowsCheck, "BOTTOMLEFT", 0, -20)
     end,
 })

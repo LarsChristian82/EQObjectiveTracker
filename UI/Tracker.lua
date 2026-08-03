@@ -566,6 +566,11 @@ function Tracker:DebugScroll()
         f:GetScale() or 1, cfg.scale or 1, tostring(point), tostring(relPoint),
         px or 0, py or 0, cfg.xOffset or 0, cfg.yOffset or 0)
 
+    -- The live size beside the stored one. A reset that leaves the frame large reads here
+    -- as the two disagreeing, which says whether the config or the frame kept the old value.
+    out[#out + 1] = ("size live %.0fx%.0f cfg %.0fx%.0f"):format(
+        f:GetWidth() or 0, f:GetHeight() or 0, cfg.width or 0, cfg.maxHeight or 0)
+
     if not bar then
         out[#out + 1] = "bar none"
     else

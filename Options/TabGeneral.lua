@@ -3,31 +3,9 @@ local _, ns = ...
 local Options = ns:GetModule("Options")
 local L       = ns.L
 
-local SORT_ORDER = { "zone", "title", "status", "level", "distance", "recent", "manual" }
-
--- Wrapped here rather than at the point of use: docs/_gen_enus.py extracts literal
--- L["..."] occurrences, so L[SORT_DESC[mode]] would keep working and silently never
--- reach the manifest. The stored value stays the lowercase id, so a profile written
--- in one locale still reads correctly in another.
-local SORT_LABEL = {
-    zone     = L["Zone"],
-    title    = L["Title"],
-    status   = L["Status"],
-    level    = L["Level"],
-    distance = L["Distance"],
-    recent   = L["Recent"],
-    manual   = L["Manual"],
-}
-
-local SORT_DESC  = {
-    zone     = L["Group by the quest log heading."],
-    title    = L["Alphabetical by name."],
-    status   = L["Ready to turn in first."],
-    level    = L["Lowest quest level first."],
-    distance = L["Nearest objective first. Updates as you move."],
-    recent   = L["Most recently accepted first."],
-    manual   = L["Drag and drop the quests in the tracker to reorder them however you like."],
-}
+-- The right column is a second anchor chain rooted this far right of the first header,
+-- sharing its y. Same figure the Tracker and Appearance tabs use.
+local COLUMN_X = 460
 
 Options:RegisterTab({
     id    = "general",
@@ -36,27 +14,20 @@ Options:RegisterTab({
     build = function(self, content)
         local DB = ns:GetModule("DB")
 
-        self:CreateHeading(content, L["Tracker window"])
+        local h = self:CreateHeading(content, L["General"])
+        h:SetPoint("TOPLEFT", 8, -8)
 
-        self:CreateCheckbox(content, L["Lock tracker"],
+        local lock = self:CreateCheckbox(content, L["Lock tracker"],
             function() return DB:General().lockTracker end,
             function(v)
                 DB:General().lockTracker = v
                 ns:GetModule("Tracker"):ApplyLockState()
             end,
-            L["Stops the tracker being dragged or resized. The corner grip is hidden while locked."])
-
-        self:CreateButton(content, L["Reset position and size"], 190, function()
-            ns:GetModule("Tracker"):ResetPosition()
-        end, L["Returns the tracker to its default position and size."])
-
-        self:CreateCheckbox(content, L["Keep focused quest after relog"],
-            function() return DB:General().restoreSuperTrackOnLogin ~= false end,
-            function(v) DB:General().restoreSuperTrackOnLogin = v end,
-            L["Restores the waypoint arrow."])
+            L["Disable drag-to-move and resize."])
+        lock:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -16)
 
         local function hideRule(key, label, tooltip)
-            self:CreateCheckbox(content, label,
+            return self:CreateCheckbox(content, label,
                 function() return DB:General()[key] end,
                 function(v)
                     DB:General()[key] = v
@@ -65,222 +36,102 @@ Options:RegisterTab({
                 tooltip)
         end
 
-        hideRule("hideInCombat", L["Hide tracker in combat"],
+        local combat = hideRule("hideInCombat", L["Hide tracker in combat"],
             L["Hides the tracker while you are in combat and brings it back when you leave."])
-        hideRule("hideInInstances", L["Hide tracker in instances"],
+        combat:SetPoint("TOPLEFT", lock, "BOTTOMLEFT", 0, -2)
+
+        local inst = hideRule("hideInInstances", L["Hide tracker in instances"],
             L["Raids, dungeons, delves."])
-        hideRule("hideOnMapOpen", L["Hide tracker when world map is open"],
+        inst:SetPoint("TOPLEFT", combat, "BOTTOMLEFT", 0, -2)
+
+        local mapHide = hideRule("hideOnMapOpen", L["Hide tracker when world map is open"],
             L["Hides the tracker while the world map is up, so it does not sit over the map."])
+        mapHide:SetPoint("TOPLEFT", inst, "BOTTOMLEFT", 0, -2)
+
+        local prev = mapHide
         -- No Mythic+ API on this client, so the toggle could never fire
         if ns.Has.MythicPlus then
-            hideRule("hideInMythicPlus", L["Hide tracker in Mythic+"],
+            local mplus = hideRule("hideInMythicPlus", L["Hide tracker in Mythic+"],
                 L["Hides the tracker during an active Mythic+ run, then brings it back when the run ends."])
+            mplus:SetPoint("TOPLEFT", mapHide, "BOTTOMLEFT", 0, -2)
+            prev = mplus
         end
 
-        self:CreateCheckbox(content, L["Auto-track accepted quests"],
+        local autoTrack = self:CreateCheckbox(content, L["Auto-track accepted quests"],
             function() return DB:General().autoTrackAccepted ~= false end,
             function(v) DB:General().autoTrackAccepted = v end,
             L["Matches Blizzard's default."])
+        autoTrack:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -2)
 
-        self:CreateCheckbox(content, L["Show Options icon on the tracker"],
-            function() return DB:Tracker().showOptionsIcon ~= false end,
+        local restore = self:CreateCheckbox(content, L["Keep focused quest after relog"],
+            function() return DB:General().restoreSuperTrackOnLogin ~= false end,
+            function(v) DB:General().restoreSuperTrackOnLogin = v end,
+            L["Restores the waypoint arrow."])
+        restore:SetPoint("TOPLEFT", autoTrack, "BOTTOMLEFT", 0, -2)
+
+        local owScale = self:CreateSlider(content, L["Options Window Scale"], 0.7, 1.4, 0.05,
+            function() return (DB:Global() and DB:Global().optionsWindowScale) or 1.0 end,
             function(v)
-                DB:Tracker().showOptionsIcon = v
-                ns:GetModule("Tracker"):ApplyHeaderIcons()
+                local g = DB:Global()
+                if g and type(v) == "number" and v > 0 then g.optionsWindowScale = v end
             end,
-            L["A small cogwheel at the top-right of the tracker that opens the options panel."])
+            L["Resizes this EQ Objective Tracker options window only. It does not change the quest tracker or anything shown in the game world. The new size applies when you let go of the slider."])
+        owScale:SetPoint("TOPLEFT", restore, "BOTTOMLEFT", 0, -18)
+        -- The slider sits inside the window it scales, so applying mid-drag fights the drag
+        -- and snaps to the ends.
+        if owScale.slider then
+            owScale.slider:HookScript("OnMouseUp", function() Options:ApplyWindowScale() end)
+        end
 
-        self:CreateCheckbox(content, L["Split quest click"],
-            function() return DB:Tracker().splitQuestClick end,
-            function(v) DB:Tracker().splitQuestClick = v end,
-            L["Click the icon to focus, click the title to open the quest log."])
+        -- EQOT-only, approved: EQ has no equivalent anywhere in its Options. Grouped with
+        -- Reset all settings at the foot of the column rather than breaking the checkbox run.
+        local resetPos = self:CreateButton(content, L["Reset position and size"], 160, function()
+            ns:GetModule("Tracker"):ResetPosition()
+        end, L["Returns the tracker to its default position and size."])
+        resetPos:SetSize(160, 24)
+        resetPos:SetPoint("TOPLEFT", owScale, "BOTTOMLEFT", 0, -16)
 
-        self:CreateHeading(content, L["What to show"])
-
-        self:CreateCheckbox(content, L["Only show tracked quests"],
-            function() return DB:Tracker().showOnlyWatched end,
-            function(v) DB:Tracker().showOnlyWatched = v end,
-            L["Hide quests you have not clicked to track in the quest log. Turn this off to see your whole log."])
-
-        self:CreateCheckbox(content, L["Show count beside section headers"],
-            function() return DB:Tracker().showQuestTotal ~= false end,
-            function(v) DB:Tracker().showQuestTotal = v end,
-            L["Show visible out of total, for example 13/22, instead of just the visible count."])
-
-        self:CreateCheckbox(content, L["Show usable quest item buttons"],
-            function() return DB:Tracker().showItemButtons ~= false end,
-            function(v)
-                DB:Tracker().showItemButtons = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["Puts a button on the tracker row of any quest that carries a usable item, so you can use it without opening your bags."])
-
-        self:CreateCheckbox(content, L["Show Quest Discovered popups"],
-            function() return DB:Tracker().showQuestPopups ~= false end,
-            function(v) DB:Tracker().showQuestPopups = v end,
-            L["Boxes for newly discovered / completed quests."])
-
-        self:CreateHeading(content, L["Objective text"])
-
-        self:CreateCheckbox(content, L["Simplify objectives"],
-            function() return DB:Tracker().simplifyMode end,
-            function(v)
-                DB:Tracker().simplifyMode = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["Show only the first unfinished objective on each entry instead of the full list."])
-
-        -- Stored per section behind the scenes, but only the achievements toggle is
-        -- exposed - that is the one Everything Quests has, under the same label.
-        self:CreateCheckbox(content, L["Simplify tracked achievements"],
-            function()
-                local t = DB:Tracker()
-                return (t.simplifyGroups and t.simplifyGroups.achievements) and true or false
-            end,
-            function(v)
-                local t = DB:Tracker()
-                t.simplifyGroups = t.simplifyGroups or {}
-                t.simplifyGroups.achievements = v or nil
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["Show only incomplete criteria for tracked achievements."])
-
-        self:CreateCheckbox(content, L["Show zone under title"],
-            function() return DB:Tracker().showZoneTag end,
-            function(v)
-                DB:Tracker().showZoneTag = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["Adds the quest log grouping under each title. Note this is the log heading, which is often a category such as Dungeon rather than a zone."])
-
-        self:CreateCheckbox(content, L["Show objective numbers"],
-            function() return DB:Tracker().showObjectiveNumbers ~= false end,
-            function(v)
-                DB:Tracker().showObjectiveNumbers = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["Keep the leading count, for example 3/10, at the start of each objective."])
-
-        self:CreateCheckbox(content, L["Show quest level prefix"],
-            function() return DB:Tracker().showLevelInTracker end,
-            function(v)
-                DB:Tracker().showLevelInTracker = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["For example, [60] Title."])
-
-        self:CreateCheckbox(content, L["Show quest ID"],
-            function() return DB:Tracker().showQuestID end,
-            function(v)
-                DB:Tracker().showQuestID = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["Useful for bug reports."])
-
-        self:CreateCheckbox(content, L["Show NEW tag on recently accepted quests"],
-            function() return DB:Tracker().showRecentlyAddedTag ~= false end,
-            function(v)
-                DB:Tracker().showRecentlyAddedTag = v
-                ns:GetModule("Row"):Invalidate()
-            end,
-            L["For about an hour after accepting."])
-
-
-        self:CreateHeading(content, L["Quest Sound"])
-
-        self:CreateCheckbox(content, L["Quest Sound"],
-            function() return DB:Tracker().questSoundEnabled ~= false end,
-            function(v) DB:Tracker().questSoundEnabled = v end,
-            L["Plays when a quest is ready to turn in."])
-
-        self:CreateDropdown(content, L["Quest Complete Sound"],
-            function() return (ns:GetModule("Media"):GetSoundList()) end,
-            function() return ns:GetModule("Media"):GetSoundLabel(DB:Tracker().questCompleteSound) end,
-            function(label)
-                local Media = ns:GetModule("Media")
-                local _, values = Media:GetSoundList()
-                local value = values[label] or "NONE"
-                DB:Tracker().questCompleteSound = value
-                local file = Media:GetSoundFile(value)
-                if file and PlaySoundFile then PlaySoundFile(file, "Master") end
-            end,
-            L["Which sound plays when a quest becomes ready to turn in."])
-
-        self:CreateHeading(content, L["Zone Progress Bar"])
-
-        self:CreateCheckbox(content, L["Show zone progress bar"],
-            function() return DB:Tracker().showZoneProgressBar end,
-            function(v) ns:GetModule("ZoneProgressBar"):SetEnabled(v) end,
-            L["Approximate questline progress."])
-
-        self:CreateCheckbox(content, L["Float as a movable bar"],
-            function()
-                return (DB:Tracker().zoneProgressLocation or "floating") == "floating"
-            end,
-            function(v)
-                ns:GetModule("ZoneProgressBar"):SetLocation(v and "floating" or "tracker")
-            end,
-            L["Drag to move; right-click to lock or reset."])
-
-        -- Gated so the controls are absent rather than dead on a flavor with no bonus steps
-        if ns.Has.ScenarioBonus then
-            self:CreateHeading(content, L["Scenario Bonus Objectives"])
-
-            self:CreateCheckbox(content, L["Show bonus objectives HUD"],
-                function()
-                    local st = DB:Tracker().scenarioBonusHUD
-                    return st and st.enabled
+        local resetAll = self:CreateButton(content, L["Reset all settings"], 160, function()
+            local Dialog = ns:GetModule("Dialog")
+            if not Dialog then return end
+            Dialog:Show({
+                title    = "EQ Objective Tracker",
+                text     = L["Reset every EQ Objective Tracker setting to defaults?"],
+                button1  = L["Reset"],
+                button2  = L["Cancel"],
+                onAccept = function()
+                    -- Covers all three AceDB scopes. schemaVersion is deliberately left
+                    -- alone - it is migration state, not a setting, and clearing it would
+                    -- re-run every conversion.
+                    DB:ResetAll()
+                    -- Resetting the stored geometry does not resize the frame already on
+                    -- screen, and the reload rebuilds from config rather than from the
+                    -- frame - so put the live one back too rather than leaving the two
+                    -- disagreeing across the reload.
+                    ns:GetModule("Tracker"):ResetPosition()
+                    ReloadUI()
                 end,
-                function(v) ns:GetModule("ScenarioBonusHUD"):SetEnabled(v) end,
-                L["Shows a small movable checklist of the extra bonus objectives that appear during some scenarios and delves, so you do not miss their rewards. Drag to move, right-click to lock or reset. Off by default."])
+            })
+        end, L["Restores every setting on every tab to its default. Only the active profile is affected."])
+        resetAll:SetSize(160, 24)
+        resetAll:SetPoint("TOPLEFT", resetPos, "BOTTOMLEFT", 0, -10)
 
-            self:CreateSlider(content, L["HUD Scale"], 0.5, 2.0, 0.05,
-                function()
-                    local st = DB:Tracker().scenarioBonusHUD
-                    return (st and st.scale) or 1.0
-                end,
-                function(v) ns:GetModule("ScenarioBonusHUD"):SetScale(v) end,
-                L["Sizes the bonus objectives HUD."])
-        end
+        local profilesHeader = self:CreateHeading(content, L["Profiles"])
+        profilesHeader:SetPoint("TOPLEFT", h, "TOPLEFT", COLUMN_X, 0)
+        self:AttachTooltip(profilesHeader, L["Profiles"],
+            L["Switching profiles reloads the UI. Profiles are shared across characters; use them to keep different setups (e.g. raid vs solo). |cffEBB706New Profile|r prompts for a name and creates it on the spot."])
 
-        self:CreateHeading(content, L["Sorting"])
-
-        local sortBtn
-        local function sortLabel()
-            local mode = DB:Tracker().sortMode or "zone"
-            return L["Sort: %s"]:format(SORT_LABEL[mode] or SORT_LABEL.zone)
-        end
-        local function sortDesc()
-            return SORT_DESC[DB:Tracker().sortMode or "zone"] or ""
-        end
-        sortBtn = self:CreateButton(content, sortLabel(), 190, function()
-            local cur, idx = DB:Tracker().sortMode or "zone", 1
-            for n = 1, #SORT_ORDER do if SORT_ORDER[n] == cur then idx = n break end end
-            DB:Tracker().sortMode = SORT_ORDER[(idx % #SORT_ORDER) + 1]
-            sortBtn:SetText(sortLabel())
-            ns:GetModule("Tracker"):Render()
-        end, L["Click to cycle. Sorting applies within each section."])
-
-        local desc = self:CreateLabel(content, "", 0.6, 0.6, 0.6)
-        desc:SetText(sortDesc())
-
-        sortBtn:HookScript("OnClick", function()
-            desc:SetText(sortDesc())
-        end)
-
-        self:CreateHeading(content, L["Profiles"])
-
-        -- CreateDropdown takes a flat list of strings and hands the picked string straight
-        -- to the setter. EQ's dropdown takes {value=, label=} pairs - do not copy that shape.
         local function profileList()
-            local out = {}
-            if not (DB.db and DB.db.GetProfiles) then return out end
+            local names = {}
+            if not (DB.db and DB.db.GetProfiles) then return names end
             for _, name in ipairs(DB.db:GetProfiles()) do
-                out[#out + 1] = name
+                names[#names + 1] = name
             end
             -- AceDB builds that list with pairs(), so its order is arbitrary and can differ
-            -- between sessions with nothing having changed. EQ leaves it unsorted.
-            table.sort(out)
+            -- between sessions with nothing having changed.
+            table.sort(names)
+            local out = {}
+            for _, name in ipairs(names) do out[#out + 1] = { value = name, label = name } end
             return out
         end
 
@@ -314,10 +165,11 @@ Options:RegisterTab({
             ReloadUI()
         end
 
-        self:CreateDropdown(content, L["Active profile"], profileList, currentProfile, setProfile,
-            L["Switching profiles reloads the UI. Profiles are shared across characters, so use them to keep different setups such as raid and solo."])
+        local profDD = self:CreateDropdown(content, L["Active profile"],
+            profileList, currentProfile, setProfile)
+        profDD:SetPoint("TOPLEFT", profilesHeader, "BOTTOMLEFT", 0, -16)
 
-        self:CreateButton(content, L["New Profile"], 190, function()
+        local newProfile = self:CreateButton(content, L["New Profile"], 120, function()
             local Dialog = ns:GetModule("Dialog")
             if not Dialog then return end
             Dialog:Show({
@@ -344,20 +196,7 @@ Options:RegisterTab({
                 end,
             })
         end, L["Prompts for a name, then creates a profile holding a copy of your current settings and switches to it."])
-
-        self:CreateButton(content, L["Reset all settings"], 190, function()
-            local Dialog = ns:GetModule("Dialog")
-            if not Dialog then return end
-            Dialog:Show({
-                title    = "EQ Objective Tracker",
-                text     = L["Reset every EQ Objective Tracker setting to defaults?"],
-                button1  = L["Reset"],
-                button2  = L["Cancel"],
-                onAccept = function()
-                    if DB.db and DB.db.ResetProfile then DB.db:ResetProfile() end
-                    ReloadUI()
-                end,
-            })
-        end, L["Restores every setting on every tab to its default. Only the active profile is affected."])
+        newProfile:SetSize(120, 22)
+        newProfile:SetPoint("LEFT", profDD.button, "RIGHT", 6, 0)
     end,
 })

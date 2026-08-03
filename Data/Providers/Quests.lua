@@ -137,6 +137,9 @@ local function fillTags(e, id, info)
     wipe(tags)
     if isWorldQuest(id) then tags.worldquest = true end
     if isCampaign(id, info) then tags.campaign = true end
+    -- Kept as the raw enum as well as a tag, because the type sort orders by it
+    -- directly - weekly above daily above normal - rather than by tag presence.
+    e.frequency = (info and info.frequency) or 0
     if info then
         if info.frequency == DAILY_FREQ  then tags.daily  = true end
         if info.frequency == WEEKLY_FREQ then tags.weekly = true end

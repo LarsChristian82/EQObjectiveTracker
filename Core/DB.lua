@@ -162,9 +162,60 @@ DB.defaults = {
         trackedWorldQuests = {},
     },
     global = {
-        schemaVersion = 1,
+        schemaVersion       = 1,
+        optionsWindowScale  = 1.0,
     },
 }
+
+local APPEARANCE_KEYS = {
+    "font", "fontSize", "fontOutline", "titleSizeDelta",
+    "textShadow", "textShadowColor", "textShadowStrength",
+    "scenarioTextShadow", "scenarioTextShadowColor", "scenarioTextShadowStrength",
+    "scenarioTextAlign", "scenarioTextSizeDelta", "scenarioFontSize",
+    "colorByDifficulty", "titleColorOverride", "overrideCompleteGreen", "headerColor",
+    "headerDividerColor", "headerSizeDelta",
+    "titleColorUseClass", "headerColorUseClass",
+    "headerBar", "headerBarColor", "headerBarHeight", "headerBarStyle",
+    "headerBarSoftEdges", "headerBarSoftEdgeStrength",
+    "blockSpacing", "lineSpacing", "headerSpacing", "scale",
+    "blockLayout", "cardColor", "cardBorderColor", "cardBorderSize", "cardPadding",
+    "cardTintByType", "cardTintCampaign", "cardTintLegendary", "cardTintDungeon", "cardTintRaid",
+    "showBackground", "backgroundColor", "showBorder", "borderColor", "borderSize",
+    "scrollBarBg", "scrollBarBgColor", "hideScrollBar", "skinScrollBar",
+    "scrollBarThumbColor", "scrollBarThumbWidth", "hideScrollArrows",
+}
+
+-- Clearing a key lets AceDB re-apply its default. Behaviour keys and the zone bar's saved
+-- position are left alone by design, so this resets how the tracker looks and nothing else.
+function DB:ResetTrackerAppearance()
+    local prof = self:Tracker()
+    if not prof then return end
+    for _, k in ipairs(APPEARANCE_KEYS) do prof[k] = nil end
+    local zb = prof.zoneProgressBar
+    if zb then
+        zb.showBackground, zb.showBorder, zb.scale = nil, nil, nil
+        zb.borderColor, zb.headerColor, zb.countColor, zb.font = nil, nil, nil, nil
+        zb.barTexture, zb.barColor = nil, nil
+    end
+end
+
+-- ResetProfile only clears the profile scope, so on its own it leaves the per-character
+-- display state and the one global key behind - both of which a user reads as "a setting".
+-- trackedWorldQuests is deliberately spared: it mirrors the player's own manual world quest
+-- watches, so clearing it untracks their quests rather than restoring a default.
+function DB:ResetAll()
+    if not self.db then return end
+    if self.db.ResetProfile then self.db:ResetProfile() end
+
+    local g = self.db.global
+    if g then g.optionsWindowScale = self.defaults.global.optionsWindowScale end
+
+    local c = self.db.char
+    if c then
+        c.sectionsCollapsed = {}
+        c.hidden            = {}
+    end
+end
 
 function DB:OnInitialize()
     -- The saved variable global exists only once this addon has written one, so its absence
@@ -194,4 +245,8 @@ end
 
 function DB:Char()
     return self.db and self.db.char
+end
+
+function DB:Global()
+    return self.db and self.db.global
 end

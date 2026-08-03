@@ -99,6 +99,12 @@ local function eqProfile()
     return (name and sv.profiles[name]) or sv.profiles["Default"]
 end
 
+local function eqGlobal()
+    local sv = _G.EverythingQuestsDB
+    if type(sv) ~= "table" or type(sv.global) ~= "table" then return nil end
+    return sv.global
+end
+
 -- EQ SetPoints these offsets raw and only then scales the frame, so what it stores lives in
 -- the frame's own scaled space. EQOT stores UIParent units, so multiply through on the way in.
 local function importFrame(dst, src)
@@ -187,6 +193,14 @@ function Migrate:ImportFromEQ(db)
             local k = GENERAL_KEYS[i]
             if sg[k] ~= nil then g[k] = copyValue(sg[k]); n = n + 1 end
         end
+    end
+
+    -- The only global-scope key the two addons share. Both windows are 1020x720 and both
+    -- sliders run 0.7-1.4, so an imported value is always representable.
+    local sgl = eqGlobal()
+    if db.global and sgl and type(sgl.optionsWindowScale) == "number" then
+        db.global.optionsWindowScale = sgl.optionsWindowScale
+        n = n + 1
     end
 
     if db.global then db.global.eqConfigImported = true end

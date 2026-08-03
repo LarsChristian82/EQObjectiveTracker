@@ -2,9 +2,9 @@
 ## Title: EQ Objective Tracker
 ## Notes: Standalone replacement for the default objective tracker.
 ## Author: Wheelbarrel00
-## Version: 0.7.1
+## Version: 1.0.0
 ## SavedVariables: EQObjectiveTrackerDB
-## X-Curse-Project-ID:
+## X-Curse-Project-ID: 1637002
 ## X-Website: https://github.com/wheelbarrel00/EQObjectiveTracker
 ## Category: Quests & Leveling
 
@@ -78,7 +78,7 @@ UI\Dialog.lua
 # Options. Frame.lua defines RegisterTab and must load before any Tab file.
 Options\Frame.lua
 Options\TabGeneral.lua
-Options\TabSections.lua
+Options\TabTracker.lua
 Options\TabAppearance.lua
 Options\TabAbout.lua
 

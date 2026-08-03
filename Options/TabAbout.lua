@@ -14,33 +14,57 @@ local COMMANDS = {
     { "/eqot debug",    L["Toggle entry validation warnings"] },
 }
 
+-- A tab-local cursor, the way EQ's own About tab does it. This is the one tab that wants
+-- stacking - its provider run is as long as the flavor's TOC made it - and a cursor that
+-- lives here costs less than a layout engine shared by three tabs that never use it.
+local LEFT, WRAP = 8, 900
+
 Options:RegisterTab({
     id    = "about",
     title = L["About"],
     order = 90,
     build = function(self, content)
-        self:CreateHeading(content, "EQ Objective Tracker")
-        self:CreateLabel(content,
-            L["Version %s"]:format(ns.VERSION) .. " " .. L["by Wheelbarrel00"])
-        self:CreateLabel(content,
-            L["A standalone replacement for the default objective tracker. It does not require Everything Quests, and never will."],
-            0.6, 0.6, 0.6)
+        local y = -8
 
-        self:CreateHeading(content, L["Commands"])
-        for i = 1, #COMMANDS do
-            self:CreateLabel(content,
-                ("|cffEBB706%s|r  %s"):format(COMMANDS[i][1], COMMANDS[i][2]))
+        local function heading(text)
+            local fs = self:CreateHeading(content, text)
+            fs:SetPoint("TOPLEFT", content, "TOPLEFT", LEFT, y)
+            y = y - math.max(18, fs:GetStringHeight() or 18) - 10
+            return fs
         end
 
-        self:CreateHeading(content, L["Content providers"])
-        self:CreateLabel(content,
-            L["Providers are gated at load time by which TOC file your game flavor used. A provider that is not listed was never loaded."],
+        -- Width and wrap set before the text, so GetStringHeight reports the wrapped
+        -- height. The old shared CreateLabel set neither and overflowed the content frame.
+        local function label(text, r, g, b)
+            local fs = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            fs:SetPoint("TOPLEFT", content, "TOPLEFT", LEFT, y)
+            fs:SetWidth(WRAP)
+            fs:SetJustifyH("LEFT")
+            fs:SetWordWrap(true)
+            fs:SetTextColor(r or 0.8, g or 0.8, b or 0.8)
+            fs:SetText(text)
+            y = y - math.max(12, fs:GetStringHeight() or 12) - 4
+            return fs
+        end
+
+        heading("EQ Objective Tracker")
+        label(L["Version %s"]:format(ns.VERSION) .. " " .. L["by Wheelbarrel00"])
+        label(L["A standalone replacement for the default objective tracker. It does not require Everything Quests, and never will."],
+            0.6, 0.6, 0.6)
+
+        heading(L["Commands"])
+        for i = 1, #COMMANDS do
+            label(("|cffEBB706%s|r  %s"):format(COMMANDS[i][1], COMMANDS[i][2]))
+        end
+
+        heading(L["Content providers"])
+        label(L["Providers are gated at load time by which TOC file your game flavor used. A provider that is not listed was never loaded."],
             0.6, 0.6, 0.6)
 
         content._providerLines = {}
         local Registry = ns:GetModule("Registry")
         for _, p in ipairs(Registry:Active()) do
-            content._providerLines[p.id] = self:CreateLabel(content, p.id)
+            content._providerLines[p.id] = label(p.id)
         end
     end,
 

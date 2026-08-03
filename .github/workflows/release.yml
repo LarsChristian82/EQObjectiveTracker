@@ -47,8 +47,11 @@ jobs:
             echo "::warning::'$TAG' is a lightweight tag - the packager will treat this as an ALPHA build. For a stable release use: git tag -a $TAG -m \"$TAG\""
           fi
 
+      # Slices the newest version section out of CHANGELOG.md for the release body.
+      # Anchored on '## [<digit>' rather than any '## ', so the Keep a Changelog
+      # '## [Unreleased]' heading is skipped instead of being taken as the release.
       - name: Build per-release changelog
-        run: awk '/^## / { if (seen) exit; seen=1 } seen' CHANGELOG.md > .release_changelog.md
+        run: awk '/^## \[[0-9]/ { if (seen) exit; seen=1 } seen' CHANGELOG.md > .release_changelog.md
 
       - name: Package and release
         uses: BigWigsMods/packager@v2

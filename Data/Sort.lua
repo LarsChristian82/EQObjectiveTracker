@@ -23,6 +23,14 @@ local function byStatus(a, b)
     return byTitle(a, b)
 end
 
+-- Descending, so weekly sorts above daily above normal. Only the Quests provider emits
+-- frequency, so every other group shares the 0 fallback and drops through to byTitle.
+local function byType(a, b)
+    local fa, fb = a.frequency or 0, b.frequency or 0
+    if fa ~= fb then return fa > fb end
+    return byTitle(a, b)
+end
+
 local function byLevel(a, b)
     local la, lb = a.level or 0, b.level or 0
     if la ~= lb then return la < lb end
@@ -71,6 +79,7 @@ local MODES = {
     zone     = byZone,
     title    = byTitle,
     status   = byStatus,
+    type     = byType,
     level    = byLevel,
     recent   = byRecent,
     manual   = byManual,

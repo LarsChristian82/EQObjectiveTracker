@@ -6,9 +6,24 @@ package-as: EQObjectiveTracker
 # junction would fail to load in-game. Vendoring is what makes the zero-build-step
 # workflow real. Update the six Ace3 files by hand when needed.
 
+# Declared by hand because both of the packager's auto-credit routes are absent here -
+# there are no externals to mark, and the vendored files carry no
+# '@curseforge-project-slug:' annotation. Adds nothing to the zip, relations only.
+embedded-libraries:
+  - libstub
+  - callbackhandler
+  - ace3
+  - libsharedmedia-3-0
+
 ignore:
   - .github
   - .luacheckrc
   - docs
+  - .release_changelog.md
 
-manual-changelog: CHANGELOG.md
+# The per-release slice built by the workflow, not the whole file. CurseForge shows
+# this on every file page, so pointing it at CHANGELOG.md would present the entire
+# project history as the newest release's notes.
+manual-changelog:
+  filename: .release_changelog.md
+  markup-type: markdown

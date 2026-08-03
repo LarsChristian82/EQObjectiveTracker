@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-03
+
+Out of beta. The options panel has been rebuilt to match Everything Quests control for
+control, so moving between the two addons no longer means learning a second layout.
+
+### Improvements
+
+- The options window is rebuilt throughout: wider, laid out in two columns, and restyled to
+  match Everything Quests. Dropdowns, buttons, sliders, colour swatches and section headers
+  all follow the same look now.
+- Sort order is a row of buttons instead of a button you had to click through to find the
+  mode you wanted. All eight modes are visible at once.
+- Section order uses arrows, and section visibility is a plain checkbox list, so reordering
+  and hiding are no longer tangled together in one row.
+- The Sections tab is gone. Everything on it now lives on a new Tracker tab, alongside the
+  tracker settings that used to be spread across General. The tabs are General, Tracker,
+  Appearance and About.
+- Quest sorting by type is available, ordering weekly above daily above normal.
+- Font outline offers the three monochrome options as well, for six in total.
+- A new Options Window Scale slider resizes the options window itself.
+- Wording throughout the panel now matches Everything Quests, which also means far more of
+  it arrives already translated. French and Russian cover 72% of the addon's phrases and
+  Korean 66%, up from 44%.
+- Many controls gained explanations on hover, and existing ones were reworded to match.
+
+### Bug Fixes
+
+- Reset all settings now genuinely resets everything. The tracker's size and position, any
+  collapsed or hidden sections, and the options window scale all return to their defaults;
+  previously they survived the reset. Your tracked world quests are deliberately left alone.
+- Sliders no longer quietly rewrite a saved value that sits outside their range simply
+  because you opened the tab they live on.
+- Picking an option from a dropdown stores the setting itself rather than the label shown on
+  screen, so dropdowns keep working correctly in every language.
+- On-panel description text no longer overflows the window; explanations are on hover.
+
 ## [0.7.1] - 2026-08-02
 
 Fixes to the drag ghost and to how equipment slots are named, found by comparing notes with

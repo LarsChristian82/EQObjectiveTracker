@@ -1,0 +1,473 @@
+local _, ns = ...
+
+local Options = ns:GetModule("Options")
+local L       = ns.L
+
+local SORT_OPTIONS = {
+    { value = "zone",     label = L["Zone"]     },
+    { value = "title",    label = L["Title"]    },
+    { value = "status",   label = L["Status"]   },
+    { value = "type",     label = L["Type"]     },
+    { value = "level",    label = L["Level"]    },
+    { value = "distance", label = L["Distance"] },
+    { value = "recent",   label = L["Recent"]   },
+    { value = "manual",   label = L["Manual"]   },
+}
+
+-- EQ's own screen order, which is not Filter.CATEGORIES order - that one encodes match
+-- precedence and must not be reshuffled for display.
+local FILTER_ORDER = {
+    "showNormal", "showDaily", "showWeekly", "showCampaign", "showWorld", "showBonus",
+}
+
+-- EQ exposes three of these; the author kept all five plus World Quests, so the shape is
+-- EQ's flat run and only the row count differs.
+local VISIBILITY_ROWS = {
+    { id = "campaign",     label = L["Campaign section"]     },
+    { id = "quests",       label = L["Quests section"]       },
+    { id = "profession",   label = L["Profession section"]   },
+    { id = "endeavors",    label = L["Endeavors section"]    },
+    { id = "achievements", label = L["Achievements section"] },
+    { id = "worldquests",  label = L["World Quests section"] },
+}
+
+local WQ_POSITIONS = {
+    { value = "top",    label = L["Top"] },
+    { value = "bottom", label = L["Bottom"] },
+}
+
+local ORDER_ROW_H = 24
+
+-- The right column is a second anchor chain rooted this far right of the first header,
+-- sharing its y. Same figure the Appearance tab uses.
+local COLUMN_X = 460
+
+local function DB() return ns:GetModule("DB"):Tracker() end
+local function render() ns:GetModule("Tracker"):Render() end
+
+local function trackerSetting(key)
+    return function() return DB()[key] end,
+           function(v) DB()[key] = v; render() end
+end
+
+-- Row memoizes on the fields in its repaint gate and returns early when they all match, so
+-- anything that changes how a row READS has to invalidate or it silently never repaints.
+local function rowSetting(key, defaultOn)
+    return function()
+               local v = DB()[key]
+               if defaultOn then return v ~= false end
+               return v
+           end,
+           function(v)
+               DB()[key] = v
+               ns:GetModule("Row"):Invalidate()
+               render()
+           end
+end
+
+local function filterSetting(key)
+    return function() return DB().filters[key] ~= false end,
+           function(v) DB().filters[key] = v; render() end
+end
+
+local function sectionLabel(id)
+    return ns:GetModule("Sections"):Title(id)
+end
+
+-- Blizzard's stock triangles, not a glyph in a panel button. The tooltip is hand-rolled
+-- rather than going through AttachTooltip because EQ titles this one white, not gold.
+local function makeOrderArrow(parent, dir)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(18, 18)
+    b:SetNormalTexture("Interface\\Buttons\\Arrow-" .. dir .. "-Up")
+    b:SetPushedTexture("Interface\\Buttons\\Arrow-" .. dir .. "-Down")
+    b:SetDisabledTexture("Interface\\Buttons\\Arrow-" .. dir .. "-Disabled")
+    local isUp = (dir == "Up")
+    b:HookScript("OnEnter", function(self)
+        local row = self:GetParent()
+        local name = (row and row.sectionID and sectionLabel(row.sectionID)) or ""
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        -- SetText arg 5 is alpha, not wrap. Pass 1 or the line renders invisible.
+        GameTooltip:SetText((isUp and L["Move %s up"] or L["Move %s down"]):format(name),
+                            1, 1, 1, 1, true)
+        GameTooltip:AddLine(L["Reorders where this section sits in the tracker. A section only shows while it has something in it, so empty sections won't visibly move."],
+                            0.82, 0.82, 0.82, true)
+        GameTooltip:Show()
+    end)
+    b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    return b
+end
+
+Options:RegisterTab({
+    id    = "tracker",
+    title = L["Tracker"],
+    order = 20,
+    build = function(self, content)
+        local Sections = ns:GetModule("Sections")
+        local Filter   = ns:GetModule("Filter")
+        local Registry = ns:GetModule("Registry")
+
+        local header = self:CreateHeading(content, L["On-Screen Tracker"])
+        header:SetPoint("TOPLEFT", 8, -8)
+        self:AttachTooltip(header, L["On-Screen Tracker"],
+            L["Changes apply immediately to the on-screen tracker."])
+
+        local watchedGet, watchedSet = trackerSetting("showOnlyWatched")
+        local watched = self:CreateCheckbox(content, L["Show only watched quests"],
+            watchedGet, watchedSet,
+            L["Matches Blizzard's default tracker."])
+        watched:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -16)
+
+        local simplify = self:CreateCheckbox(content, L["Simplify Mode"],
+            trackerSetting("simplifyMode"))
+        simplify:SetPoint("TOPLEFT", watched, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(simplify, L["Simplify Mode"],
+            L["Show only the first incomplete objective per quest."])
+
+        local achSimplify = self:CreateCheckbox(content, L["Simplify tracked achievements"],
+            function() return DB().simplifyGroups and DB().simplifyGroups.achievements end,
+            function(v)
+                DB().simplifyGroups = DB().simplifyGroups or {}
+                DB().simplifyGroups.achievements = v
+                render()
+            end,
+            L["Show only incomplete criteria for tracked achievements."])
+        achSimplify:SetPoint("TOPLEFT", simplify, "BOTTOMLEFT", 0, -2)
+
+        local manualHint, filtersHeader, sort
+        local function syncManualHint(value)
+            local manual = (value == "manual")
+            if manualHint then manualHint:SetShown(manual) end
+            if filtersHeader and sort then
+                filtersHeader:ClearAllPoints()
+                if manual and manualHint then
+                    filtersHeader:SetPoint("TOPLEFT", manualHint, "BOTTOMLEFT", 0, -10)
+                else
+                    filtersHeader:SetPoint("TOPLEFT", sort, "BOTTOMLEFT", 0, -14)
+                end
+            end
+        end
+
+        sort = self:CreateRadioGroup(content, L["Sort Order"],
+            SORT_OPTIONS,
+            function() return DB().sortMode or "zone" end,
+            function(v)
+                DB().sortMode = v
+                render()
+                syncManualHint(v)
+            end,
+            440, 14)
+        sort:SetPoint("TOPLEFT", achSimplify, "BOTTOMLEFT", 0, -12)
+
+        manualHint = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        manualHint:SetPoint("TOPLEFT", sort, "BOTTOMLEFT", 0, -2)
+        manualHint:SetWidth(440)
+        manualHint:SetJustifyH("LEFT")
+        manualHint:SetTextColor(0.92, 0.72, 0.02)
+        manualHint:SetText(L["|cffaaaaaaDrag and drop the quests in the tracker to reorder them however you like.|r"])
+
+        filtersHeader = self:CreateHeading(content, L["Filters"])
+        syncManualHint(DB().sortMode)
+
+        local byKey = {}
+        for i = 1, #Filter.CATEGORIES do
+            byKey[Filter.CATEGORIES[i].key] = Filter.CATEGORIES[i]
+        end
+
+        local prev, filterBoxes = filtersHeader, {}
+        for _, key in ipairs(FILTER_ORDER) do
+            local c = byKey[key]
+            -- No loaded provider can produce this category, so the toggle would be dead
+            if c and ((not c.tag) or Registry:HasTag(c.tag)) then
+                local get, set = filterSetting(key)
+                local cb = self:CreateCheckbox(content, c.label, get, set,
+                    L["Show or hide %s entries in the tracker."]:format(c.label:lower()))
+                cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, prev == filtersHeader and -8 or -2)
+                filterBoxes[#filterBoxes + 1] = { key = key, cb = cb }
+                prev = cb
+            end
+        end
+
+        local zoneOnly = self:CreateCheckbox(content, L["Show only quests in current zone"],
+            function() return DB().filters.onlyCurrentZone end,
+            function(v) DB().filters.onlyCurrentZone = v; render() end,
+            L["Only show entries with an objective on your current map. Entries whose provider cannot tell are always shown."])
+        zoneOnly:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -2)
+
+        local resetFilters = self:CreateButton(content, L["Reset filters to defaults"], 180,
+            function()
+                local f = DB().filters
+                f.showNormal, f.showDaily, f.showWeekly = true, true, true
+                f.showCampaign, f.showWorld, f.showBonus = true, true, true
+                f.onlyCurrentZone = false
+                DB().showOnlyWatched = true
+                -- Re-checked in place rather than by reloading the tab: these boxes only
+                -- read their getter on build and on a tab view.
+                watched:SetChecked(true)
+                zoneOnly:SetChecked(false)
+                for _, e in ipairs(filterBoxes) do
+                    e.cb:SetChecked(f[e.key] ~= false)
+                end
+                render()
+            end)
+        resetFilters:SetSize(180, 24)
+        resetFilters:SetPoint("TOPLEFT", zoneOnly, "BOTTOMLEFT", 0, -10)
+
+        local visHeader = self:CreateHeading(content, L["Tracker Visibility"])
+        visHeader:SetPoint("TOPLEFT", resetFilters, "BOTTOMLEFT", 0, -10)
+
+        local visPrev = visHeader
+        for _, row in ipairs(VISIBILITY_ROWS) do
+            local id = row.id
+            local cb = self:CreateCheckbox(content, row.label,
+                function() return not Sections:IsHidden(id) end,
+                function(v) Sections:SetHidden(id, not v); render() end,
+                L["Hide this section entirely, even when it has entries."])
+            cb:SetPoint("TOPLEFT", visPrev, "BOTTOMLEFT", 0, visPrev == visHeader and -8 or -2)
+            visPrev = cb
+        end
+
+        local autoWQ = self:CreateCheckbox(content, L["Auto-list current-zone world quests"],
+            trackerSetting("autoListZoneWorldQuests"))
+        autoWQ:SetPoint("TOPLEFT", visPrev, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(autoWQ, L["Auto-list current-zone world quests"],
+            L["Lists every WQ in your zone without tracking each."])
+
+        local wqHeightSlider
+        local function setWqHeightEnabled(on)
+            if not wqHeightSlider then return end
+            wqHeightSlider:SetAlpha(on and 1 or 0.4)
+            if wqHeightSlider.slider then
+                wqHeightSlider.slider:EnableMouse(on and true or false)
+            end
+        end
+
+        local wqhCheck = self:CreateCheckbox(content, L["Set a custom World Quests height"],
+            function() return DB().worldQuestsHeightOverride end,
+            function(v)
+                DB().worldQuestsHeightOverride = v
+                setWqHeightEnabled(v)
+                render()
+            end,
+            L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."])
+        wqhCheck:SetPoint("TOPLEFT", autoWQ, "BOTTOMLEFT", 0, -2)
+
+        wqHeightSlider = self:CreateSlider(content, L["World Quests height"], 40, 400, 10,
+            function() return DB().worldQuestsHeight or 120 end,
+            function(v) DB().worldQuestsHeight = v; render() end)
+        wqHeightSlider:SetPoint("TOPLEFT", wqhCheck, "BOTTOMLEFT", 0, -8)
+        setWqHeightEnabled(DB().worldQuestsHeightOverride)
+
+        -- EQOT-only: EQ caps the world quest area by fixed height alone. Kept because it
+        -- is backed by real tracker code, and placed with the other height controls.
+        local wqMaxSlider = self:CreateSlider(content, L["Maximum height"], 10, 80, 5,
+            function() return (DB().worldQuestsPinnedMaxFraction or 0.40) * 100 end,
+            function(v)
+                DB().worldQuestsPinnedMaxFraction = v / 100
+                render()
+            end,
+            L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation."])
+        wqMaxSlider:SetPoint("TOPLEFT", wqHeightSlider, "BOTTOMLEFT", 0, -14)
+
+        local orderHeader = self:CreateHeading(content, L["Section Order"])
+        orderHeader:SetPoint("TOPLEFT", wqMaxSlider, "BOTTOMLEFT", 0, -18)
+        self:AttachTooltip(orderHeader, L["Section Order"],
+            L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom \226\128\148 use the Top/Bottom control."])
+
+        local wqPos = self:CreateRadioGroup(content, L["World Quests position"],
+            WQ_POSITIONS,
+            function() return DB().worldQuestsPosition or "bottom" end,
+            function(v) ns:GetModule("Tracker"):SetWorldQuestsPosition(v) end,
+            300, 14,
+            L["World Quests position"],
+            L["Where the World Quests panel sits on the tracker. |cffffffffTop|r puts it above your quests; |cffffffffBottom|r keeps it below your quests (the default). World Quests scroll in their own capped panel, which is why they can't be mixed in between the other sections."])
+        wqPos:SetPoint("TOPLEFT", orderHeader, "BOTTOMLEFT", 0, -8)
+
+        local orderList = CreateFrame("Frame", nil, content)
+        orderList:SetPoint("TOPLEFT", wqPos, "BOTTOMLEFT", 0, -8)
+        orderList:SetSize(300, ORDER_ROW_H)
+
+        local orderRows = {}
+        local function renderOrderRows()
+            local order = Sections:Order()
+            for _, r in ipairs(orderRows) do r:Hide() end
+            for i, id in ipairs(order) do
+                local row = orderRows[i]
+                if not row then
+                    row = CreateFrame("Frame", nil, orderList)
+                    row:SetHeight(ORDER_ROW_H)
+                    row.up = makeOrderArrow(row, "Up")
+                    row.up:SetPoint("LEFT", 0, 0)
+                    row.down = makeOrderArrow(row, "Down")
+                    row.down:SetPoint("LEFT", row.up, "RIGHT", 3, 0)
+                    row.label = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                    row.label:SetPoint("LEFT", row.down, "RIGHT", 8, 0)
+                    row.label:SetTextColor(1, 1, 1)
+                    orderRows[i] = row
+                end
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT",  orderList, "TOPLEFT",  0, -(i - 1) * ORDER_ROW_H)
+                row:SetPoint("TOPRIGHT", orderList, "TOPRIGHT", 0, -(i - 1) * ORDER_ROW_H)
+                row.sectionID = id
+                row.label:SetText(sectionLabel(id))
+                row.up:SetEnabled(i > 1)
+                row.down:SetEnabled(i < #order)
+                row.up:SetScript("OnClick", function()
+                    Sections:Move(id, -1)
+                    render()
+                    renderOrderRows()
+                end)
+                row.down:SetScript("OnClick", function()
+                    Sections:Move(id, 1)
+                    render()
+                    renderOrderRows()
+                end)
+                row:Show()
+            end
+            orderList:SetHeight(math.max(1, #order * ORDER_ROW_H))
+        end
+        renderOrderRows()
+
+        local optionsHeader = self:CreateHeading(content, L["Options"])
+        optionsHeader:SetPoint("TOPLEFT", header, "TOPLEFT", COLUMN_X, 0)
+
+        local diff = self:CreateCheckbox(content, L["Quest Title Color By Difficulty"],
+            rowSetting("colorByDifficulty", true))
+        diff:SetPoint("TOPLEFT", optionsHeader, "BOTTOMLEFT", 0, -10)
+
+        local lvl = self:CreateCheckbox(content, L["Show quest level prefix"],
+            rowSetting("showLevelInTracker"))
+        lvl:SetPoint("TOPLEFT", diff, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(lvl, L["Show quest level prefix"], L["For example, [60] Title."])
+
+        local zoneCheck = self:CreateCheckbox(content, L["Show zone label under quest titles"],
+            rowSetting("showZoneTag"))
+        zoneCheck:SetPoint("TOPLEFT", lvl, "BOTTOMLEFT", 0, -2)
+
+        local objCheck = self:CreateCheckbox(content, L["Show objective progress numbers"],
+            rowSetting("showObjectiveNumbers", true))
+        objCheck:SetPoint("TOPLEFT", zoneCheck, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(objCheck, L["Show objective progress numbers"],
+            L["For example, 0/4, 1/1, etc."])
+
+        local qidCheck = self:CreateCheckbox(content, L["Show quest ID"],
+            rowSetting("showQuestID"))
+        qidCheck:SetPoint("TOPLEFT", objCheck, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(qidCheck, L["Show quest ID"], L["Useful for bug reports."])
+
+        local qtotalCheck = self:CreateCheckbox(content,
+            L["Show tracked / total on the Quests & Campaign headers"],
+            function() return DB().showQuestTotal ~= false end,
+            function(v) DB().showQuestTotal = v; render() end,
+            L["For example, 3/9."])
+        qtotalCheck:SetPoint("TOPLEFT", qidCheck, "BOTTOMLEFT", 0, -2)
+
+        local itemBtnCheck = self:CreateCheckbox(content, L["Show usable quest item buttons"],
+            rowSetting("showItemButtons", true))
+        itemBtnCheck:SetPoint("TOPLEFT", qtotalCheck, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(itemBtnCheck, L["Show usable quest item buttons"],
+            L["Puts a button on the tracker row of any quest that carries a usable item, so you can use it without opening your bags."])
+
+        local optIconCheck = self:CreateCheckbox(content, L["Show Options icon on the tracker"],
+            function() return DB().showOptionsIcon ~= false end,
+            function(v)
+                DB().showOptionsIcon = v
+                ns:GetModule("Tracker"):ApplyHeaderIcons()
+            end,
+            L["A small cogwheel at the top-right of the tracker that opens the options panel."])
+        optIconCheck:SetPoint("TOPLEFT", itemBtnCheck, "BOTTOMLEFT", 0, -2)
+
+        -- EQ has Show Chain Guide icon between these two. Deliberately not ported: it opens
+        -- EQ's Chain Guide, which EQOT does not have.
+        local hideBarCheck = self:CreateCheckbox(content, L["Hide scroll bar"],
+            trackerSetting("hideScrollBar"))
+        hideBarCheck:SetPoint("TOPLEFT", optIconCheck, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(hideBarCheck, L["Hide scroll bar"],
+            L["Scroll with the mouse wheel instead."])
+
+        local popupCheck = self:CreateCheckbox(content, L["Show Quest Discovered popups"],
+            function() return DB().showQuestPopups ~= false end,
+            function(v) DB().showQuestPopups = v; render() end,
+            L["Boxes for newly discovered / completed quests."])
+        popupCheck:SetPoint("TOPLEFT", hideBarCheck, "BOTTOMLEFT", 0, -2)
+
+        local newTagCheck = self:CreateCheckbox(content,
+            L["Show NEW tag on recently accepted quests"],
+            rowSetting("showRecentlyAddedTag", true))
+        newTagCheck:SetPoint("TOPLEFT", popupCheck, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(newTagCheck, L["Show NEW tag on recently accepted quests"],
+            L["For about an hour after accepting."])
+
+        local splitCheck = self:CreateCheckbox(content, L["Split quest click"],
+            trackerSetting("splitQuestClick"))
+        splitCheck:SetPoint("TOPLEFT", newTagCheck, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(splitCheck, L["Split quest click"],
+            L["Click the icon to focus, click the title to open the quest log."])
+
+        local soundCheck = self:CreateCheckbox(content, L["Quest Sound"],
+            function() return DB().questSoundEnabled ~= false end,
+            function(v) DB().questSoundEnabled = v end,
+            L["Plays when a quest is ready to turn in."])
+        soundCheck:SetPoint("TOPLEFT", splitCheck, "BOTTOMLEFT", 0, -8)
+
+        local function playSound(value)
+            local file = ns:GetModule("Media"):GetSoundFile(value)
+            if file and PlaySoundFile then PlaySoundFile(file, "Master") end
+        end
+        local soundDD = self:CreateDropdown(content, L["Quest Complete Sound"],
+            function()
+                local labels, values = ns:GetModule("Media"):GetSoundList()
+                local out = {}
+                for _, name in ipairs(labels) do
+                    out[#out + 1] = { value = values[name] or "NONE", label = name }
+                end
+                return out
+            end,
+            function() return DB().questCompleteSound or "NONE" end,
+            function(v) DB().questCompleteSound = v; playSound(v) end,
+            L["Which sound plays when a quest becomes ready to turn in."],
+            nil, playSound)
+        soundDD:SetPoint("TOPLEFT", soundCheck, "BOTTOMLEFT", 0, -8)
+
+        local zpHeader = self:CreateHeading(content, L["Zone Progress Bar"])
+        zpHeader:SetPoint("TOPLEFT", soundDD, "BOTTOMLEFT", 0, -16)
+
+        local zpEnable = self:CreateCheckbox(content, L["Show zone progress bar"],
+            function() return DB().showZoneProgressBar end,
+            function(v) ns:GetModule("ZoneProgressBar"):SetEnabled(v) end,
+            L["Approximate questline progress."])
+        zpEnable:SetPoint("TOPLEFT", zpHeader, "BOTTOMLEFT", 0, -8)
+
+        local zpFloat = self:CreateCheckbox(content, L["Float as a movable bar"],
+            function() return (DB().zoneProgressLocation or "floating") == "floating" end,
+            function(v)
+                ns:GetModule("ZoneProgressBar"):SetLocation(v and "floating" or "tracker")
+            end,
+            L["Drag to move; right-click to lock or reset."])
+        zpFloat:SetPoint("TOPLEFT", zpEnable, "BOTTOMLEFT", 0, -2)
+
+        -- Gated so the controls are absent rather than dead on a flavor with no bonus steps
+        if ns.Has.ScenarioBonus then
+            local sbHeader = self:CreateHeading(content, L["Scenario Bonus Objectives"])
+            sbHeader:SetPoint("TOPLEFT", zpFloat, "BOTTOMLEFT", 0, -16)
+
+            local sbEnable = self:CreateCheckbox(content, L["Show bonus objectives HUD"],
+                function()
+                    local st = DB().scenarioBonusHUD
+                    return st and st.enabled
+                end,
+                function(v) ns:GetModule("ScenarioBonusHUD"):SetEnabled(v) end,
+                L["Shows a small movable checklist of the extra bonus objectives that appear during some scenarios and delves, so you do not miss their rewards. Drag to move, right-click to lock or reset. Off by default."])
+            sbEnable:SetPoint("TOPLEFT", sbHeader, "BOTTOMLEFT", 0, -8)
+
+            local sbScale = self:CreateSlider(content, L["HUD Scale"], 0.5, 2.0, 0.05,
+                function()
+                    local st = DB().scenarioBonusHUD
+                    return (st and st.scale) or 1.0
+                end,
+                function(v) ns:GetModule("ScenarioBonusHUD"):SetScale(v) end,
+                L["Sizes the bonus objectives HUD."])
+            sbScale:SetPoint("TOPLEFT", sbEnable, "BOTTOMLEFT", 0, -16)
+        end
+    end,
+})

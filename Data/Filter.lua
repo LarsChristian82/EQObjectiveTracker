@@ -9,10 +9,10 @@ local L      = ns.L
 Filter.CATEGORIES = {
     { tag = "worldquest", key = "showWorld",    label = L["World quests"]     },
     { tag = "bonus",      key = "showBonus",    label = L["Bonus Objectives"] },
-    { tag = "campaign",   key = "showCampaign", label = L["Campaign"]         },
-    { tag = "daily",      key = "showDaily",    label = L["Daily"]            },
-    { tag = "weekly",     key = "showWeekly",   label = L["Weekly"]           },
-    { tag = nil,          key = "showNormal",   label = L["Normal"]           },
+    { tag = "campaign",   key = "showCampaign", label = L["Campaign quests"]  },
+    { tag = "daily",      key = "showDaily",    label = L["Daily quests"]     },
+    { tag = "weekly",     key = "showWeekly",   label = L["Weekly quests"]    },
+    { tag = nil,          key = "showNormal",   label = L["Normal quests"]    },
 }
 
 -- Hidden is keyed by provider then entry id so two providers can never collide on a

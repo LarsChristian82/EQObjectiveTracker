@@ -54,9 +54,9 @@ In manual sort mode you can also drag quests into whatever order you like.
 The tracker can hide itself while you are in combat, inside an instance, on a Mythic+ run,
 or while the world map is open. Each is its own toggle, and all are off by default.
 
-Almost everything is configurable: fonts (41 bundled, plus anything from
+Almost everything is configurable: fonts (42 bundled, plus anything from
 LibSharedMedia), sizes, spacing, colours, a card layout, section order and visibility,
-filters by quest type, and seven sort modes including by distance and by hand.
+filters by quest type, and eight sort modes including by distance and by hand.
 
 Settings live in profiles, so you can keep separate setups and switch between them.
 Profiles are shared across all your characters.

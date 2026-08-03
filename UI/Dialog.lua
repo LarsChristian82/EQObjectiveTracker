@@ -26,7 +26,9 @@ function Dialog:_finish(accepted)
 
     local f = self.frame
     local text = (f and f.editBox:IsShown()) and f.editBox:GetText() or nil
-    if f then f:Hide() end
+    -- Hiding the frame releases the focus on its own, but only while this stays the sole
+    -- path that hides it. An edit box that kept focus would swallow Enter game-wide.
+    if f then f.editBox:ClearFocus(); f:Hide() end
 
     if accepted then
         if opts.onAccept then opts.onAccept(text) end
