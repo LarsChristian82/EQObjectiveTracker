@@ -172,7 +172,7 @@ local APPEARANCE_KEYS = {
     "textShadow", "textShadowColor", "textShadowStrength",
     "scenarioTextShadow", "scenarioTextShadowColor", "scenarioTextShadowStrength",
     "scenarioTextAlign", "scenarioTextSizeDelta", "scenarioFontSize",
-    "colorByDifficulty", "titleColorOverride", "overrideCompleteGreen", "headerColor",
+    "titleColorOverride", "overrideCompleteGreen", "headerColor",
     "headerDividerColor", "headerSizeDelta",
     "titleColorUseClass", "headerColorUseClass",
     "headerBar", "headerBarColor", "headerBarHeight", "headerBarStyle",
@@ -181,7 +181,10 @@ local APPEARANCE_KEYS = {
     "blockLayout", "cardColor", "cardBorderColor", "cardBorderSize", "cardPadding",
     "cardTintByType", "cardTintCampaign", "cardTintLegendary", "cardTintDungeon", "cardTintRaid",
     "showBackground", "backgroundColor", "showBorder", "borderColor", "borderSize",
-    "scrollBarBg", "scrollBarBgColor", "hideScrollBar", "skinScrollBar",
+    -- colorByDifficulty and hideScrollBar are deliberately absent: both controls live on
+    -- the Tracker tab, so resetting them from the Appearance button would change a tab the
+    -- user was not looking at.
+    "scrollBarBg", "scrollBarBgColor", "skinScrollBar",
     "scrollBarThumbColor", "scrollBarThumbWidth", "hideScrollArrows",
 }
 
@@ -195,7 +198,7 @@ function DB:ResetTrackerAppearance()
     if zb then
         zb.showBackground, zb.showBorder, zb.scale = nil, nil, nil
         zb.borderColor, zb.headerColor, zb.countColor, zb.font = nil, nil, nil, nil
-        zb.barTexture, zb.barColor = nil, nil
+        zb.barTexture, zb.barColor, zb.backgroundColor = nil, nil, nil
     end
 end
 

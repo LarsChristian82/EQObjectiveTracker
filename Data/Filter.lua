@@ -7,7 +7,7 @@ local L      = ns.L
 -- campaign. Adding a category is one row here plus the tag on the provider - no
 -- comparator, renderer, or branch anywhere else learns about it.
 Filter.CATEGORIES = {
-    { tag = "worldquest", key = "showWorld",    label = L["World quests"]     },
+    { tag = "worldquest", key = "showWorld",    label = L["World Quests"]     },
     { tag = "bonus",      key = "showBonus",    label = L["Bonus Objectives"] },
     { tag = "campaign",   key = "showCampaign", label = L["Campaign quests"]  },
     { tag = "daily",      key = "showDaily",    label = L["Daily quests"]     },

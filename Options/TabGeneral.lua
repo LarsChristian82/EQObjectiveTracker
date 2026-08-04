@@ -24,7 +24,7 @@ Options:RegisterTab({
                 ns:GetModule("Tracker"):ApplyLockState()
             end,
             L["Disable drag-to-move and resize."])
-        lock:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -16)
+        lock:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, self.GAP.tabHead)
 
         local function hideRule(key, label, tooltip)
             return self:CreateCheckbox(content, label,
@@ -96,7 +96,7 @@ Options:RegisterTab({
             if not Dialog then return end
             Dialog:Show({
                 title    = "EQ Objective Tracker",
-                text     = L["Reset every EQ Objective Tracker setting to defaults?"],
+                text     = L["Reset every EQ Objective Tracker setting to defaults? The interface will reload."],
                 button1  = L["Reset"],
                 button2  = L["Cancel"],
                 onAccept = function()
@@ -112,14 +112,14 @@ Options:RegisterTab({
                     ReloadUI()
                 end,
             })
-        end, L["Restores every setting on every tab to its default. Only the active profile is affected."])
+        end, L["Restores every setting on every tab to its default and reloads the interface. This also clears the Options Window Scale, which every character shares, and this character's collapsed sections and individually hidden entries."])
         resetAll:SetSize(160, 24)
         resetAll:SetPoint("TOPLEFT", resetPos, "BOTTOMLEFT", 0, -10)
 
         local profilesHeader = self:CreateHeading(content, L["Profiles"])
         profilesHeader:SetPoint("TOPLEFT", h, "TOPLEFT", COLUMN_X, 0)
         self:AttachTooltip(profilesHeader, L["Profiles"],
-            L["Switching profiles reloads the UI. Profiles are shared across characters; use them to keep different setups (e.g. raid vs solo). |cffEBB706New Profile|r prompts for a name and creates it on the spot."])
+            L["Switching profiles reloads the UI. Profiles are shared across characters. Use them to keep different setups such as raid and solo. |cffEBB706New Profile|r prompts for a name and creates it on the spot."])
 
         local function profileList()
             local names = {}
@@ -166,22 +166,29 @@ Options:RegisterTab({
         end
 
         local profDD = self:CreateDropdown(content, L["Active profile"],
-            profileList, currentProfile, setProfile)
-        profDD:SetPoint("TOPLEFT", profilesHeader, "BOTTOMLEFT", 0, -16)
+            profileList, currentProfile, setProfile,
+            L["Switches to another saved settings profile. The interface reloads immediately when you pick one."])
+        profDD:SetPoint("TOPLEFT", profilesHeader, "BOTTOMLEFT", 0, self.GAP.tabHead)
 
-        local newProfile = self:CreateButton(content, L["New Profile"], 120, function()
+        -- Re-entrant on purpose. Dialog:_finish clears its own opts before calling onAccept,
+        -- so re-showing from inside the handler is safe.
+        local promptForName
+        promptForName = function(seed)
             local Dialog = ns:GetModule("Dialog")
             if not Dialog then return end
             Dialog:Show({
-                title      = L["New Profile"],
-                text       = L["Profile name:"],
-                hasEditBox = true,
-                maxLetters = 32,
-                button1    = L["Create"],
-                button2    = L["Cancel"],
+                title       = L["New Profile"],
+                text        = L["Profile name:"],
+                hasEditBox  = true,
+                editBoxText = seed or "",
+                maxLetters  = 32,
+                button1     = L["Create"],
+                button2     = L["Cancel"],
                 onAccept = function(text)
                     local name = (text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-                    if name == "" then return end
+                    -- Asking again rather than closing on an empty name: the dialog simply
+                    -- vanishing with no profile created reads as success.
+                    if name == "" then return promptForName(text) end
                     if name ~= currentProfile() and profileExists(name) then
                         Dialog:Show({
                             title    = L["Overwrite profile?"],
@@ -195,7 +202,11 @@ Options:RegisterTab({
                     end
                 end,
             })
-        end, L["Prompts for a name, then creates a profile holding a copy of your current settings and switches to it."])
+        end
+
+        local newProfile = self:CreateButton(content, L["New Profile"], 120,
+            function() promptForName() end,
+            L["Prompts for a name, then creates a profile holding a copy of your current settings and switches to it. The interface reloads."])
         newProfile:SetSize(120, 22)
         newProfile:SetPoint("LEFT", profDD.button, "RIGHT", 6, 0)
     end,

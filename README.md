@@ -8,12 +8,16 @@ Everything Quests, and never will.
 
 ## Status
 
-In development, retail only. Tracks quests and campaign quests, world quests,
+Released, retail only. Tracks quests and campaign quests, world quests,
 scenarios and delves, achievements, professions, and Traveler's Log endeavors.
 
 Also included: usable quest-item buttons, popups for newly discovered and completed
 quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is
 ready to turn in, and a highlight on the flight point nearest your tracked quest.
+
+The options panel is laid out to match Everything Quests, so the two addons are
+configured the same way round. A setting that only applies while another one is on is
+dimmed while that one is off, so it is clear which settings are actually in effect.
 
 If you already run Everything Quests, your tracker settings are imported the first time
 this addon loads, so it starts out looking the way yours already does.
@@ -32,6 +36,9 @@ back to English on its own, so a partial translation is never a broken one.
 - **Achievements**, **professions** with reagent counts, and **endeavors**
 - **Quest items**, as a button on the row of any quest that carries one
 - **Quest popups** for newly discovered quests and ones ready to hand in remotely
+- **Hover any quest** for its objectives and full rewards, including item level
+  comparisons against what you have equipped. World quests also show their faction and
+  how long is left
 
 ## Usage
 

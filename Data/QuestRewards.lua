@@ -137,6 +137,19 @@ function QR:Title(questID)
     return "Quest #" .. tostring(questID)
 end
 
+-- The grey line EQ puts under a world quest's title. Nil for an ordinary quest, which is
+-- what keeps the line off those tooltips without the renderer needing to know the row type.
+function QR:FactionName(questID)
+    if not (questID and C_QuestLog and C_QuestLog.GetQuestFactionID) then return nil end
+    local id = C_QuestLog.GetQuestFactionID(questID)
+    if not id then return nil end
+    if C_FactionInfo and C_FactionInfo.GetFactionDataByID then
+        local data = C_FactionInfo.GetFactionDataByID(id)
+        return data and data.name or nil
+    end
+    return nil
+end
+
 -- Structured rather than pre-formatted: the colour and the indent are the renderer's, which
 -- is what keeps every escape sequence out of this layer. Valid until the next call.
 function QR:Lines(questID)

@@ -1,7 +1,8 @@
 local _, ns = ...
 
-local RT = ns:RegisterModule("RewardTooltip", {})
-local L  = ns.L
+local RT   = ns:RegisterModule("RewardTooltip", {})
+local L    = ns.L
+local Util = ns.Util
 
 local INDENT = "    "
 -- Escaped rather than literal so this file stays ASCII: \195\151 is a multiplication sign,
@@ -67,16 +68,10 @@ local function addItem(e)
     addComparison(e)
 end
 
-RT.calls, RT.drawn = 0, 0
-
-function RT:Show(owner, questID)
-    self.calls = self.calls + 1
-    if not (owner and questID) then return end
+-- Returns whether anything was drawn, so a caller can decide about a separator below it.
+local function renderLines(questID)
     local QR = ns:GetModule("QuestRewards")
-    if not QR then return end
-
-    GameTooltip:SetOwner(owner, pickAnchor(owner))
-    GameTooltip:SetText(QR:Title(questID) or "", 1.0, 0.82, 0.0, 1, true)
+    if not QR then return false end
 
     local lines = QR:Lines(questID)
     for i = 1, #lines do
@@ -101,9 +96,57 @@ function RT:Show(owner, questID)
             GameTooltip:AddLine(label, 0.85, 0.85, 1.0)
         end
     end
+    return #lines > 0
+end
 
+RT.calls, RT.drawn = 0, 0
+
+function RT:Show(owner, questID)
+    self.calls = self.calls + 1
+    if not (owner and questID) then return end
+    local QR = ns:GetModule("QuestRewards")
+    if not QR then return end
+
+    GameTooltip:SetOwner(owner, pickAnchor(owner))
+    GameTooltip:SetText(QR:Title(questID) or "", 1.0, 0.82, 0.0, 1, true)
+    renderLines(questID)
     GameTooltip:Show()
     self.drawn = self.drawn + 1
+end
+
+-- The tracker row tooltip, mirroring EQ: title, objectives and rewards on a quest row, plus
+-- a faction line and a colour-coded countdown on a world quest row. EQ has no click hint on
+-- either and neither does this - with Split quest click on, "left-click to super-track"
+-- describes only half the row and is wrong for the other half.
+function RT:ShowForEntry(owner, entry)
+    if not (owner and entry and entry.id) then return end
+    local QR = ns:GetModule("QuestRewards")
+    if not QR then return end
+
+    -- An expiry is what makes a row a world quest in the Entry shape - Row's own countdown
+    -- reads the same field - so it gates both of EQ's world-quest-only lines.
+    local expiresAt = entry.expiresAt
+
+    GameTooltip:SetOwner(owner, pickAnchor(owner))
+    GameTooltip:SetText(QR:Title(entry.id) or entry.title or "", 1.0, 0.82, 0.0, 1, true)
+
+    if expiresAt then
+        local faction = QR:FactionName(entry.id)
+        if faction then GameTooltip:AddLine(faction, 0.7, 0.7, 0.7) end
+    end
+
+    local drew = renderLines(entry.id)
+
+    if expiresAt then
+        local mins = math.floor((expiresAt - time()) / 60)
+        if mins > 0 then
+            if drew then GameTooltip:AddLine(" ") end
+            GameTooltip:AddLine(L["Time Left: "] .. Util.FmtDuration(mins * 60),
+                                Util.TimeColor(mins))
+        end
+    end
+
+    GameTooltip:Show()
 end
 
 function RT:Hide()

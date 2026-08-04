@@ -15,6 +15,11 @@ local GOLD         = { 0.92, 0.72, 0.02 }
 
 Options.tabs = {}
 
+-- One vertical rhythm for every tab: this far under a heading that tops a column, this far
+-- under an in-column heading, and this far above one. Shared rather than per tab so a fifth
+-- value cannot be invented - the four tabs had four of each before.
+Options.GAP = { tabHead = -16, head = -10, aboveHead = -20 }
+
 -- Tab files load after this one and register themselves, so the tab bar is built from
 -- whatever the TOC actually loaded.
 function Options:RegisterTab(def)
@@ -74,16 +79,32 @@ function Options:CreateCheckbox(content, label, getter, setter, tooltip)
     cb.label = cb:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     cb.label:SetPoint("LEFT", cb, "RIGHT", 4, 1)
     cb.label:SetText(label)
+    -- GameFontNormal is gold. Every control label in this panel is white, so it has to be
+    -- set rather than left to the template.
+    cb.label:SetTextColor(1, 1, 1)
+    -- Widened here rather than only in AttachTooltip, or a checkbox built without a tooltip
+    -- has a label the mouse cannot click while its neighbours' labels work.
+    local labelW = cb.label:GetStringWidth() or 0
+    if labelW > 0 then cb:SetHitRectInsets(0, -(labelW + 8), 0, 0) end
     cb:SetChecked(getter() and true or false)
+    -- No Render here. Every setter that needs one does it itself, and an unconditional
+    -- render made the whole six-provider feed rebuild twice per click.
     cb:SetScript("OnClick", function(btn)
         setter(btn:GetChecked() and true or false)
-        local Tracker = ns:GetModule("Tracker")
-        if Tracker then Tracker:Render() end
     end)
     cb.Refresh = function(btn) btn:SetChecked(getter() and true or false) end
     if tooltip then self:AttachTooltip(cb, label, tooltip) end
     content._controls[#content._controls + 1] = cb
     return cb
+end
+
+-- A texture on the HIGHLIGHT layer is shown and hidden by the Button itself, so hover needs
+-- no script. Without one these read as labels rather than as something clickable.
+local function addHighlight(frame, alpha)
+    local hl = frame:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints()
+    hl:SetColorTexture(1, 1, 1, alpha or 0.10)
+    return hl
 end
 
 local function flatButton(parent, label, onClick)
@@ -92,10 +113,13 @@ local function flatButton(parent, label, onClick)
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.10, 0.10, 0.10, 0.9)
+    addHighlight(b)
     b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     b.text:SetPoint("CENTER")
     b.text:SetText(label)
-    b.text:SetTextColor(unpack(GOLD))
+    b.text:SetTextColor(1, 1, 1)
+    b:SetScript("OnMouseDown", function() b.text:SetPoint("CENTER", 1, -1) end)
+    b:SetScript("OnMouseUp",   function() b.text:SetPoint("CENTER", 0, 0) end)
     -- Keeps btn:SetText() working now the Blizzard template and its FontString are gone.
     -- Without it a caller relabelling a button would fail silently.
     b.SetText = function(_, s) b.text:SetText(s) end
@@ -132,7 +156,7 @@ function Options:CreateRadioGroup(content, label, options, getter, setter, maxWi
                 b.txt:SetTextColor(1, 1, 1, 1)
             else
                 b.bg:SetColorTexture(unpack(TAB_INACTIVE))
-                b.txt:SetTextColor(GOLD[1], GOLD[2], GOLD[3], 1)
+                b.txt:SetTextColor(1, 1, 1, 1)
             end
         end
     end
@@ -147,6 +171,7 @@ function Options:CreateRadioGroup(content, label, options, getter, setter, maxWi
         btn:SetHeight(BTN_H)
         local bg = btn:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
+        addHighlight(btn)
         local txt = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         txt:SetPoint("CENTER")
         txt:SetText(opt.label)
@@ -162,14 +187,22 @@ function Options:CreateRadioGroup(content, label, options, getter, setter, maxWi
             if setter then setter(b.value) end
             paint(b.value)
         end)
-        if tipTitle or tipBody then self:AttachTooltip(btn, tipTitle, tipBody) end
+        -- A per-option tip titles itself with that option's own label. Without one the
+        -- group's shared tooltip is used, which is what every existing caller passes.
+        if opt.tip then
+            self:AttachTooltip(btn, opt.label, opt.tip)
+        elseif tipTitle or tipBody then
+            self:AttachTooltip(btn, tipTitle, tipBody)
+        end
         x = x + w + BTN_GAP
         if x > maxX then maxX = x end
         buttons[#buttons + 1] = btn
     end
 
     paint(getter and getter())
-    local h = 50 + y
+    -- Derived, not a constant. A fixed 50 declared 8px more than the contents occupy, so
+    -- every gap written under a radio group rendered 8px larger than the number said.
+    local h = (labelFS and ((labelFS:GetStringHeight() or 14) + 4) or 0) + BTN_H + y
     container:SetSize(maxWidth or maxX, h)
     container.Refresh = function() paint(getter and getter()) end
     content._controls[#content._controls + 1] = container
@@ -189,7 +222,7 @@ function Options:CreateSlider(content, label, minV, maxV, step, getter, setter, 
 
     local value = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     value:SetPoint("TOPRIGHT", 0, 0)
-    value:SetTextColor(unpack(GOLD))
+    value:SetTextColor(1, 1, 1)
 
     -- Decimals follow the step, so a 0.05 step reads 1.05 and a step of 1 reads 16.
     local function chooseFormat(s)
@@ -349,24 +382,42 @@ local function decorateRow(b, item, decorate)
     end
 end
 
-local function showDropdown(anchor, opts, onPick, decorate)
+local function showDropdown(anchor, opts, onPick, decorate, current)
     local p = dropdownPopup()
-    p:ClearAllPoints()
-    p:SetPoint("TOPLEFT",  anchor, "BOTTOMLEFT",  0, -2)
-    p:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", 0, -2)
-    p:SetHeight(math.min(#opts, DD_MAX_ROWS) * DD_ROW + 8)
+    -- The popup hangs off UIParent, so it does not inherit the options window's scale.
+    -- Matching it also puts anchor and popup back in one unit space, which the width
+    -- arithmetic below depends on.
+    p:SetScale((Options.frame and Options.frame:GetScale()) or 1)
 
+    local h = math.min(#opts, DD_MAX_ROWS) * DD_ROW + 8
+    p:SetHeight(h)
+    p:ClearAllPoints()
+    -- A list opened near the foot of a column is taller than the space under it, so it
+    -- would render off the bottom of the screen. Compared in real pixels because anchor
+    -- and popup can sit at different effective scales.
+    if ((anchor:GetBottom() or 0) * anchor:GetEffectiveScale()) - (h * p:GetEffectiveScale()) < 0 then
+        p:SetPoint("BOTTOMLEFT",  anchor, "TOPLEFT",  0, 2)
+        p:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 2)
+    else
+        p:SetPoint("TOPLEFT",  anchor, "BOTTOMLEFT",  0, -2)
+        p:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", 0, -2)
+    end
+
+    local activeIndex
     for i = 1, #opts do
         local b = p.rows[i]
         if not b then
             b = CreateFrame("Button", nil, p.content)
             b:SetHeight(DD_ROW)
+            b.sel = b:CreateTexture(nil, "BACKGROUND")
+            b.sel:SetAllPoints()
+            b.sel:SetColorTexture(BRAND_RED[1], BRAND_RED[2], BRAND_RED[3], 1)
             b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             b.text:SetPoint("LEFT", 6, 0)
             b.text:SetPoint("RIGHT", -6, 0)
             b.text:SetJustifyH("LEFT")
             b.text:SetWordWrap(false)
-            b.text:SetTextColor(unpack(GOLD))
+            b.text:SetTextColor(1, 1, 1)
             local hl = b:CreateTexture(nil, "HIGHLIGHT")
             hl:SetAllPoints()
             hl:SetColorTexture(1, 1, 1, 0.10)
@@ -378,6 +429,11 @@ local function showDropdown(anchor, opts, onPick, decorate)
         b:SetPoint("TOPRIGHT", p.content, "TOPRIGHT", 0, -(i - 1) * DD_ROW)
         decorateRow(b, opt.value, decorate)
         b.text:SetText(opt.label)
+        -- Marked the way the radio buttons mark their active choice, so 42 fonts or 27
+        -- sounds do not open with nothing saying which one is in use.
+        local isActive = (opt.value == current)
+        b.sel:SetShown(isActive)
+        if isActive then activeIndex = i end
         b:SetScript("OnClick", function() p:Hide(); onPick(opt.value) end)
         b:Show()
     end
@@ -387,6 +443,14 @@ local function showDropdown(anchor, opts, onPick, decorate)
     -- SetPoints old here and has not resolved yet.
     p.content:SetSize(math.max(1, anchor:GetWidth() - 28), math.max(1, #opts * DD_ROW))
     p:Show()
+
+    -- One popup is shared by every dropdown and nothing else resets the offset, so a
+    -- short list opened after a long one would inherit the long one's scroll position.
+    local maxScroll = math.max(0, (#opts - math.min(#opts, DD_MAX_ROWS)) * DD_ROW)
+    local want = activeIndex
+        and ((activeIndex - 1) * DD_ROW - math.floor(DD_MAX_ROWS / 2) * DD_ROW)
+        or 0
+    p.scroll:SetVerticalScroll(math.min(math.max(0, want), maxScroll))
 end
 
 -- options is a list of { value =, label = } pairs, or a function returning one that is
@@ -412,7 +476,6 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
     if onTest then
         speaker = CreateFrame("Button", nil, holder)
         speaker:SetSize(20, 20)
-        speaker:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, -4)
         local icon = speaker:CreateTexture(nil, "ARTWORK")
         icon:SetAllPoints()
         icon:SetTexture("Interface\\Common\\VoiceChat-Speaker")
@@ -422,15 +485,18 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
 
     local btn = CreateFrame("Button", nil, holder, "BackdropTemplate")
     btn:SetHeight(22)
-    if speaker then
-        btn:SetPoint("TOPLEFT", speaker, "TOPRIGHT", 4, 0)
-    else
-        btn:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, -4)
-    end
+    -- Both TOP anchors carry the same y. Giving TOPLEFT and TOPRIGHT different offsets sets
+    -- one edge twice, silently, and nothing decides which wins.
+    btn:SetPoint("TOPLEFT",  holder, "TOPLEFT",  speaker and 24 or 0, -22)
     btn:SetPoint("TOPRIGHT", holder, "TOPRIGHT", 0, -22)
+    if speaker then
+        speaker:SetPoint("RIGHT", btn, "LEFT", -4, 0)
+        self:AttachTooltip(speaker, label, L["Plays the currently selected sound."])
+    end
     local bg = btn:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.10, 0.10, 0.10, 0.95)
+    addHighlight(btn)
 
     if decorate then
         btn.swatch = btn:CreateTexture(nil, "ARTWORK")
@@ -443,18 +509,21 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
     btn.text:SetPoint("RIGHT", -22, 0)
     btn.text:SetJustifyH("LEFT")
     btn.text:SetWordWrap(false)
-    btn.text:SetTextColor(unpack(GOLD))
+    btn.text:SetTextColor(1, 1, 1)
 
     -- A literal lowercase "v", as EQ has it. There is no chevron in the atlas set that
     -- matches, and an atlas arrow reads as a different widget.
     btn.arrow = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     btn.arrow:SetPoint("RIGHT", -6, 0)
     btn.arrow:SetText("v")
-    btn.arrow:SetTextColor(unpack(GOLD))
+    btn.arrow:SetTextColor(1, 1, 1)
 
     local function refresh()
         local current = getter()
         if decorate then decorate(btn, current) end
+        -- "NONE" is this addon's no-sound sentinel (Core/Media.lua returns no file for it),
+        -- so previewing it can only ever be silent. Hidden rather than left to look broken.
+        if speaker then speaker:SetShown(current ~= nil and current ~= "NONE") end
         for _, opt in ipairs(resolveOptions()) do
             if opt.value == current then btn.text:SetText(opt.label); return end
         end
@@ -466,7 +535,7 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
         showDropdown(btn, resolveOptions(), function(v)
             setter(v)
             refresh()
-        end, decorate)
+        end, decorate, getter())
     end)
 
     holder.button  = btn
@@ -513,7 +582,7 @@ end
 
 -- SetupColorPickerAndShow is the current retail entry point. The field-assignment form
 -- is the only one Classic has. Feature-detect, never version-detect.
-function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange)
+function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange, onCancel)
     local cp = ColorPickerFrame
     if not cp then return end
     -- Snapshotted before the first open, so Cancel after a Class click still restores the
@@ -532,7 +601,12 @@ function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange)
         end
         onChange(nr, ng, nb, na)
     end
-    local function cancel() onChange(origR, origG, origB, origA) end
+    -- onCancel restores the caller's PREVIOUS value. Falling back to the seeded channels
+    -- is wrong when there was no value to begin with: an unset colour seeds white, so
+    -- Cancel would write white into a profile the user never edited.
+    local function cancel()
+        if onCancel then onCancel() else onChange(origR, origG, origB, origA) end
+    end
 
     local function openWith(nr, ng, nb, na)
         if cp.SetupColorPickerAndShow then
@@ -582,6 +656,7 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
     local tex = swatch:CreateTexture(nil, "ARTWORK")
     tex:SetPoint("TOPLEFT", 2, -2)
     tex:SetPoint("BOTTOMRIGHT", -2, 2)
+    addHighlight(swatch, 0.18)
 
     local clear
     local function paint()
@@ -601,8 +676,6 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
         clear = flatButton(holder, L["Clear"], function()
             onClear()
             paint()
-            local T = ns:GetModule("Tracker")
-            if T then T:Render() end
         end)
         clear:SetSize(60, 18)
         clear:SetPoint("LEFT", holder, "RIGHT", 8, 0)
@@ -610,14 +683,24 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
     paint()
 
     swatch:SetScript("OnClick", function()
-        local c = getter() or {}
+        local c = getter()
+        -- Copied rather than aliased: the setter may hand this same table straight back.
+        local prev = c and { r = c.r, g = c.g, b = c.b, a = c.a } or nil
+        local function commit(v)
+            setter(v)
+            paint()
+        end
+        c = c or {}
         Options:ShowColorPicker(c.r or 1, c.g or 1, c.b or 1, c.a or 1, hasAlpha,
-            function(nr, ng, nb, na)
-                setter({ r = nr, g = ng, b = nb, a = na })
-                paint()
-                local T = ns:GetModule("Tracker")
-                if T then T:Render() end
-            end)
+            function(nr, ng, nb, na) commit({ r = nr, g = ng, b = nb, a = na }) end,
+            function() commit(prev) end)
+    end)
+
+    -- The row is hoverable across its whole width for the tooltip, and AlignPickerColumn
+    -- can open a wide gap between label and swatch, so the click has to work there too.
+    holder:EnableMouse(true)
+    holder:SetScript("OnMouseUp", function(_, mouseButton)
+        if mouseButton == "LeftButton" then swatch:Click() end
     end)
 
     holder.button  = swatch
@@ -629,22 +712,44 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
     return holder
 end
 
--- Straightens the swatch column in a run of pickers whose labels are different lengths:
--- the button takes the reference picker's x and the label hangs right-aligned off its left
--- edge. Used by the two-column Appearance tab.
-function Options:AlignSwatchTo(picker, ref)
-    picker.button:ClearAllPoints()
-    picker.button:SetPoint("TOP",  picker, "TOP", 0, -1)
-    picker.button:SetPoint("LEFT", ref.button, "LEFT", 0, 0)
-    picker.label:ClearAllPoints()
-    picker.label:SetPoint("RIGHT", picker.button, "LEFT", -8, 0)
+-- Dims a control whose master switch is off. Deliberately does NOT disable the mouse:
+-- AttachTooltip's hover lives on these same frames, and a control that cannot say why it is
+-- greyed is worse than one that is simply lit. The value stays editable and takes effect
+-- when its master is switched back on.
+function Options:SetDependent(control, on)
+    if control then control:SetAlpha(on and 1 or 0.4) end
+end
+
+-- Lines a run of pickers up as a table: labels flush left, every swatch in one column just
+-- past the widest label. EQ instead right-aligns each label off its own swatch, which
+-- straightens the swatches but leaves the labels ragged - its Border Color reads indented
+-- from the Background Color above it and the Border Thickness slider below.
+function Options:AlignPickerColumn(...)
+    local pickers = { ... }
+    local widest = 0
+    for _, p in ipairs(pickers) do
+        local w = p.label:GetStringWidth() or 0
+        if w > widest then widest = w end
+    end
+    for _, p in ipairs(pickers) do
+        p.label:ClearAllPoints()
+        p.label:SetPoint("LEFT", p, "LEFT", 0, 0)
+        p.button:ClearAllPoints()
+        p.button:SetPoint("TOP",  p, "TOP", 0, -1)
+        p.button:SetPoint("LEFT", p, "LEFT", widest + 8, 0)
+        -- A translated label can outrun the 220 the holder is built at, and anything hung
+        -- off the holder's right (the Clear button) would then sit under the swatch.
+        local need = widest + 8 + p.button:GetWidth()
+        if need > p:GetWidth() then p:SetWidth(need) end
+    end
 end
 
 -- A hand-anchored column resolves nothing until the next frame, so its height is unknowable
 -- at build time. Run per view rather than once per build as EQ does, because Build() runs
 -- at login with the whole window hidden - GetTop() is nil there and a one-shot measure
--- would leave the tab unscrollable until a reload.
-local function measureContentHeight(content)
+-- would leave the tab unscrollable until a reload. Exposed because a tab that re-anchors
+-- its own column at runtime has to re-measure without waiting for the next tab switch.
+function Options:MeasureContent(content)
     C_Timer.After(0, function()
         local top = content:GetTop()
         if not top then return end
@@ -690,7 +795,7 @@ function Options:SelectTab(id)
                 if c.Refresh then c:Refresh() end
             end
             t._scroll:Show()
-            measureContentHeight(t._content)
+            self:MeasureContent(t._content)
         else
             t._scroll:Hide()
         end
@@ -713,8 +818,18 @@ function Options:Build()
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    -- This frame persists no position, so a window dragged off screen would stay there for
+    -- every later show. Every other movable frame in the addon already clamps.
+    f:SetClampedToScreen(true)
     f:Hide()
     closeOnEscape(f)
+
+    -- Both hang off UIParent rather than this frame, so neither goes away on its own and a
+    -- list or a colour picker would be left floating over the game world.
+    f:HookScript("OnHide", function()
+        if Options._ddPopup then Options._ddPopup:Hide() end
+        if ColorPickerFrame and ColorPickerFrame:IsShown() then ColorPickerFrame:Hide() end
+    end)
 
     if f.SetBackdrop then
         f:SetBackdrop({
@@ -735,7 +850,7 @@ function Options:Build()
     local version = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     version:SetPoint("TOPRIGHT", -34, -14)
     version:SetText("v" .. ns.VERSION)
-    version:SetTextColor(unpack(GOLD))
+    version:SetTextColor(1, 1, 1)
 
     -- Untemplated to match EQ - UIPanelCloseButton draws Blizzard's own red panel art.
     local close = CreateFrame("Button", nil, f)
@@ -744,6 +859,7 @@ function Options:Build()
     local closeBg = close:CreateTexture(nil, "BACKGROUND")
     closeBg:SetAllPoints()
     closeBg:SetColorTexture(0, 0, 0, 0.9)
+    addHighlight(close, 0.20)
     local closeText = close:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     closeText:SetPoint("CENTER")
     closeText:SetText("X")
@@ -765,6 +881,7 @@ function Options:Build()
         b:SetHeight(TAB_H)
         b.bg = b:CreateTexture(nil, "BACKGROUND")
         b.bg:SetAllPoints()
+        addHighlight(b)
         b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         b.text:SetPoint("CENTER")
         b.text:SetText(t.title)
@@ -804,6 +921,14 @@ function Options:ApplyWindowScale()
     local g = ns:GetModule("DB"):Global()
     local s = g and g.optionsWindowScale
     if type(s) ~= "number" or s <= 0 then s = 1 end
+
+    -- The window is a fixed 1020x720. On a default 768-unit UIParent anything past about
+    -- 1.06 pushes the close button and then the tab bar off the top edge, and since this
+    -- re-applies on every open the broken state would survive closing the window.
+    local uw, uh = UIParent:GetWidth(), UIParent:GetHeight()
+    if uw and uh and uw > 0 and uh > 0 then
+        s = math.min(s, uw / W, uh / H)
+    end
 
     -- SetScale re-reads the anchor offsets in the new scale, so a dragged window jumps
     -- unless its centre is restored.

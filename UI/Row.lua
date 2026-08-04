@@ -288,7 +288,16 @@ local function onEnter(row)
     if not row._entry or clickThrough() then return end
     local Registry = ns:GetModule("Registry")
     local provider = row._providerID and Registry:Get(row._providerID)
-    if not (provider and provider.OnEntryTooltip) then return end
+    if not provider then return end
+    -- A provider whose ids ARE quest ids gets EQ's rich tooltip. It is drawn here rather
+    -- than by the provider because it needs coin textures, item quality colours and the
+    -- ilvl comparison, none of which Data/ may build.
+    if provider.idSpace == "quest" then
+        local RT = ns:GetModule("RewardTooltip")
+        if RT then RT:ShowForEntry(row, row._entry) end
+        return
+    end
+    if not provider.OnEntryTooltip then return end
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     provider:OnEntryTooltip(row._entry, GameTooltip)
     GameTooltip:Show()

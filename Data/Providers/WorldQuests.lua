@@ -318,16 +318,6 @@ function WorldQuests:OnEntryClick(entry, button)
     end
 end
 
-function WorldQuests:OnEntryTooltip(entry, tooltip)
-    tooltip:AddLine(entry.title, 1, 0.82, 0)
-    local mins = minutesLeft(entry.id)
-    if mins and mins > 0 then
-        tooltip:AddLine(L["%s remaining"]:format(ns.Util.FmtDuration(mins * 60)), 0.6, 0.6, 0.6)
-    end
-    tooltip:AddLine(" ")
-    tooltip:AddLine(L["Left-click to super-track, right-click to untrack."], 0.5, 0.5, 0.5)
-end
-
 function WorldQuests:OnEntryGroupFinder(entry)
     if LFGListUtil_FindQuestGroup then LFGListUtil_FindQuestGroup(entry.id) end
 end

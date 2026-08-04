@@ -3,15 +3,25 @@ local _, ns = ...
 local Options = ns:GetModule("Options")
 local L       = ns.L
 
+-- Wrapped at the table, never as L[SORT_OPTIONS[i].tip] - a computed index is invisible to
+-- docs/_gen_enus.py, so the phrase would never reach the manifest.
 local SORT_OPTIONS = {
-    { value = "zone",     label = L["Zone"]     },
-    { value = "title",    label = L["Title"]    },
-    { value = "status",   label = L["Status"]   },
-    { value = "type",     label = L["Type"]     },
-    { value = "level",    label = L["Level"]    },
-    { value = "distance", label = L["Distance"] },
-    { value = "recent",   label = L["Recent"]   },
-    { value = "manual",   label = L["Manual"]   },
+    { value = "zone",     label = L["Zone"],
+      tip = L["Groups entries under the heading they sit under in your quest log."] },
+    { value = "title",    label = L["Title"],
+      tip = L["Alphabetical by name."] },
+    { value = "status",   label = L["Status"],
+      tip = L["Puts everything that is ready to turn in at the top."] },
+    { value = "type",     label = L["Type"],
+      tip = L["Weekly first, then daily, then everything else. Only quests carry a type, so other sections fall back to alphabetical."] },
+    { value = "level",    label = L["Level"],
+      tip = L["Lowest quest level first."] },
+    { value = "distance", label = L["Distance"],
+      tip = L["Nearest objective first, updated as you move. A quest ready to turn in measures to its turn-in point."] },
+    { value = "recent",   label = L["Recent"],
+      tip = L["Most recently accepted first."] },
+    { value = "manual",   label = L["Manual"],
+      tip = L["Your own order. Drag quests up and down in the tracker to set it."] },
 }
 
 -- EQ's own screen order, which is not Filter.CATEGORIES order - that one encodes match
@@ -113,10 +123,10 @@ Options:RegisterTab({
             L["Changes apply immediately to the on-screen tracker."])
 
         local watchedGet, watchedSet = trackerSetting("showOnlyWatched")
-        local watched = self:CreateCheckbox(content, L["Show only watched quests"],
+        local watched = self:CreateCheckbox(content, L["Show only tracked quests"],
             watchedGet, watchedSet,
-            L["Matches Blizzard's default tracker."])
-        watched:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -16)
+            L["Hides quests that are in your log but not tracked. Matches Blizzard's default tracker."])
+        watched:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, self.GAP.tabHead)
 
         local simplify = self:CreateCheckbox(content, L["Simplify Mode"],
             trackerSetting("simplifyMode"))
@@ -141,10 +151,13 @@ Options:RegisterTab({
             if filtersHeader and sort then
                 filtersHeader:ClearAllPoints()
                 if manual and manualHint then
-                    filtersHeader:SetPoint("TOPLEFT", manualHint, "BOTTOMLEFT", 0, -10)
+                    filtersHeader:SetPoint("TOPLEFT", manualHint, "BOTTOMLEFT", 0, self.GAP.aboveHead)
                 else
-                    filtersHeader:SetPoint("TOPLEFT", sort, "BOTTOMLEFT", 0, -14)
+                    filtersHeader:SetPoint("TOPLEFT", sort, "BOTTOMLEFT", 0, self.GAP.aboveHead)
                 end
+                -- Showing the hint moves the whole left column, and the scroll range is
+                -- otherwise only measured on a tab switch.
+                self:MeasureContent(content)
             end
         end
 
@@ -160,11 +173,11 @@ Options:RegisterTab({
         sort:SetPoint("TOPLEFT", achSimplify, "BOTTOMLEFT", 0, -12)
 
         manualHint = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        manualHint:SetPoint("TOPLEFT", sort, "BOTTOMLEFT", 0, -2)
+        manualHint:SetPoint("TOPLEFT", sort, "BOTTOMLEFT", 0, -10)
         manualHint:SetWidth(440)
         manualHint:SetJustifyH("LEFT")
-        manualHint:SetTextColor(0.92, 0.72, 0.02)
-        manualHint:SetText(L["|cffaaaaaaDrag and drop the quests in the tracker to reorder them however you like.|r"])
+        manualHint:SetTextColor(0.67, 0.67, 0.67)
+        manualHint:SetText(L["Drag and drop the quests in the tracker to reorder them however you like."])
 
         filtersHeader = self:CreateHeading(content, L["Filters"])
         syncManualHint(DB().sortMode)
@@ -180,9 +193,11 @@ Options:RegisterTab({
             -- No loaded provider can produce this category, so the toggle would be dead
             if c and ((not c.tag) or Registry:HasTag(c.tag)) then
                 local get, set = filterSetting(key)
+                -- Not interpolated with the label: every label already ends in a noun, so
+                -- the old form read "Show or hide world quests entries in the tracker."
                 local cb = self:CreateCheckbox(content, c.label, get, set,
-                    L["Show or hide %s entries in the tracker."]:format(c.label:lower()))
-                cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, prev == filtersHeader and -8 or -2)
+                    L["Show or hide this category of entry in the tracker."])
+                cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, prev == filtersHeader and self.GAP.head or -2)
                 filterBoxes[#filterBoxes + 1] = { key = key, cb = cb }
                 prev = cb
             end
@@ -194,37 +209,47 @@ Options:RegisterTab({
             L["Only show entries with an objective on your current map. Entries whose provider cannot tell are always shown."])
         zoneOnly:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -2)
 
+        -- Deliberately does NOT touch showOnlyWatched. That box sits under a different
+        -- heading and is the most impactful setting on the tab, so silently turning it back
+        -- on here hid quests with nothing connecting the two.
         local resetFilters = self:CreateButton(content, L["Reset filters to defaults"], 180,
             function()
                 local f = DB().filters
                 f.showNormal, f.showDaily, f.showWeekly = true, true, true
                 f.showCampaign, f.showWorld, f.showBonus = true, true, true
                 f.onlyCurrentZone = false
-                DB().showOnlyWatched = true
                 -- Re-checked in place rather than by reloading the tab: these boxes only
                 -- read their getter on build and on a tab view.
-                watched:SetChecked(true)
                 zoneOnly:SetChecked(false)
                 for _, e in ipairs(filterBoxes) do
                     e.cb:SetChecked(f[e.key] ~= false)
                 end
                 render()
-            end)
+            end,
+            L["Turns all six category filters back on and clears the current-zone filter. Nothing else on this tab is changed."])
         resetFilters:SetSize(180, 24)
         resetFilters:SetPoint("TOPLEFT", zoneOnly, "BOTTOMLEFT", 0, -10)
 
         local visHeader = self:CreateHeading(content, L["Tracker Visibility"])
-        visHeader:SetPoint("TOPLEFT", resetFilters, "BOTTOMLEFT", 0, -10)
+        visHeader:SetPoint("TOPLEFT", resetFilters, "BOTTOMLEFT", 0, self.GAP.aboveHead)
+
+        -- Gated like the filter run above it: a section its TOC never loaded must not get a
+        -- toggle that can never do anything.
+        local liveSections = {}
+        for _, id in ipairs(Sections:Known()) do liveSections[id] = true end
 
         local visPrev = visHeader
         for _, row in ipairs(VISIBILITY_ROWS) do
             local id = row.id
-            local cb = self:CreateCheckbox(content, row.label,
-                function() return not Sections:IsHidden(id) end,
-                function(v) Sections:SetHidden(id, not v); render() end,
-                L["Hide this section entirely, even when it has entries."])
-            cb:SetPoint("TOPLEFT", visPrev, "BOTTOMLEFT", 0, visPrev == visHeader and -8 or -2)
-            visPrev = cb
+            if liveSections[id] then
+                -- The box SHOWS the section, so the tooltip has to describe unchecking it.
+                local cb = self:CreateCheckbox(content, row.label,
+                    function() return not Sections:IsHidden(id) end,
+                    function(v) Sections:SetHidden(id, not v); render() end,
+                    L["Uncheck to hide this section from the tracker even while it has entries."])
+                cb:SetPoint("TOPLEFT", visPrev, "BOTTOMLEFT", 0, visPrev == visHeader and self.GAP.head or -2)
+                visPrev = cb
+            end
         end
 
         local autoWQ = self:CreateCheckbox(content, L["Auto-list current-zone world quests"],
@@ -233,13 +258,13 @@ Options:RegisterTab({
         self:AttachTooltip(autoWQ, L["Auto-list current-zone world quests"],
             L["Lists every WQ in your zone without tracking each."])
 
-        local wqHeightSlider
+        -- The two sliders are mutually exclusive - UI/Tracker.lua reads the fixed height or
+        -- the fraction, never both - so exactly one of them is live at a time and the dead
+        -- one has to say so.
+        local wqHeightSlider, wqMaxSlider
         local function setWqHeightEnabled(on)
-            if not wqHeightSlider then return end
-            wqHeightSlider:SetAlpha(on and 1 or 0.4)
-            if wqHeightSlider.slider then
-                wqHeightSlider.slider:EnableMouse(on and true or false)
-            end
+            self:SetDependent(wqHeightSlider, on)
+            self:SetDependent(wqMaxSlider, not on)
         end
 
         local wqhCheck = self:CreateCheckbox(content, L["Set a custom World Quests height"],
@@ -252,39 +277,40 @@ Options:RegisterTab({
             L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."])
         wqhCheck:SetPoint("TOPLEFT", autoWQ, "BOTTOMLEFT", 0, -2)
 
-        wqHeightSlider = self:CreateSlider(content, L["World Quests height"], 40, 400, 10,
+        wqHeightSlider = self:CreateSlider(content, L["World Quests Height"], 40, 400, 10,
             function() return DB().worldQuestsHeight or 120 end,
-            function(v) DB().worldQuestsHeight = v; render() end)
+            function(v) DB().worldQuestsHeight = v; render() end,
+            L["Height in pixels for the world quest area. Only used while Set a custom World Quests height is on."])
         wqHeightSlider:SetPoint("TOPLEFT", wqhCheck, "BOTTOMLEFT", 0, -8)
-        setWqHeightEnabled(DB().worldQuestsHeightOverride)
 
         -- EQOT-only: EQ caps the world quest area by fixed height alone. Kept because it
         -- is backed by real tracker code, and placed with the other height controls.
-        local wqMaxSlider = self:CreateSlider(content, L["Maximum height"], 10, 80, 5,
+        wqMaxSlider = self:CreateSlider(content, L["Maximum Height (% of tracker)"], 10, 80, 5,
             function() return (DB().worldQuestsPinnedMaxFraction or 0.40) * 100 end,
             function(v)
                 DB().worldQuestsPinnedMaxFraction = v / 100
                 render()
             end,
-            L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation."])
+            L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation. Only used while Set a custom World Quests height is off."])
         wqMaxSlider:SetPoint("TOPLEFT", wqHeightSlider, "BOTTOMLEFT", 0, -14)
+        setWqHeightEnabled(DB().worldQuestsHeightOverride)
 
         local orderHeader = self:CreateHeading(content, L["Section Order"])
-        orderHeader:SetPoint("TOPLEFT", wqMaxSlider, "BOTTOMLEFT", 0, -18)
+        orderHeader:SetPoint("TOPLEFT", wqMaxSlider, "BOTTOMLEFT", 0, self.GAP.aboveHead)
         self:AttachTooltip(orderHeader, L["Section Order"],
-            L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom \226\128\148 use the Top/Bottom control."])
+            L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom, so use the Top/Bottom control."])
 
-        local wqPos = self:CreateRadioGroup(content, L["World Quests position"],
+        local wqPos = self:CreateRadioGroup(content, L["World Quests Position"],
             WQ_POSITIONS,
             function() return DB().worldQuestsPosition or "bottom" end,
             function(v) ns:GetModule("Tracker"):SetWorldQuestsPosition(v) end,
             300, 14,
-            L["World Quests position"],
-            L["Where the World Quests panel sits on the tracker. |cffffffffTop|r puts it above your quests; |cffffffffBottom|r keeps it below your quests (the default). World Quests scroll in their own capped panel, which is why they can't be mixed in between the other sections."])
-        wqPos:SetPoint("TOPLEFT", orderHeader, "BOTTOMLEFT", 0, -8)
+            L["World Quests Position"],
+            L["Where the World Quests panel sits on the tracker. |cffffffffTop|r puts it above your quests. |cffffffffBottom|r keeps it below your quests, which is the default. World Quests scroll in their own capped panel, which is why they can't be mixed in between the other sections."])
+        wqPos:SetPoint("TOPLEFT", orderHeader, "BOTTOMLEFT", 0, self.GAP.head)
 
         local orderList = CreateFrame("Frame", nil, content)
-        orderList:SetPoint("TOPLEFT", wqPos, "BOTTOMLEFT", 0, -8)
+        orderList:SetPoint("TOPLEFT", wqPos, "BOTTOMLEFT", 0, -10)
         orderList:SetSize(300, ORDER_ROW_H)
 
         local orderRows = {}
@@ -312,15 +338,19 @@ Options:RegisterTab({
                 row.label:SetText(sectionLabel(id))
                 row.up:SetEnabled(i > 1)
                 row.down:SetEnabled(i < #order)
+                -- The list reorders under a stationary cursor, so a tooltip left up would
+                -- keep naming the section that used to be on this row.
                 row.up:SetScript("OnClick", function()
                     Sections:Move(id, -1)
                     render()
                     renderOrderRows()
+                    GameTooltip:Hide()
                 end)
                 row.down:SetScript("OnClick", function()
                     Sections:Move(id, 1)
                     render()
                     renderOrderRows()
+                    GameTooltip:Hide()
                 end)
                 row:Show()
             end
@@ -333,7 +363,9 @@ Options:RegisterTab({
 
         local diff = self:CreateCheckbox(content, L["Quest Title Color By Difficulty"],
             rowSetting("colorByDifficulty", true))
-        diff:SetPoint("TOPLEFT", optionsHeader, "BOTTOMLEFT", 0, -10)
+        diff:SetPoint("TOPLEFT", optionsHeader, "BOTTOMLEFT", 0, self.GAP.tabHead)
+        self:AttachTooltip(diff, L["Quest Title Color By Difficulty"],
+            L["Colors each quest title by how hard it is for your level, the way the quest log does. The Quest Title Color Override on the Appearance tab wins over this while it is set."])
 
         local lvl = self:CreateCheckbox(content, L["Show quest level prefix"],
             rowSetting("showLevelInTracker"))
@@ -343,6 +375,8 @@ Options:RegisterTab({
         local zoneCheck = self:CreateCheckbox(content, L["Show zone label under quest titles"],
             rowSetting("showZoneTag"))
         zoneCheck:SetPoint("TOPLEFT", lvl, "BOTTOMLEFT", 0, -2)
+        self:AttachTooltip(zoneCheck, L["Show zone label under quest titles"],
+            L["Adds the quest log heading each quest came from as a small line under its title."])
 
         local objCheck = self:CreateCheckbox(content, L["Show objective progress numbers"],
             rowSetting("showObjectiveNumbers", true))
@@ -355,11 +389,14 @@ Options:RegisterTab({
         qidCheck:SetPoint("TOPLEFT", objCheck, "BOTTOMLEFT", 0, -2)
         self:AttachTooltip(qidCheck, L["Show quest ID"], L["Useful for bug reports."])
 
+        -- UI/Tracker.lua reads showQuestTotal for every ordinary section and for the pinned
+        -- world quest region, not just Quests and Campaign, and the pair it draws is
+        -- visible/total rather than tracked/total.
         local qtotalCheck = self:CreateCheckbox(content,
-            L["Show tracked / total on the Quests & Campaign headers"],
+            L["Show the visible / total count on section headers"],
             function() return DB().showQuestTotal ~= false end,
             function(v) DB().showQuestTotal = v; render() end,
-            L["For example, 3/9."])
+            L["For example, 3/9. Applies to every section header."])
         qtotalCheck:SetPoint("TOPLEFT", qidCheck, "BOTTOMLEFT", 0, -2)
 
         local itemBtnCheck = self:CreateCheckbox(content, L["Show usable quest item buttons"],
@@ -377,19 +414,14 @@ Options:RegisterTab({
             L["A small cogwheel at the top-right of the tracker that opens the options panel."])
         optIconCheck:SetPoint("TOPLEFT", itemBtnCheck, "BOTTOMLEFT", 0, -2)
 
-        -- EQ has Show Chain Guide icon between these two. Deliberately not ported: it opens
-        -- EQ's Chain Guide, which EQOT does not have.
-        local hideBarCheck = self:CreateCheckbox(content, L["Hide scroll bar"],
-            trackerSetting("hideScrollBar"))
-        hideBarCheck:SetPoint("TOPLEFT", optIconCheck, "BOTTOMLEFT", 0, -2)
-        self:AttachTooltip(hideBarCheck, L["Hide scroll bar"],
-            L["Scroll with the mouse wheel instead."])
-
+        -- EQ has Show Chain Guide icon after this one. Deliberately not ported: it opens
+        -- EQ's Chain Guide, which EQOT does not have. Hide scroll bar used to sit here too,
+        -- and now heads the Scroll Bar group on Appearance that it switches off.
         local popupCheck = self:CreateCheckbox(content, L["Show Quest Discovered popups"],
             function() return DB().showQuestPopups ~= false end,
             function(v) DB().showQuestPopups = v; render() end,
             L["Boxes for newly discovered / completed quests."])
-        popupCheck:SetPoint("TOPLEFT", hideBarCheck, "BOTTOMLEFT", 0, -2)
+        popupCheck:SetPoint("TOPLEFT", optIconCheck, "BOTTOMLEFT", 0, -2)
 
         local newTagCheck = self:CreateCheckbox(content,
             L["Show NEW tag on recently accepted quests"],
@@ -408,7 +440,7 @@ Options:RegisterTab({
             function() return DB().questSoundEnabled ~= false end,
             function(v) DB().questSoundEnabled = v end,
             L["Plays when a quest is ready to turn in."])
-        soundCheck:SetPoint("TOPLEFT", splitCheck, "BOTTOMLEFT", 0, -8)
+        soundCheck:SetPoint("TOPLEFT", splitCheck, "BOTTOMLEFT", 0, -2)
 
         local function playSound(value)
             local file = ns:GetModule("Media"):GetSoundFile(value)
@@ -429,27 +461,14 @@ Options:RegisterTab({
             nil, playSound)
         soundDD:SetPoint("TOPLEFT", soundCheck, "BOTTOMLEFT", 0, -8)
 
-        local zpHeader = self:CreateHeading(content, L["Zone Progress Bar"])
-        zpHeader:SetPoint("TOPLEFT", soundDD, "BOTTOMLEFT", 0, -16)
-
-        local zpEnable = self:CreateCheckbox(content, L["Show zone progress bar"],
-            function() return DB().showZoneProgressBar end,
-            function(v) ns:GetModule("ZoneProgressBar"):SetEnabled(v) end,
-            L["Approximate questline progress."])
-        zpEnable:SetPoint("TOPLEFT", zpHeader, "BOTTOMLEFT", 0, -8)
-
-        local zpFloat = self:CreateCheckbox(content, L["Float as a movable bar"],
-            function() return (DB().zoneProgressLocation or "floating") == "floating" end,
-            function(v)
-                ns:GetModule("ZoneProgressBar"):SetLocation(v and "floating" or "tracker")
-            end,
-            L["Drag to move; right-click to lock or reset."])
-        zpFloat:SetPoint("TOPLEFT", zpEnable, "BOTTOMLEFT", 0, -2)
+        -- The zone progress bar's two toggles used to sit here, with its nine styling
+        -- controls on the Appearance tab. They live together under Appearance's Zone
+        -- Progress Bar heading now - one feature, one place.
 
         -- Gated so the controls are absent rather than dead on a flavor with no bonus steps
         if ns.Has.ScenarioBonus then
             local sbHeader = self:CreateHeading(content, L["Scenario Bonus Objectives"])
-            sbHeader:SetPoint("TOPLEFT", zpFloat, "BOTTOMLEFT", 0, -16)
+            sbHeader:SetPoint("TOPLEFT", soundDD, "BOTTOMLEFT", 0, self.GAP.aboveHead)
 
             local sbEnable = self:CreateCheckbox(content, L["Show bonus objectives HUD"],
                 function()
@@ -458,7 +477,15 @@ Options:RegisterTab({
                 end,
                 function(v) ns:GetModule("ScenarioBonusHUD"):SetEnabled(v) end,
                 L["Shows a small movable checklist of the extra bonus objectives that appear during some scenarios and delves, so you do not miss their rewards. Drag to move, right-click to lock or reset. Off by default."])
-            sbEnable:SetPoint("TOPLEFT", sbHeader, "BOTTOMLEFT", 0, -8)
+            sbEnable:SetPoint("TOPLEFT", sbHeader, "BOTTOMLEFT", 0, self.GAP.head)
+
+            -- The HUD only draws inside a scenario or delve, so without this the position
+            -- and scale below can only be set somewhere the player cannot see the result.
+            local sbTest = self:CreateButton(content, L["Test"], 120, function()
+                ns:GetModule("ScenarioBonusHUD"):ToggleTest()
+            end, L["Draws the HUD with two made-up bonus objectives so you can position and size it without being in a scenario or delve. Click again to clear it."])
+            sbTest:SetSize(120, 22)
+            sbTest:SetPoint("TOPLEFT", sbEnable, "BOTTOMLEFT", 0, -10)
 
             local sbScale = self:CreateSlider(content, L["HUD Scale"], 0.5, 2.0, 0.05,
                 function()
@@ -467,7 +494,7 @@ Options:RegisterTab({
                 end,
                 function(v) ns:GetModule("ScenarioBonusHUD"):SetScale(v) end,
                 L["Sizes the bonus objectives HUD."])
-            sbScale:SetPoint("TOPLEFT", sbEnable, "BOTTOMLEFT", 0, -16)
+            sbScale:SetPoint("TOPLEFT", sbTest, "BOTTOMLEFT", 0, -16)
         end
     end,
 })

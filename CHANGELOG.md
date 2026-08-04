@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-04
+
+Richer tracker tooltips, and a pass over the whole options panel: controls that do nothing
+right now are dimmed instead of looking active, related settings are grouped together, and a
+number of labels and tooltips that described the wrong thing have been corrected.
+
+### New Features
+
+- Hovering a quest in the tracker now shows its objectives and its full rewards: money,
+  currencies, and items with an item level comparison against what you have equipped.
+  Previously it showed only the quest name and a note about clicking.
+- Hovering a world quest additionally shows its faction and how long is left, with the time
+  coloured by how close it is to expiring, matching the countdown on the row itself.
+- A control that only applies while another setting is on is now dimmed while that setting
+  is off, so it is clear at a glance which settings are actually in effect.
+- Each of the eight sort orders now explains what it sorts by on hover.
+- The zone progress bar has a Background Color of its own. Left unset it keeps the plain
+  black fill that fades slightly once the bar is locked.
+- The Scenario Bonus Objectives group has a Test button, so the HUD can be positioned and
+  sized without waiting to be inside a scenario or delve.
+
+### Improvements
+
+- The zone progress bar's settings are all in one place. Its two switches moved from the
+  Tracker tab to join its styling on the Appearance tab.
+- Hide scroll bar moved to the Appearance tab, at the top of the scroll bar settings it
+  turns off, rather than sitting two tabs away from them.
+- Buttons, tabs, dropdowns and colour swatches now respond to the mouse.
+- Colour settings line up in a column, and the whole row is clickable rather than just the
+  small swatch.
+- A dropdown list marks the setting you are using, opens scrolled to it, and opens upward
+  when there is no room below.
+- Control text is white throughout instead of gold.
+- Spacing around section headings is consistent across all four tabs.
+- Show only watched quests is now Show only tracked quests, matching the word the game and
+  the rest of the addon use, and its tooltip explains what it hides.
+- Show tracked / total on the Quests & Campaign headers is now Show the visible / total
+  count on section headers, which is what it has always done.
+- The click hint has been removed from quest and world quest tooltips. It described only
+  half of what a click does once Split quest click is turned on.
+
+### Bug Fixes
+
+- Cancelling the colour picker no longer writes a colour. Opening an unset colour and
+  pressing Cancel or Escape used to save white, which turned every quest title white and
+  silently stopped difficulty colouring from applying.
+- Options Window Scale can no longer push the window's tabs and close button off the top of
+  the screen, and the window is kept on screen if dragged to an edge.
+- The section visibility tooltips said they hide a section when the box shows it.
+- Reset all settings said only the active profile was affected. It also clears the Options
+  Window Scale, which every character shares, and this character's collapsed sections and
+  hidden entries. The confirmation now says so, and both reset dialogs mention the reload.
+- The Appearance tab's Reset to Defaults no longer changes two settings on the Tracker tab.
+- Quest Title Color By Difficulty and Show zone label under quest titles could not be
+  clicked by their labels, unlike every other checkbox.
+- Reset filters to defaults no longer turns Show only tracked quests back on.
+- Dropdown lists follow the options window scale, and a list or colour picker left open no
+  longer floats over the game world after the window is closed.
+- The Maximum height slider had no effect while a custom World Quests height was set, with
+  nothing to indicate it.
+- Creating a profile with an empty name closed the dialog without creating anything.
+- Pressing Enter on a confirmation dialog opened the chat box behind it.
+- The section reorder arrows kept naming the previous section after a move.
+- Filter tooltips read "Show or hide world quests entries in the tracker."
+- The tracker no longer rebuilds twice every time a checkbox or colour is changed.
+
 ## [1.0.0] - 2026-08-03
 
 Out of beta. The options panel has been rebuilt to match Everything Quests control for

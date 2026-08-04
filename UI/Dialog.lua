@@ -78,6 +78,11 @@ function Dialog:Build()
         if key == "ESCAPE" then
             frame:SetPropagateKeyboardInput(false)
             Dialog:_finish(false)
+        elseif (key == "ENTER" or key == "NUMPADENTER") and not frame.editBox:IsShown() then
+            -- Swallowed, never bound to accept: two of the three confirms that reach here
+            -- reload the UI, so a stray keypress must not be able to trigger one. Without
+            -- this it opens the chat box behind a dialog that looks modal.
+            frame:SetPropagateKeyboardInput(false)
         else
             frame:SetPropagateKeyboardInput(true)
         end
