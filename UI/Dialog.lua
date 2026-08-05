@@ -5,7 +5,10 @@ local L      = ns.L
 
 -- Own frame rather than StaticPopup: that system recycles a small shared pool, so an
 -- insecure handler here could taint the frame the logout or quit dialog later reuses.
-local GOLD_R, GOLD_G, GOLD_B = 0.92, 0.72, 0.02
+
+-- The options window's own border and title colour. This dialog is only ever spawned from
+-- that window, so it carries the same red rather than a second scheme of its own.
+local BRAND_R, BRAND_G, BRAND_B = 0.635, 0.000, 0.039
 
 local function makeButton(parent)
     return CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
@@ -61,7 +64,7 @@ function Dialog:Build()
             edgeSize = 1,
         })
         f:SetBackdropColor(0, 0, 0, 0.94)
-        f:SetBackdropBorderColor(GOLD_R, GOLD_G, GOLD_B, 0.8)
+        f:SetBackdropBorderColor(BRAND_R, BRAND_G, BRAND_B, 1)
     end
 
     -- SetPropagateKeyboardInput is protected, so the whole handler stands down in combat
@@ -90,7 +93,10 @@ function Dialog:Build()
 
     f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     f.title:SetPoint("TOP", 0, -12)
-    f.title:SetTextColor(GOLD_R, GOLD_G, GOLD_B)
+    f.title:SetTextColor(BRAND_R, BRAND_G, BRAND_B)
+    -- Outlined for the same reason the options window's title is: brand red is dark, and
+    -- unoutlined at this size it reads muddy against the near-black fill.
+    f.title:SetFont(f.title:GetFont(), 18, "OUTLINE")
 
     f.text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     f.text:SetPoint("TOPLEFT", 18, -40)
