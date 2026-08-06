@@ -28,6 +28,16 @@ handlers.toggle = function()
     tracker():Toggle()
 end
 
+handlers.unhide = function()
+    local n = ns:GetModule("Filter"):ClearHidden()
+    if n == 0 then
+        ns:Print(L["nothing is hidden."])
+        return
+    end
+    ns:Print((L["%d hidden entries restored."]):format(n))
+    tracker():Render()
+end
+
 handlers.debug = function()
     ns.DEBUG = not ns.DEBUG
     ns:Print("debug validation " .. (ns.DEBUG and "on" or "off") .. ".")
@@ -65,6 +75,9 @@ handlers.status = function()
         end
     end
 
+    local FILT = ns:GetModule("Filter")
+    if FILT and FILT.DebugLine then ns:Print(FILT:DebugLine()) end
+
     ns:Print("sections (in render order):")
     for _, id in ipairs(Sections:Order()) do
         local g = Feed.byGroup[id]
@@ -77,6 +90,8 @@ handlers.status = function()
 
     local active, free = RowPool:Count()
     ns:Print(("rows: %d active, %d pooled"):format(active, free))
+    local RowMod = ns:GetModule("Row")
+    if RowMod and RowMod.DebugLine then ns:Print(RowMod:DebugLine()) end
 
     local T = tracker()
     if T and T.DebugScroll then ns:Print("scroll: " .. T:DebugScroll()) end
@@ -235,7 +250,7 @@ function Commands:OnEnable()
         else
             -- The subcommands are literals the dispatcher matches, so they stay outside
             -- L. Only the word introducing them is translated.
-            ns:Print(L["commands:"] .. " lock, unlock, reset, toggle, status, debug, "
+            ns:Print(L["commands:"] .. " lock, unlock, reset, toggle, unhide, status, debug, "
                 .. "bonushud [test], importeq, modules, disable <m>, enable <m>")
         end
     end

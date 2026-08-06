@@ -11,7 +11,7 @@ globals = {
     "SLASH_EQOT2",
     "SlashCmdList",
     "BINDING_HEADER_EQOBJECTIVETRACKER",
-    -- Classic's colour picker is driven by assigning callbacks onto the frame itself
+    -- Classic's color picker is driven by assigning callbacks onto the frame itself
     "ColorPickerFrame",
 }
 

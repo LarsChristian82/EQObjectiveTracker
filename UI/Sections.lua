@@ -30,8 +30,8 @@ Sections.frames = {}
 -- so they sit outside the reorderable run and Order never returns them.
 Sections.PINNED = { worldquests = true }
 
--- Kept separate from PINNED because that list is what the World Quests options block
--- iterates, and a scenario has no header, collapse or visibility toggle to offer.
+-- Kept separate from PINNED because a pinned group still has a header, a collapse and a
+-- visibility toggle, and a scenario container has none of the three.
 Sections.CONTAINER = { scenarios = true }
 
 -- No provider backs a virtual section. Its body is a StatusBar rather than a run of rows,
@@ -58,15 +58,6 @@ end
 
 function Sections:IsVirtual(groupID)
     return self.VIRTUAL[groupID] == true
-end
-
-function Sections:Pinned()
-    local Registry = ns:GetModule("Registry")
-    local out = {}
-    for _, id in ipairs(Registry:Groups()) do
-        if self:IsPinned(id) then out[#out + 1] = id end
-    end
-    return out
 end
 
 -- Virtual ids lead, matching EQ's own reorderable list, so a saved order that predates

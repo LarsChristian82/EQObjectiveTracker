@@ -67,7 +67,7 @@ function Util.GetPlayerClassColor()
 end
 
 -- Returns nothing when neither source is set, which is what lets callers fall through to
--- difficulty colouring. Class colour deliberately beats the explicit override.
+-- difficulty coloring. Class color deliberately beats the explicit override.
 function Util.EffectiveTitleColor(cfg)
     if cfg and cfg.titleColorUseClass then
         local r, g, b = Util.GetPlayerClassColor()

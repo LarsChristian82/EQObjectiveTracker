@@ -17,12 +17,12 @@ local function inMythicPlus()
     return C_ChallengeMode.IsChallengeModeActive() and true or false
 end
 
--- Installed lazily, and ONLY once the map rule is actually switched on. Hooking the world
--- map unconditionally taints it for every player including those who never enable the rule,
--- and Blizzard's own map pin code is then blamed on EQOT the moment it needs a protected
--- call in combat - ADDON_ACTION_BLOCKED on Button:SetPassThroughButtons, reported 2026-07-30.
--- hooksecurefunc rather than HookScript, because that is the taint-safe way to watch a
--- Blizzard frame. Once taken the hook stays for the session, which is harmless.
+-- Installed lazily, and ONLY once the map rule is actually switched on, because a Blizzard
+-- frame should not be hooked for a feature the player has switched off. That is hygiene and
+-- NOT a fix for anything: this was made lazy while chasing the SetPassThroughButtons blocked
+-- action on 2026-07-30 and was then exonerated, since the error reproduced with the hook
+-- never installed. hooksecurefunc rather than HookScript, because that is the taint-safe way
+-- to watch a Blizzard frame. Once taken the hook stays for the session, which is harmless.
 local function ensureMapHook()
     if Visibility._mapHooked then return end
     local g = cfg()

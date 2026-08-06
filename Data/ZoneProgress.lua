@@ -117,7 +117,7 @@ end
 
 -- silent is passed by Count alone. Count owns _seen and is not re-entrant, and a listener
 -- fired mid-walk calls straight back into it, so an inline fill must never announce itself.
--- The caller already has the filled data; only the async retry has news worth telling.
+-- The caller already has the filled data. Only the async retry has news worth telling.
 function ZoneProgress:EnsureQuests(qlID, silent)
     if not (qlID and C_QuestLine and C_QuestLine.GetQuestLineQuests) then return end
     local quests = C_QuestLine.GetQuestLineQuests(qlID)

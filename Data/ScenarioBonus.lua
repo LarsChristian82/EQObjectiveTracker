@@ -249,16 +249,29 @@ local function onVignette()
     Bonus:QueueRefresh()
 end
 
--- Reset per-run state on delve change or exit so a new run never inherits the old packs or banner
+local function resetRun()
+    delveTier    = nil
+    bannerState, ragerGUID = nil, nil
+    nemesisRemaining, nemesisSeenCount = nil, 0
+    wipe(nemesisSeen)
+end
+
+-- Reset per-run state on delve change or exit so a new run never inherits the old packs or
+-- banner. The exit half has to be driven from a world transition: gatherDelveModel is only
+-- ever reached from inside a delve, so it can never observe the player leaving one, and
+-- re-entering the same delve would otherwise match trackedDelve and skip the reset.
 local function checkRun()
-    if not playerInDelve() then trackedDelve = nil; return end
+    if not playerInDelve() then
+        if trackedDelve then
+            trackedDelve = nil
+            resetRun()
+        end
+        return
+    end
     local name = (GetInstanceInfo and GetInstanceInfo()) or "delve"
     if name ~= trackedDelve then
         trackedDelve = name
-        delveTier    = nil
-        bannerState, ragerGUID = nil, nil
-        nemesisRemaining, nemesisSeenCount = nil, 0
-        wipe(nemesisSeen)
+        resetRun()
     end
 end
 
@@ -389,12 +402,18 @@ function Bonus:OnEnable()
         Bonus:Reconcile()
         Bonus:QueueRefresh()
     end
+    -- Only the world transitions test for an exit. A criteria update fires throughout a run,
+    -- so letting one observe a momentarily stale "not in a delve" would wipe the live run.
+    local function worldChanged()
+        checkRun()
+        refresh()
+    end
     Events:On("SCENARIO_UPDATE",                     refresh)
     Events:On("SCENARIO_CRITERIA_UPDATE",            refresh)
     Events:On("SCENARIO_CRITERIA_SHOW_STATE_UPDATE", refresh)
     Events:On("SCENARIO_COMPLETED",                  refresh)
     Events:On("ACTIVE_DELVE_DATA_UPDATE",            refresh)
-    Events:On("PLAYER_ENTERING_WORLD",               refresh)
-    Events:On("ZONE_CHANGED_NEW_AREA",               refresh)
+    Events:On("PLAYER_ENTERING_WORLD",               worldChanged)
+    Events:On("ZONE_CHANGED_NEW_AREA",               worldChanged)
     self:Reconcile()
 end

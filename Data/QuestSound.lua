@@ -32,6 +32,14 @@ local function recordRecent(title)
     recentTitles[title] = now + DEDUP_WINDOW_S
 end
 
+-- Read before any work rather than only inside playSound. The scan walks the whole quest log
+-- and the chat path matches every system message, so gating at the end paid the feature's
+-- full cost while it was switched off.
+local function soundEnabled()
+    local cfg = ns:GetModule("DB"):Tracker()
+    return (cfg and cfg.questSoundEnabled ~= false) and true or false
+end
+
 local function playSound()
     local cfg = ns:GetModule("DB"):Tracker()
     if not (cfg and cfg.questSoundEnabled ~= false and PlaySoundFile) then return end
@@ -43,6 +51,12 @@ end
 -- transitions detected, and everything downstream of them, are identical.
 local function detectTransitions()
     if not ns.Has.QuestLog then return end
+    -- Re-prime rather than simply skipping, or every quest completed while the option was
+    -- off reads as a fresh transition the moment it is switched back on.
+    if not soundEnabled() then
+        armed = false
+        return
+    end
 
     local n = 0
     local seen = scratch
@@ -97,6 +111,7 @@ local function completePattern()
 end
 
 local function onSystemChat(_, msg)
+    if not soundEnabled() then return end
     -- msg:match on a secret value throws, and the log scan still catches those quests
     if _issecret and _issecret(msg) then return end
     if type(msg) ~= "string" then return end

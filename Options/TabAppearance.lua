@@ -78,7 +78,7 @@ local function zbState()
     return t.zoneProgressBar
 end
 
--- Only the fill texture and colour reach the docked bar, so only those repaint the tracker.
+-- Only the fill texture and color reach the docked bar, so only those repaint the tracker.
 -- The rest land on the floating frame alone, and a full Render there would re-run every
 -- provider once per slider step for a frame the tracker does not contain.
 local function zbSet(key, v, shared)
@@ -318,7 +318,7 @@ Options:RegisterTab({
         local hbHeightSlider = self:CreateSlider(content, L["Bar Height"], 6, 26, 0.5,
             function() return DB().headerBarHeight or 22 end,
             function(v) relayout("headerBarHeight", v) end,
-            L["How tall the section-header bar is. The bar is centred on the header row, so larger values fill more of it."])
+            L["How tall the section-header bar is. The bar is centered on the header row, so larger values fill more of it."])
         hbHeightSlider:SetPoint("TOPLEFT", hbSoftCheck, "BOTTOMLEFT", 0, -14)
 
         local hbSoftSlider = self:CreateSlider(content, L["Edge Softness"], 1, 10, 0.5,
@@ -347,7 +347,7 @@ Options:RegisterTab({
         resetBtn:SetSize(160, 24)
         resetBtn:SetPoint("LEFT", colorsHeader, "LEFT", 320, 0)
 
-        -- onClear rather than a button of our own: the helper hides it while the colour is
+        -- onClear rather than a button of our own: the helper hides it while the color is
         -- unset, so a live Clear no longer sits beside a swatch it cannot change.
         local titlePicker = self:CreateColorPicker(content, L["Quest Title Color Override"],
             function() return DB().titleColorOverride end,
@@ -510,7 +510,7 @@ Options:RegisterTab({
         zbBgCheck:SetPoint("TOPLEFT", zbFloat, "BOTTOMLEFT", 0, -2)
 
         -- Left unset by default so the backdrop keeps its locked/unlocked alpha fade. Once
-        -- a colour is picked that alpha is the user's, and the fade stops.
+        -- a color is picked that alpha is the user's, and the fade stops.
         local zbBgPicker = self:CreateColorPicker(content, L["Background Color"],
             function() local st = zbState(); return st and st.backgroundColor end,
             function(v) zbSet("backgroundColor", v) end,
@@ -525,10 +525,7 @@ Options:RegisterTab({
         zbBorderCheck:SetPoint("TOPLEFT", zbBgCheck, "BOTTOMLEFT", 0, -2)
 
         local zbBorderPicker = self:CreateColorPicker(content, L["Border Color"],
-            function()
-                local st = zbState()
-                return (st and st.borderColor) or { r = 0.635, g = 0.000, b = 0.039, a = 1 }
-            end,
+            function() local st = zbState(); return st and st.borderColor end,
             function(v) zbSet("borderColor", v) end,
             L["Border color and opacity for the floating bar."], true)
         zbBorderPicker:SetPoint("LEFT", zbBorderCheck, "LEFT", 90, 0)
@@ -559,28 +556,19 @@ Options:RegisterTab({
         zbTexDD:SetPoint("TOPLEFT", zbFontDD, "BOTTOMLEFT", 0, -14)
 
         local zbBarColorPicker = self:CreateColorPicker(content, L["Bar Color"],
-            function()
-                local st = zbState()
-                return (st and st.barColor) or { r = 0.26, g = 0.42, b = 1.0, a = 1 }
-            end,
+            function() local st = zbState(); return st and st.barColor end,
             function(v) zbSet("barColor", v, true) end,
             L["Fill color and opacity of the bar itself."], true)
         zbBarColorPicker:SetPoint("TOPLEFT", zbTexDD, "BOTTOMLEFT", 0, -16)
 
         local zbHeaderPicker = self:CreateColorPicker(content, L["Header Color"],
-            function()
-                local st = zbState()
-                return (st and st.headerColor) or { r = 0.93, g = 0.32, b = 0.10, a = 1 }
-            end,
+            function() local st = zbState(); return st and st.headerColor end,
             function(v) zbSet("headerColor", v) end,
             L["Color of the zone name on the floating bar. The docked section uses the section header color."], true)
         zbHeaderPicker:SetPoint("TOPLEFT", zbBarColorPicker, "BOTTOMLEFT", 0, -10)
 
         local zbCountPicker = self:CreateColorPicker(content, L["Count Color"],
-            function()
-                local st = zbState()
-                return (st and st.countColor) or { r = 0.92, g = 0.72, b = 0.02, a = 1 }
-            end,
+            function() local st = zbState(); return st and st.countColor end,
             function(v) zbSet("countColor", v) end,
             L["Color of the completed-of-total count on the floating bar."], true)
         zbCountPicker:SetPoint("TOPLEFT", zbHeaderPicker, "BOTTOMLEFT", 0, -10)
@@ -618,7 +606,7 @@ Options:RegisterTab({
             dim(hbSoftCheck,    cfg.headerBar)
             dim(hbSoftSlider,   cfg.headerBar and cfg.headerBarSoftEdges)
 
-            -- The class colour overrides the picker above it rather than the other way
+            -- The class color overrides the picker above it rather than the other way
             -- round, so the picker is what goes dim.
             dim(titlePicker,  not cfg.titleColorUseClass)
             dim(headerPicker, not cfg.headerColorUseClass)

@@ -64,6 +64,12 @@ local FILTER_KEYS = {
 
 local FRAME_KEYS = { "point", "relPoint", "locked", "showBorder", "showBackground" }
 
+-- EQ writes these to the identical zoneProgressBar sub-table, so they copy by name.
+-- backgroundColor is absent because it is EQOT-only, with no EQ counterpart to carry.
+local ZONE_BAR_STYLE_KEYS = {
+    "barTexture", "barColor", "borderColor", "headerColor", "countColor", "font",
+}
+
 local SECTION_VISIBILITY = {
     showProfessionSection   = "profession",
     showAchievementsSection = "achievements",
@@ -107,13 +113,19 @@ end
 
 -- EQ SetPoints these offsets raw and only then scales the frame, so what it stores lives in
 -- the frame's own scaled space. EQOT stores UIParent units, so multiply through on the way in.
-local function importFrame(dst, src)
+local function importFrame(dst, src, styleKeys)
     if type(src) ~= "table" or type(dst) ~= "table" then return 0 end
 
     local n = 0
     for i = 1, #FRAME_KEYS do
         local k = FRAME_KEYS[i]
         if src[k] ~= nil then dst[k] = src[k]; n = n + 1 end
+    end
+    if styleKeys then
+        for i = 1, #styleKeys do
+            local k = styleKeys[i]
+            if src[k] ~= nil then dst[k] = copyValue(src[k]); n = n + 1 end
+        end
     end
     if src.enabled ~= nil then dst.enabled = src.enabled; n = n + 1 end
 
@@ -164,7 +176,7 @@ function Migrate:ImportFromEQ(db)
             end
         end
 
-        n = n + importFrame(t.zoneProgressBar, st.zoneProgressBar)
+        n = n + importFrame(t.zoneProgressBar, st.zoneProgressBar, ZONE_BAR_STYLE_KEYS)
         n = n + importFrame(t.scenarioBonusHUD, st.scenarioBonusHUD)
         n = n + importSectionOrder(t, st)
 
@@ -175,7 +187,7 @@ function Migrate:ImportFromEQ(db)
             n = n + 1
         end
 
-        -- EQ stores three "show this section" booleans; EQOT stores the inverse, keyed by
+        -- EQ stores three "show this section" booleans. EQOT stores the inverse, keyed by
         -- group id, so only an explicit false carries across.
         for eqKey, groupID in pairs(SECTION_VISIBILITY) do
             if st[eqKey] == false then

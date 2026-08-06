@@ -43,8 +43,8 @@ local function cleanRequirement(text)
 end
 
 -- Requirements are emitted as ordinary objective lines with a completion flag, never as
--- pre-coloured strings. EQ bakes a checkmark texture and a hardcoded green escape into
--- this text, which is why its endeavors ignore the complete-colour setting.
+-- pre-colored strings. EQ bakes a checkmark texture and a hardcoded green escape into
+-- this text, which is why its endeavors ignore the complete-color setting.
 local function fillLines(e, info)
     Entry.BeginLines(e)
     local reqs = info.requirementsList

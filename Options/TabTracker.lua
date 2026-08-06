@@ -30,7 +30,7 @@ local FILTER_ORDER = {
     "showNormal", "showDaily", "showWeekly", "showCampaign", "showWorld", "showBonus",
 }
 
--- EQ exposes three of these; the author kept all five plus World Quests, so the shape is
+-- EQ exposes three of these. The author kept all five plus World Quests, so the shape is
 -- EQ's flat run and only the row count differs.
 local VISIBILITY_ROWS = {
     { id = "campaign",     label = L["Campaign section"]     },

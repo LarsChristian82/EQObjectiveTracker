@@ -48,11 +48,14 @@ back to English on its own, so a partial translation is never a broken one.
 | `/eqot lock` / `unlock` | Lock or unlock moving and resizing |
 | `/eqot reset` | Restore the default position and size |
 | `/eqot toggle` | Show or hide the tracker |
+| `/eqot unhide` | Bring back every entry you have hidden from the tracker |
 | `/eqot status` | Print what each provider emitted and what reached the screen |
 | `/eqot bonushud` | Print what the bonus objectives HUD can see, or `test` to place it |
 | `/eqot importeq` | Replace this profile with your Everything Quests tracker settings |
 | `/eqot modules` | List the optional parts, and which are switched off |
 | `/eqot disable <name>` | Switch off one part, or `all`, to narrow down a fault |
+| `/eqot enable <name>` | Switch a part back on, or `all` |
+| `/eqot debug` | Toggle entry validation warnings |
 
 Drag the strip along the top to move the tracker, and the corner grip to resize it.
 Left-click a quest to super-track it, right-click to untrack it, shift-click to hide it.

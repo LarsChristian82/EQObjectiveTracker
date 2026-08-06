@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-05
+
+A correctness pass over the whole addon, following a full read of the code. Most of what
+changed is settings and saved state that could be lost or quietly ignored, so day to day the
+tracker behaves as it did.
+
+### New Features
+
+- `/eqot unhide` brings back every entry you have hidden by shift-clicking it. Hiding was
+  previously one way, short of resetting the whole profile.
+
+### Improvements
+
+- Quest icons are drawn at their full size, so the icon fills its ring instead of sitting
+  small inside it.
+- Importing from Everything Quests now carries the zone progress bar's styling as well as its
+  position: bar texture, bar color, border color, zone name color, count color and font.
+- Several internal caches are now pruned as you play, instead of growing for a whole session.
+- `/eqot status` reports how many entries are hidden, and which sections they came from.
+
+### Bug Fixes
+
+- Reset to Defaults on the Appearance tab no longer switches off a configured zone progress
+  bar, or pulls a docked one back out into a floating bar. It restyles the tracker, which is
+  what it says it does.
+- Cancelling the color picker no longer writes a value. Opening Quest Title Color Override
+  and pressing Escape used to turn every quest title flat white and silently switch off
+  coloring by difficulty. Closing the options window part way through a pick is covered too.
+- World quests you tracked by hand are no longer dropped from the saved watch list, so they
+  are still tracked when you log back in.
+- Bonus objectives reset on leaving a delve, instead of carrying the previous run's progress
+  into the next one.
+- Quest sounds stop as soon as the setting is switched off, rather than only after a reload.
+- Hiding an entry now keeps it hidden. It could previously come back under a different
+  section.
+- A quest that turns out to be Legendary now takes the matching card tint, not just the
+  matching icon.
+- Blizzard's quest log no longer opens on a quest you did not select.
+- The tracker no longer resizes its contents while you are in combat.
+
 ## [1.1.0] - 2026-08-04
 
 Richer tracker tooltips, and a pass over the whole options panel: controls that do nothing
@@ -408,7 +448,7 @@ First milestone. Not yet released.
 - Filter by quest type: campaign, daily, weekly, normal, and this zone only.
 - Sort by zone, title, status, level, or recently added.
 - Shift-click a row to hide it from the tracker.
-- Appearance options for text and frame: font through LibSharedMedia with 41 bundled
+- Appearance options for text and frame: font through LibSharedMedia with 42 bundled
   fonts, size, outline, title and header size offsets, text shadow with its own color
   and distance, tracker scale, line and header spacing, section header and divider
   colors, and a background and border with colors and thickness.

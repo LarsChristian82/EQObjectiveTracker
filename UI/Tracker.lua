@@ -57,10 +57,6 @@ local function secureLocked()
     return (IB and IB.Locked and IB:Locked()) and true or false
 end
 
--- True only in the window where Visibility could not call Hide, because a secure quest-item
--- button makes it protected, so the tracker is invisible but still on screen. Every mouse
--- handler in the tracker checks this. Without it an alpha-0 tracker keeps taking clicks,
--- tooltips and the wheel, which is the trap EQ leaves open on all but two of its paths.
 function Tracker:ApplyHeaderIcons()
     local f = self.frame
     if not (f and f.headerIcons) then return end
@@ -72,6 +68,10 @@ function Tracker:ApplyHeaderIcons()
     end
 end
 
+-- True only in the window where Visibility could not call Hide, because a secure quest-item
+-- button makes it protected, so the tracker is invisible but still on screen. Every mouse
+-- handler in the tracker checks this. Without it an alpha-0 tracker keeps taking clicks,
+-- tooltips and the wheel, which is the trap EQ leaves open on all but two of its paths.
 function Tracker:IsClickThrough()
     local f = self.frame
     return (f and f._eqotHidden and f:IsShown()) and true or false
@@ -80,6 +80,7 @@ end
 local function renderWhenSafe() Tracker:Render() end
 local function applyWQPosWhenSafe() Tracker:ApplyWorldQuestsPosition() end
 local function resetPositionWhenSafe() Tracker:ResetPosition() end
+local function applyContentInsetWhenSafe() Tracker:ApplyContentInset() end
 
 -- One key for the whole render, so a combat full of quest events collapses into a single
 -- relayout when it ends rather than one per event.
@@ -398,7 +399,7 @@ local function applyScrollBarSkin(sf, cfg)
     if thumbTex then
         -- Capture the plain texture as well as the atlas. A stock thumb that is not
         -- atlas-based leaves the atlas nil, and restoring on that alone strands the
-        -- solid colour permanently, since the skinned flag is cleared either way.
+        -- solid color permanently, since the skinned flag is cleared either way.
         if not bar._eqotThumbCaptured then
             bar._eqotThumbCaptured = true
             bar._eqotThumbAtlas   = thumbTex.GetAtlas and thumbTex:GetAtlas() or nil
@@ -501,6 +502,15 @@ function Tracker:ApplyContentInset()
     if not (f and f.scenarioContainer) then return end
     local gutter = scrollGutter(ns:GetModule("DB"):Tracker())
     if f._scrollGutter == gutter then return end
+
+    -- The quest scroll anchors to this container, so re-anchoring it is a protected move
+    -- once a secure item button exists. The gutter is recorded only after the move lands,
+    -- or the guard above would swallow the deferred retry.
+    if secureLocked() then
+        ns:GetModule("Events"):RunWhenOutOfCombat("eqot.contentInset", applyContentInsetWhenSafe)
+        return
+    end
+
     f._scrollGutter = gutter
     f.scenarioContainer:SetPoint("TOPLEFT",  CONTENT_PAD, -DRAG_HANDLE_H)
     f.scenarioContainer:SetPoint("TOPRIGHT", -(gutter - CONTENT_PAD), -DRAG_HANDLE_H)

@@ -83,7 +83,7 @@ function Options:CreateCheckbox(content, label, getter, setter, tooltip)
     -- set rather than left to the template.
     cb.label:SetTextColor(1, 1, 1)
     -- Widened here rather than only in AttachTooltip, or a checkbox built without a tooltip
-    -- has a label the mouse cannot click while its neighbours' labels work.
+    -- has a label the mouse cannot click while its neighbors' labels work.
     local labelW = cb.label:GetStringWidth() or 0
     if labelW > 0 then cb:SetHitRectInsets(0, -(labelW + 8), 0, 0) end
     cb:SetChecked(getter() and true or false)
@@ -121,7 +121,7 @@ local function flatButton(parent, label, onClick)
     b:SetScript("OnMouseDown", function() b.text:SetPoint("CENTER", 1, -1) end)
     b:SetScript("OnMouseUp",   function() b.text:SetPoint("CENTER", 0, 0) end)
     -- Keeps btn:SetText() working now the Blizzard template and its FontString are gone.
-    -- Without it a caller relabelling a button would fail silently.
+    -- Without it a caller relabeling a button would fail silently.
     b.SetText = function(_, s) b.text:SetText(s) end
     if onClick then b:SetScript("OnClick", onClick) end
     return b
@@ -274,7 +274,7 @@ function Options:CreateSlider(content, label, minV, maxV, step, getter, setter, 
     return holder, slider
 end
 
--- ⛔ Escape-to-close WITHOUT UISpecialFrames, and it must stay that way. Blizzard's panel
+-- Escape-to-close WITHOUT UISpecialFrames, and it must stay that way. Blizzard's panel
 -- manager walks that list by NAME and does _G[name], so an addon frame in it taints
 -- UIParentPanelManager on every single Escape press. That taint reaches the panel manager's
 -- own state, and from there the world map and its data providers - which on 2026-07-30
@@ -301,7 +301,7 @@ local function closeOnEscape(frame)
     end)
 end
 
--- Hand-rolled rather than UIDropDownMenu: that was deprecated in favour of MenuUtil on
+-- Hand-rolled rather than UIDropDownMenu: that was deprecated in favor of MenuUtil on
 -- current retail but is still the only option on Classic, and this addon loads on both.
 local DD_ROW      = 22
 local DD_MAX_ROWS = 10
@@ -314,7 +314,7 @@ local function dropdownPopup()
     p:Hide()
     -- A backdrop, not a fill plus a larger rect over it. EQ draws the border texture at
     -- BORDER above a BACKGROUND fill, so the border covers the fill and the whole popup
-    -- renders solid grey - the same layering mistake its drag ghost had.
+    -- renders solid gray - the same layering mistake its drag ghost had.
     if p.SetBackdrop then
         p:SetBackdrop({
             bgFile   = "Interface\\Buttons\\WHITE8x8",
@@ -545,13 +545,26 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
     return holder
 end
 
--- Skipped when ElvUI is loaded, which puts its own class-colour button on the picker.
+-- Skipped when ElvUI is loaded, which puts its own class-color button on the picker.
 local function elvUILoaded()
     local f = (C_AddOns and C_AddOns.IsAddOnLoaded) or _G["IsAddOnLoaded"]
     return (f and f("ElvUI")) and true or false
 end
 
-local classColorButton, activeColorApply, activeReopen
+local classColorButton, activeColorApply, activeReopen, activeCancel
+local pickerHookInstalled = false
+
+-- Installed independently of the class button, which ElvUI suppresses. These three outlive a
+-- picker that has closed unless something clears them, and a stale cancel would revert an
+-- already committed color the next time the options window hides over an open picker.
+local function ensurePickerHook()
+    if pickerHookInstalled or not ColorPickerFrame then return end
+    pickerHookInstalled = true
+    ColorPickerFrame:HookScript("OnHide", function()
+        if classColorButton then classColorButton:Hide() end
+        activeColorApply, activeReopen, activeCancel = nil, nil, nil
+    end)
+end
 
 local function ensureClassColorButton()
     if classColorButton ~= nil then return classColorButton or nil end
@@ -572,10 +585,6 @@ local function ensureClassColorButton()
     b:SetSize(90, 22)
     b:SetPoint("TOPLEFT", ColorPickerFrame, "TOPRIGHT", 6, -34)
     b:Hide()
-    ColorPickerFrame:HookScript("OnHide", function()
-        if classColorButton then classColorButton:Hide() end
-        activeColorApply, activeReopen = nil, nil
-    end)
     classColorButton = b
     return b
 end
@@ -586,7 +595,7 @@ function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange, onCancel)
     local cp = ColorPickerFrame
     if not cp then return end
     -- Snapshotted before the first open, so Cancel after a Class click still restores the
-    -- colour the picker was opened on rather than the seeded class colour.
+    -- color the picker was opened on rather than the seeded class color.
     local origR, origG, origB, origA = r, g, b, a
 
     local function apply()
@@ -602,7 +611,7 @@ function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange, onCancel)
         onChange(nr, ng, nb, na)
     end
     -- onCancel restores the caller's PREVIOUS value. Falling back to the seeded channels
-    -- is wrong when there was no value to begin with: an unset colour seeds white, so
+    -- is wrong when there was no value to begin with: an unset color seeds white, so
     -- Cancel would write white into a profile the user never edited.
     local function cancel()
         if onCancel then onCancel() else onChange(origR, origG, origB, origA) end
@@ -624,7 +633,8 @@ function Options:ShowColorPicker(r, g, b, a, hasAlpha, onChange, onCancel)
             cp:Show()
         end
         -- Set after the open: the legacy branch's Hide fires the OnHide hook that clears these.
-        activeColorApply, activeReopen = apply, openWith
+        activeColorApply, activeReopen, activeCancel = apply, openWith, cancel
+        ensurePickerHook()
         local classBtn = ensureClassColorButton()
         if classBtn then classBtn:Show() end
     end
@@ -647,7 +657,7 @@ function Options:CreateColorPicker(content, label, getter, setter, tooltip, hasA
     local rim = swatch:CreateTexture(nil, "BACKGROUND")
     rim:SetAllPoints()
     rim:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 1)
-    -- The colour is drawn with its own alpha, so it needs something opaque behind it or a
+    -- The color is drawn with its own alpha, so it needs something opaque behind it or a
     -- translucent swatch composites against the gold rim and reads as washed-out gold.
     local underlay = swatch:CreateTexture(nil, "BORDER")
     underlay:SetPoint("TOPLEFT", 2, -2)
@@ -714,7 +724,7 @@ end
 
 -- Dims a control whose master switch is off. Deliberately does NOT disable the mouse:
 -- AttachTooltip's hover lives on these same frames, and a control that cannot say why it is
--- greyed is worse than one that is simply lit. The value stays editable and takes effect
+-- grayed is worse than one that is simply lit. The value stays editable and takes effect
 -- when its master is switched back on.
 function Options:SetDependent(control, on)
     if control then control:SetAlpha(on and 1 or 0.4) end
@@ -825,10 +835,17 @@ function Options:Build()
     closeOnEscape(f)
 
     -- Both hang off UIParent rather than this frame, so neither goes away on its own and a
-    -- list or a colour picker would be left floating over the game world.
+    -- list or a color picker would be left floating over the game world.
     f:HookScript("OnHide", function()
         if Options._ddPopup then Options._ddPopup:Hide() end
-        if ColorPickerFrame and ColorPickerFrame:IsShown() then ColorPickerFrame:Hide() end
+        -- Closing the window mid-edit has to CANCEL the picker, not merely hide it. The live
+        -- preview writes on every drag frame, so hiding alone commits whatever color the
+        -- wheel was last sitting on. Captured before the Hide, which clears it.
+        if ColorPickerFrame and ColorPickerFrame:IsShown() then
+            local cancelPending = activeCancel
+            ColorPickerFrame:Hide()
+            if cancelPending then cancelPending() end
+        end
     end)
 
     if f.SetBackdrop then
@@ -931,7 +948,7 @@ function Options:ApplyWindowScale()
     end
 
     -- SetScale re-reads the anchor offsets in the new scale, so a dragged window jumps
-    -- unless its centre is restored.
+    -- unless its center is restored.
     local cx, cy = f:GetCenter()
     local oldEff = f:GetEffectiveScale()
     f:SetScale(s)

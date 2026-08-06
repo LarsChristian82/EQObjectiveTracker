@@ -64,7 +64,7 @@ function ZoneBar:ApplySettings()
         f:SetBackdropColor(0, 0, 0, 0)
     elseif st.backgroundColor then
         local c = st.backgroundColor
-        -- A picked colour carries its own alpha, so the lock fade below stops applying.
+        -- A picked color carries its own alpha, so the lock fade below stops applying.
         f:SetBackdropColor(c.r or 0, c.g or 0, c.b or 0, c.a or 1)
     else
         -- Fades slightly once locked, so an unlocked bar reads as draggable

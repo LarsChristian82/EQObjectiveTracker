@@ -106,7 +106,7 @@ DB.defaults = {
             titleColorUseClass    = false,
             overrideCompleteGreen = true,
             -- Left unset on purpose: nil is what makes titles fall through to difficulty
-            -- colouring, so AceDB must not seed a default the Clear button cannot restore.
+            -- coloring, so AceDB must not seed a default the Clear button cannot restore.
             titleColorOverride    = nil,
 
             filters = {
@@ -138,6 +138,16 @@ DB.defaults = {
                 locked = false,
                 showBorder = true,
                 showBackground = true,
+                -- Real defaults rather than fallbacks synthesized in the options getter. A
+                -- picker snapshots its getter for the Cancel restore, so a synthesized value
+                -- gets written on Cancel, and a key absent from here can never be stripped
+                -- back out at logout. Values match the fallbacks in UI/ZoneProgressBar.lua.
+                -- backgroundColor is deliberately still unset, so the backdrop keeps its
+                -- locked/unlocked alpha fade until the user picks a color.
+                barColor    = { r = 0.26,  g = 0.42,  b = 1.00,  a = 1 },
+                borderColor = { r = 0.635, g = 0.000, b = 0.039, a = 1 },
+                headerColor = { r = 0.93,  g = 0.32,  b = 0.10,  a = 1 },
+                countColor  = { r = 0.92,  g = 0.72,  b = 0.02,  a = 1 },
             },
 
             scenarioBonusHUD = {
@@ -181,14 +191,15 @@ local APPEARANCE_KEYS = {
     "blockLayout", "cardColor", "cardBorderColor", "cardBorderSize", "cardPadding",
     "cardTintByType", "cardTintCampaign", "cardTintLegendary", "cardTintDungeon", "cardTintRaid",
     "showBackground", "backgroundColor", "showBorder", "borderColor", "borderSize",
-    -- colorByDifficulty and hideScrollBar are deliberately absent: both controls live on
-    -- the Tracker tab, so resetting them from the Appearance button would change a tab the
-    -- user was not looking at.
     "scrollBarBg", "scrollBarBgColor", "skinScrollBar",
     "scrollBarThumbColor", "scrollBarThumbWidth", "hideScrollArrows",
+    -- showZoneProgressBar and zoneProgressLocation belong on this tab but must NOT be here:
+    -- they default to off and floating, so clearing them switches a configured bar off and
+    -- undocks it. hideScrollBar defaults to false, so clearing it restores the bar.
+    "hideScrollBar",
 }
 
--- Clearing a key lets AceDB re-apply its default. Behaviour keys and the zone bar's saved
+-- Clearing a key lets AceDB re-apply its default. Behavior keys and the zone bar's saved
 -- position are left alone by design, so this resets how the tracker looks and nothing else.
 function DB:ResetTrackerAppearance()
     local prof = self:Tracker()

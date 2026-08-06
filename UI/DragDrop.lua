@@ -102,7 +102,7 @@ function DragDrop:IsManualMode()
 end
 
 function DragDrop:OnDragStart(row)
-    -- No OnEnable to skip, so safe mode is honoured here, as ItemButtons does it.
+    -- No OnEnable to skip, so safe mode is honored here, as ItemButtons does it.
     if ns:SafeMode() then return false end
 
     local Tracker = ns:GetModule("Tracker")

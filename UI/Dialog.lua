@@ -6,7 +6,7 @@ local L      = ns.L
 -- Own frame rather than StaticPopup: that system recycles a small shared pool, so an
 -- insecure handler here could taint the frame the logout or quit dialog later reuses.
 
--- The options window's own border and title colour. This dialog is only ever spawned from
+-- The options window's own border and title color. This dialog is only ever spawned from
 -- that window, so it carries the same red rather than a second scheme of its own.
 local BRAND_R, BRAND_G, BRAND_B = 0.635, 0.000, 0.039
 

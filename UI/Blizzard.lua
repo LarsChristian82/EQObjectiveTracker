@@ -21,7 +21,7 @@ function Blizzard:Suppress()
 
     silence(tracker)
 
-    -- ⛔ The sub-modules are deliberately NOT silenced, and must not be. Unregistering their
+    -- The sub-modules are deliberately NOT silenced, and must not be. Unregistering their
     -- events is an insecure write to eleven Blizzard frames that feed the quest POI system,
     -- and it is the ONE thing EQOT did here that EQ does not - EQ touches only the parent.
     -- EQ has never produced the SetPassThroughButtons taint that EQOT did on 2026-07-30.

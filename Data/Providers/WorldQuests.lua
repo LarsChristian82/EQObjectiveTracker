@@ -192,7 +192,7 @@ local function askCanCreateGroup(questID)
     return false
 end
 
--- ⛔ Resolved on a TIMER, never inside a render pass, and do not "simplify" it back.
+-- Resolved on a TIMER, never inside a render pass, and do not "simplify" it back.
 -- Asking QuestUtil.CanCreateQuestGroup from inside the render taints the execution context,
 -- and opening the world map in combat then blocks protected mouse calls on Blizzard's map POI
 -- pins - ADDON_ACTION_BLOCKED on SetPassThroughButtons and SetPropagateMouseClicks, blamed on
@@ -249,8 +249,6 @@ function WorldQuests:IsAvailable()
 end
 
 function WorldQuests:GetEntries()
-    -- Level 5 emits nothing at all: a control that proves the ladder itself works, since it
-    -- must behave exactly like disabling the provider outright.
     wipe(candidates)
     wipe(seen)
     sourceStats.watched, sourceStats.inzone, sourceStats.questlog = 0, 0, 0
@@ -304,7 +302,21 @@ function WorldQuests:GetEntries()
             fillLines(e, qid, complete)
         end
     end
-    return store:Finish()
+
+    local out = store:Finish()
+
+    -- Turn-in and removal miss the way most world quests actually end, which is expiring,
+    -- and auto-list-zone memoizes every quest flown past whether or not it is ever accepted.
+    -- Pruning against the live set also keeps the recycled-ID hazard the drop handler
+    -- describes from surviving the expiry path.
+    for qid in pairs(atlasCache) do
+        if not store:Get(qid) then atlasCache[qid] = nil end
+    end
+    for qid in pairs(groupCache) do
+        if not store:Get(qid) then groupCache[qid] = nil end
+    end
+
+    return out
 end
 
 function WorldQuests:OnEntryClick(entry, button)

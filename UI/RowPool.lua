@@ -2,12 +2,12 @@ local _, ns = ...
 
 local RowPool = ns:RegisterModule("RowPool", {})
 
-RowPool.free       = {}
-RowPool.byProvider = {}
-
 -- Two-level (providerID, id) indexing rather than a "provider:id" string key. Two
 -- table lookups cost nothing, and building a key string per row per render would
 -- allocate on a frame that repaints on every QUEST_LOG_UPDATE.
+RowPool.free       = {}
+RowPool.byProvider = {}
+
 function RowPool:Begin()
     for _, byID in pairs(self.byProvider) do
         for _, row in pairs(byID) do row._used = false end

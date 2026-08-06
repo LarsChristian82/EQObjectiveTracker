@@ -68,7 +68,7 @@ end
 -- GetDistanceSqToQuest is a quest API and UI/ may not call one.
 function Distance:Sync(sortMode)
     local Sort = ns:GetModule("Sort")
-    -- No OnEnable to skip, so safe mode is honoured here, as ItemButtons and DragDrop do it.
+    -- No OnEnable to skip, so safe mode is honored here, as ItemButtons and DragDrop do it.
     -- Otherwise a bisection session keeps harvesting and ticking with nothing to sort.
     local wanted = (sortMode == "distance") and self:IsAvailable() and not ns:SafeMode()
 

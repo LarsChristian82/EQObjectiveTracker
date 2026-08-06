@@ -82,7 +82,11 @@ local function getFallbackText(id)
         C_QuestLog.SetSelectedQuest(id)
         local _, objText = GetQuestLogQuestText()
         text = objText or ""
-        if saved and saved ~= 0 then C_QuestLog.SetSelectedQuest(saved) end
+        -- Restored unconditionally: GetSelectedQuest answers 0 when nothing is selected, and
+        -- skipping the restore there leaves Blizzard's quest log opening on whichever quest
+        -- this happened to probe last. Gated on the getter existing, or a flavor that has
+        -- only the setter would clear a selection it could never have read.
+        if C_QuestLog.GetSelectedQuest then C_QuestLog.SetSelectedQuest(saved or 0) end
     end
     -- Never memoize "" - the text may simply not have streamed in yet
     if text ~= "" then objTextCache[id] = text end
@@ -229,7 +233,9 @@ local function fullRebuild()
     store:Finish()
 
     for id in pairs(firstSeen) do
-        if not store:Get(id) then firstSeen[id] = nil; tagIDCache[id] = nil end
+        if not store:Get(id) then
+            firstSeen[id], tagIDCache[id], objTextCache[id] = nil, nil, nil
+        end
     end
 
     if next(store:Out()) ~= nil then
@@ -249,6 +255,15 @@ local function refreshDynamic()
         -- Refreshed on the cheap path too. A quest's special item arrives after the
         -- quest does, so caching it only on full rebuild leaves the gutter missing.
         e.hasItem   = QuestItems:Has(id)
+        -- Same reason, and deliberately not memoized: a classification read while static
+        -- data is still streaming can come back wrong, and caching the hit would pin the
+        -- wrong POI shape until the next full rebuild.
+        e.icon.classification = getClassification(id)
+        -- fillTags needs GetInfo and so only runs on a full rebuild. The one tag derived from
+        -- classification is re-derived here, or a late-arriving Legendary repaints the POI
+        -- icon while the card stays tinted as an ordinary quest.
+        e.tags.legendary = (CLASS_LEGENDARY and e.icon.classification == CLASS_LEGENDARY)
+                           or nil
         fillLines(e, id)
     end
     dirtyObjectives = false
@@ -265,6 +280,21 @@ function Quests:GetEntries()
         refreshDynamic()
     end
     return store:Out()
+end
+
+function Quests:DebugLine()
+    local QC    = (Enum and Enum.QuestClassification) or {}
+    local parts = {}
+    for id, e in store:Each() do
+        parts[#parts + 1] = ("%d=%s%s"):format(
+            id, tostring(e.icon.classification), e.isFocused and "*" or "")
+    end
+    table.sort(parts)
+    -- The enum values are printed because they decide the POI shape, and a wrong one is
+    -- otherwise only visible as an odd icon nobody can map back to a number.
+    return ("quests: normal=%s questline=%s campaign=%s meta=%s important=%s | class %s"):format(
+        tostring(QC.Normal), tostring(QC.Questline), tostring(QC.Campaign),
+        tostring(QC.Meta), tostring(QC.Important), table.concat(parts, " "))
 end
 
 function Quests:OnEntryClick(entry, button)

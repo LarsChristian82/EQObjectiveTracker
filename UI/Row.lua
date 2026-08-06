@@ -11,6 +11,10 @@ local PAD_X, PAD_Y     = 6, 2
 local ICON_SIZE        = 26
 local ICON_GAP         = 4
 
+-- Native atlas size, kept separate from the 26px holder it deliberately overhangs, as EQ
+-- does. Drawing these at ICON_SIZE shrinks them to 81% inside the same 50x50 glow.
+local POI_ICON_SIZE    = 32
+
 -- The ring deliberately overhangs the 26px icon column, matching the default tracker
 local WQ_RING_SIZE     = 33
 local WQ_STAR_SIZE     = 18
@@ -40,8 +44,8 @@ function Row:Padding(cfg)
     return PAD_X, PAD_Y
 end
 
--- Shared by quests, campaign quests and world quests, so these live here once rather
--- than being copied into each provider.
+-- Shared by the quest POI rows and the auto-quest popup boxes, so these live here once
+-- rather than being copied into each consumer. World quest rows use none of them.
 local OUTER_GLOW, CENTER_FACE, CENTER_TURNIN = {}, {}, {}
 do
     local QC = (Enum and Enum.QuestClassification) or {}
@@ -105,16 +109,32 @@ local function applyIcon(row, entry)
     row.iconBang:SetVertexColor(1, 1, 1)
 
     if kind == ICON.QUESTPOI then
-        row.icon:SetSize(ICON_SIZE, ICON_SIZE)
-        row.iconBang:SetSize(ICON_SIZE, ICON_SIZE)
+        row.icon:SetSize(POI_ICON_SIZE, POI_ICON_SIZE)
+        row.iconBang:SetSize(POI_ICON_SIZE, POI_ICON_SIZE)
+        local glow = lookup(OUTER_GLOW, icon.classification)
         local face = lookup(CENTER_FACE, icon.classification)
         if entry.isFocused and face then face = face .. "-SuperTracked" end
-        Util.SafeSetAtlas(row.iconGlow, lookup(OUTER_GLOW, icon.classification))
-        Util.SafeSetAtlas(row.icon, face)
+        local glowOK = Util.SafeSetAtlas(row.iconGlow, glow)
+        local faceOK = Util.SafeSetAtlas(row.icon, face)
         if entry.state == STATE.COMPLETE then
             Util.SafeSetAtlas(row.iconBang, lookup(CENTER_TURNIN, icon.classification))
         else
             Util.SafeSetAtlas(row.iconBang, "Quest-In-Progress-Icon-yellow")
+        end
+        if entry.isFocused then
+            local ulx, uly = row.icon:GetTexCoord()
+            Row._focusIcon = ("id=%s class=%s | face=%s ok=%s tex=%s coord %.3f,%.3f"
+                              .. " size %.0fx%.0f a=%.2f | glow=%s ok=%s tex=%s size %.0fx%.0f"
+                              .. " a=%.2f | holder a=%.2f row a=%.2f"):format(
+                tostring(entry.id), tostring(icon.classification),
+                tostring(face), tostring(faceOK), tostring(row.icon:GetTexture()),
+                ulx or -1, uly or -1,
+                row.icon:GetWidth() or 0, row.icon:GetHeight() or 0, row.icon:GetAlpha() or -1,
+                tostring(glow), tostring(glowOK), tostring(row.iconGlow:GetTexture()),
+                row.iconGlow:GetWidth() or 0, row.iconGlow:GetHeight() or 0,
+                row.iconGlow:GetAlpha() or -1,
+                row.iconHolder:GetAlpha() or -1, row:GetAlpha() or -1)
+            Row._focusIconAt = GetTime and GetTime() or nil
         end
         return
     end
@@ -143,6 +163,14 @@ local function applyIcon(row, entry)
     else
         row.icon:SetTexture(nil)
     end
+end
+
+-- The age matters as much as the line: this only records when a super-tracked POI row is
+-- actually repainted, so a stale reading would otherwise read as current.
+function Row:DebugLine()
+    if not Row._focusIcon then return "focus icon: no super-tracked row drawn" end
+    local age = (GetTime and Row._focusIconAt) and (GetTime() - Row._focusIconAt) or -1
+    return ("focus icon: %s | drawn %.1fs ago"):format(Row._focusIcon, age)
 end
 
 local function doneHex(cfg)
@@ -290,7 +318,7 @@ local function onEnter(row)
     local provider = row._providerID and Registry:Get(row._providerID)
     if not provider then return end
     -- A provider whose ids ARE quest ids gets EQ's rich tooltip. It is drawn here rather
-    -- than by the provider because it needs coin textures, item quality colours and the
+    -- than by the provider because it needs coin textures, item quality colors and the
     -- ilvl comparison, none of which Data/ may build.
     if provider.idSpace == "quest" then
         local RT = ns:GetModule("RewardTooltip")
@@ -320,11 +348,11 @@ function Row:Build()
     r.iconGlow:SetAlpha(0.5)
 
     r.icon = r.iconHolder:CreateTexture(nil, "ARTWORK", nil, 0)
-    r.icon:SetSize(ICON_SIZE, ICON_SIZE)
+    r.icon:SetSize(POI_ICON_SIZE, POI_ICON_SIZE)
     r.icon:SetPoint("CENTER")
 
     r.iconBang = r.iconHolder:CreateTexture(nil, "ARTWORK", nil, 1)
-    r.iconBang:SetSize(ICON_SIZE, ICON_SIZE)
+    r.iconBang:SetSize(POI_ICON_SIZE, POI_ICON_SIZE)
     r.iconBang:SetPoint("CENTER")
 
     r.title = r:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -423,7 +451,7 @@ function Row:Render(row, entry, width, cfg)
         if cfg and cfg.cardTintByType then cardBg = Card:TintFor(cfg, entry) or cardBg end
     end
 
-    -- The resolved colour is compared by table identity, which is stable per option and
+    -- The resolved color is compared by table identity, which is stable per option and
     -- changes whenever a setter assigns a new one, so tint swaps repaint without a bump.
     local unchanged =
            row._sTitle == titleText
@@ -501,8 +529,8 @@ function Row:Render(row, entry, width, cfg)
 
     row.title:SetText(titleText)
     local ovR, ovG, ovB = Util.EffectiveTitleColor(cfg)
-    -- Recolouring completed entries needs a colour to recolour them TO, so the toggle is
-    -- inert until an override or class colour is set.
+    -- Recoloring completed entries needs a color to recolor them TO, so the toggle is
+    -- inert until an override or class color is set.
     local recolorComplete = ovR and (not cfg or cfg.overrideCompleteGreen ~= false)
     if entry.state == STATE.FAILED then
         row.title:SetTextColor(0.85, 0.27, 0.27)

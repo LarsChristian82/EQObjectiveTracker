@@ -9,8 +9,8 @@ local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 local Scenarios = {
     id       = "scenarios",
     groups   = { "scenarios" },
-    -- Ahead of every provider so the active scenario heads the default order. Scenario
-    -- criteria are their own id space, so this never contends for a claim.
+    -- Declares no idSpace, so it never claims and is never blocked by one. The scenario
+    -- draws in its own container, outside Sections:Order(), so this only sets build order.
     priority = 1,
     tags     = {},
 }

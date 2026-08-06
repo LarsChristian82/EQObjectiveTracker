@@ -9,7 +9,7 @@ local INDENT = "    "
 -- matching EQ's string byte for byte.
 local TIMES = "\195\151"
 
--- Both globals are deprecated in favour of the namespaced calls and may go away
+-- Both globals are deprecated in favor of the namespaced calls and may go away
 local function coinText(amount)
     local f = (C_CurrencyInfo and C_CurrencyInfo.GetCoinTextureString) or GetCoinTextureString
     return (f and f(amount)) or tostring(amount)
@@ -115,7 +115,7 @@ function RT:Show(owner, questID)
 end
 
 -- The tracker row tooltip, mirroring EQ: title, objectives and rewards on a quest row, plus
--- a faction line and a colour-coded countdown on a world quest row. EQ has no click hint on
+-- a faction line and a color-coded countdown on a world quest row. EQ has no click hint on
 -- either and neither does this - with Split quest click on, "left-click to super-track"
 -- describes only half the row and is wrong for the other half.
 function RT:ShowForEntry(owner, entry)

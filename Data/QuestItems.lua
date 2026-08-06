@@ -36,7 +36,7 @@ function QuestItems:CountInLog()
     for i = 1, C_QuestLog.GetNumQuestLogEntries() do
         local info = C_QuestLog.GetInfo(i)
         -- World quests are skipped: they render in their own region, which gets no buttons,
-        -- so counting them would read as a filter problem rather than correct behaviour.
+        -- so counting them would read as a filter problem rather than correct behavior.
         if info and not info.isHeader and not info.isHidden
            and not (C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)) then
             local link, icon = GetQuestLogSpecialItemInfo(i)

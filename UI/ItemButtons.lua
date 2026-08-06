@@ -138,6 +138,9 @@ local function deferFn(questID)
     local f = deferFns[questID]
     if not f then
         f = function()
+            -- Dropped once it has run. The cache only has to outlive one combat, and keying
+            -- it on quest ID with no release grows for the session.
+            deferFns[questID] = nil
             ItemButtons:_Apply(questID)
             -- Paint on the flush too, or a button created at combat end stays blank
             -- until some unrelated render happens to repaint it.

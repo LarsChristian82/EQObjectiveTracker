@@ -232,7 +232,7 @@ L["Header Bar 1 is a horizontal gradient (bright on the left, dark on the right)
 L["Soft edges"] = true
 L["Feathers the top, left, and right edges of the header bar so it blends into the UI instead of sitting in a hard box. The gradient color is unchanged. Only applies while Header bars is on. Off by default."] = true
 L["Bar Height"] = true
-L["How tall the section-header bar is. The bar is centred on the header row, so larger values fill more of it."] = true
+L["How tall the section-header bar is. The bar is centered on the header row, so larger values fill more of it."] = true
 L["Edge Softness"] = true
 L["How soft the header bar's feathered edges are when Soft edges is on. Higher is softer, lower tightens toward a hard edge."] = true
 L["Colors & Dimensions"] = true
@@ -367,6 +367,8 @@ L["Quest Discovered!"] = true
 L["tracker locked."] = true
 L["tracker unlocked."] = true
 L["position and size reset."] = true
+L["nothing is hidden."] = true
+L["%d hidden entries restored."] = true
 L["no Everything Quests configuration found to import."] = true
 L["Import from Everything Quests"] = true
 L["Reset this profile to defaults and replace it with your Everything Quests tracker settings?\n\nThis cannot be undone. Make a new profile first if you want to keep the current one."] = true

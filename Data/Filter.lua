@@ -16,7 +16,7 @@ Filter.CATEGORIES = {
 }
 
 -- Hidden is keyed by provider then entry id so two providers can never collide on a
--- bare numeric id. The EQ import maps its flat hidden[questID] into hidden.quests.
+-- bare numeric id.
 function Filter:IsHidden(entry)
     local DB   = ns:GetModule("DB")
     local char = DB and DB:Char()
@@ -34,6 +34,43 @@ function Filter:SetHidden(entry, hidden)
     byProvider[entry.id] = hidden or nil
 end
 
+local function countHidden(char)
+    local hidden = char and char.hidden
+    if not hidden then return 0, nil end
+    local total, parts = 0, {}
+    for providerID, byProvider in pairs(hidden) do
+        local n = 0
+        for _ in pairs(byProvider) do n = n + 1 end
+        if n > 0 then
+            total = total + n
+            parts[#parts + 1] = ("%s %d"):format(providerID, n)
+        end
+    end
+    -- pairs order is unspecified, so sort or the status line reshuffles between reads.
+    table.sort(parts)
+    return total, parts
+end
+
+-- A hidden entry keeps claiming its ID space, so it never resurfaces under another provider
+-- for a second modified-click to undo. Without this the only way back is resetting the profile.
+function Filter:ClearHidden()
+    local DB   = ns:GetModule("DB")
+    local char = DB and DB:Char()
+    if not char then return 0 end
+    local total = countHidden(char)
+    char.hidden = {}
+    return total
+end
+
+function Filter:DebugLine()
+    local DB   = ns:GetModule("DB")
+    local char = DB and DB:Char()
+    local total, parts = countHidden(char)
+    if total == 0 then return "hidden entries: none" end
+    return ("hidden entries: %d (%s) - /eqot unhide restores them")
+        :format(total, table.concat(parts, ", "))
+end
+
 function Filter:PassesCategory(entry, f)
     if not f then return true end
     local tags = entry.tags
@@ -49,8 +86,11 @@ end
 -- Category filters are opt-in per provider. Without that gate an untagged entry from
 -- any other provider falls through to showNormal, and unchecking "Normal" would hide
 -- every achievement too.
+-- The second return says the rejection was the user hiding this entry rather than a display
+-- setting. Feed needs the difference: a hidden quest must claim its ID space, a filtered one
+-- must not.
 function Filter:Visible(entry, cfg, provider)
-    if self:IsHidden(entry) then return false end
+    if self:IsHidden(entry) then return false, true end
     if cfg and cfg.showOnlyWatched and entry.isTracked == false then return false end
 
     -- A quest with a Complete popup is drawn as a popup box instead, so it must not also
