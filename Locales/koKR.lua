@@ -199,6 +199,10 @@ L["Commands"] = "명령어"
 -- Options/Frame.lua
 L["Clear"] = "비우기"
 
+-- Core/Init.lua
+L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "아래 링크를 복사하세요(이미 선택됨 - Ctrl+C):"
+L["Close"] = "닫기"
+
 -- Data/Filter.lua
 L["World Quests"] = "전역 퀘스트"
 L["Bonus Objectives"] = "보너스 목표"
@@ -235,6 +239,19 @@ L["Time Left: "] = "남은 시간: "
 -- UI/Row.lua
 L["Find Group"] = "그룹 찾기"
 L["Open the Premade Group Finder for this quest."] = "이 퀘스트의 사전 구성 그룹 찾기를 엽니다."
+
+-- UI/RowMenu.lua
+L["Pin to tracker"] = "추적기에 고정"
+L["Unpin from tracker"] = "추적기에서 고정 해제"
+L["Track Quest"] = "퀘스트 추적"
+L["Untrack Quest"] = "퀘스트 추적 해제"
+L["Focus"] = "집중 추적"
+L["Unfocus"] = "집중 추적 해제"
+L["Super-track (follow arrow)"] = "주요 추적 (화살표 따라가기)"
+L["Open in Map & Quest Log"] = "지도 및 퀘스트 일지에서 열기"
+L["Pop Out Quest Details"] = "퀘스트 상세 정보 창 띄우기"
+L["Search on Wowhead"] = "Wowhead에서 검색"
+L["Abandon Quest"] = "퀘스트 포기"
 
 -- UI/Scenario.lua
 L["Final Stage"] = "마지막 단계"

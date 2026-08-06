@@ -334,6 +334,39 @@ function WorldQuests:OnEntryGroupFinder(entry)
     if LFGListUtil_FindQuestGroup then LFGListUtil_FindQuestGroup(entry.id) end
 end
 
+local menuOut = {}
+
+-- Shorter than the quest menu because a world quest has no log entry to pin, pop out or
+-- abandon - which is exactly the set EQ offers on its own world quest rows.
+function WorldQuests:GetEntryMenu(entry)
+    local id = entry.id
+    local tracked = ns.Has.WorldQuests and C_QuestLog.GetQuestWatchType
+                    and C_QuestLog.GetQuestWatchType(id) ~= nil
+
+    for i = #menuOut, 1, -1 do menuOut[i] = nil end
+    menuOut[#menuOut + 1] = { kind = "title", text = entry.title, order = 0 }
+    menuOut[#menuOut + 1] = { id = tracked and "untrack" or "track", order = 10 }
+    menuOut[#menuOut + 1] = { id = "supertrack", order = 20 }
+    menuOut[#menuOut + 1] = { id = "wowhead",    order = 30 }
+    return menuOut
+end
+
+function WorldQuests:OnEntryMenuSelect(entryID, itemID)
+    if itemID == "track" then
+        -- Manual, not the proximity auto-watch: only a manual watch is mirrored into the
+        -- saved list, so an automatic one would not survive a reload.
+        if ns.Has.WorldQuestWatchAdd then
+            local manual = Enum and Enum.QuestWatchType and Enum.QuestWatchType.Manual
+            C_QuestLog.AddWorldQuestWatch(entryID, manual)
+        end
+    elseif itemID == "untrack" then
+        if ns.Has.WorldQuestWatchAPI then C_QuestLog.RemoveWorldQuestWatch(entryID) end
+    elseif itemID == "supertrack" then
+        if ns.Has.SuperTrack then C_SuperTrack.SetSuperTrackedQuestID(entryID) end
+    end
+    if self._notifyDirty then self._notifyDirty() end
+end
+
 function WorldQuests:Enable(notifyDirty)
     local Events = ns:GetModule("Events")
 

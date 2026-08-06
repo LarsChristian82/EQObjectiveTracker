@@ -58,7 +58,9 @@ back to English on its own, so a partial translation is never a broken one.
 | `/eqot debug` | Toggle entry validation warnings |
 
 Drag the strip along the top to move the tracker, and the corner grip to resize it.
-Left-click a quest to super-track it, right-click to untrack it, shift-click to hide it.
+Left-click a quest to super-track it, and shift-click to hide it. Right-click opens a menu
+to pin, track, focus, open the quest log, pop out the details, look the quest up on
+Wowhead, or abandon it. A pinned quest stays on the tracker whatever your filters say.
 In manual sort mode you can also drag quests into whatever order you like.
 
 The tracker can hide itself while you are in combat, inside an instance, on a Mythic+ run,

@@ -219,6 +219,10 @@ L["Commands"] = "Commandes"
 -- Options/Frame.lua
 L["Clear"] = "Nettoyer"
 
+-- Core/Init.lua
+L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "Copiez le lien ci-dessous (pré-sélectionné - faites juste Ctrl+C):"
+L["Close"] = "Fermer"
+
 -- Data/Filter.lua
 L["World Quests"] = "Expéditions"
 L["Bonus Objectives"] = "Objectifs bonus"
@@ -255,6 +259,19 @@ L["Time Left: "] = "Temps restant : "
 -- UI/Row.lua
 L["Find Group"] = "Trouver un groupe"
 L["Open the Premade Group Finder for this quest."] = "Ouvrir la recherche de groupe pour cette quête"
+
+-- UI/RowMenu.lua
+L["Pin to tracker"] = "Épingler au module de suivi"
+L["Unpin from tracker"] = "Désépingler du module de suivi"
+L["Track Quest"] = "Suivre la quête"
+L["Untrack Quest"] = "Ne plus suivre la quête"
+L["Focus"] = "Super-suivi"
+L["Unfocus"] = "Arrêter le super-suivi"
+L["Super-track (follow arrow)"] = "Super-suivi (flèche directionnelle)"
+L["Open in Map & Quest Log"] = "Ouvrir dans la carte et le journal de quête"
+L["Pop Out Quest Details"] = "Détacher les détails de la quête"
+L["Search on Wowhead"] = "Rechercher sur Wowhead"
+L["Abandon Quest"] = "Abandonner la quête"
 
 -- UI/Scenario.lua
 L["Final Stage"] = "Phase finale"

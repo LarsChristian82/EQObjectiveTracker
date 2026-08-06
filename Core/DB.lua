@@ -169,6 +169,7 @@ DB.defaults = {
     char = {
         sectionsCollapsed  = {},
         hidden             = {},
+        pinned             = {},
         trackedWorldQuests = {},
     },
     global = {
@@ -228,6 +229,7 @@ function DB:ResetAll()
     if c then
         c.sectionsCollapsed = {}
         c.hidden            = {}
+        c.pinned            = {}
     end
 end
 

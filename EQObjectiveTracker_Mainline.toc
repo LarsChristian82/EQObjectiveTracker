@@ -2,7 +2,7 @@
 ## Title: EQ Objective Tracker
 ## Notes: Standalone replacement for the default objective tracker.
 ## Author: Wheelbarrel00
-## Version: 1.2.0
+## Version: 1.3.0
 ## SavedVariables: EQObjectiveTrackerDB
 ## X-Curse-Project-ID: 1637002
 ## X-Website: https://github.com/wheelbarrel00/EQObjectiveTracker
@@ -26,6 +26,7 @@ Core\Init.lua
 Core\Compat.lua
 Core\Events.lua
 Core\Util.lua
+Core\API.lua
 Core\Media.lua
 Core\DB.lua
 Core\Migrate.lua
@@ -63,6 +64,7 @@ UI\RowPool.lua
 UI\Card.lua
 UI\DragDrop.lua
 UI\Row.lua
+UI\RowMenu.lua
 UI\ItemButtons.lua
 UI\AutoQuestPopup.lua
 UI\Sections.lua

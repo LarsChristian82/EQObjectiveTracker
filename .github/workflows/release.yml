@@ -19,6 +19,19 @@ jobs:
         with:
           fetch-depth: 0  # full history so the packager can read all tags
 
+      # release.sh returns 0 on an empty token, so without this a missing secret ships a
+      # silent GitHub-only release that looks green. Fail loudly instead.
+      - name: Verify required secrets
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+        run: |
+          if [ -z "$CF_API_KEY" ]; then
+            echo "::error::CF_API_KEY secret is not set on this repository."
+            echo "Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "CF_API_KEY is present (length: ${#CF_API_KEY})."
+
       - name: Check TOC coverage
         run: python3 docs/check_toc.py
 

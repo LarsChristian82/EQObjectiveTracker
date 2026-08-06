@@ -13,6 +13,9 @@ globals = {
     "BINDING_HEADER_EQOBJECTIVETRACKER",
     -- Classic's color picker is driven by assigning callbacks onto the frame itself
     "ColorPickerFrame",
+    -- Blizzard's own quest log sets .questID on this before showing it, and the pop-out
+    -- reads it back, so the field has to be written rather than passed.
+    "QuestLogPopupDetailFrame",
 }
 
 read_globals = {
@@ -66,6 +69,9 @@ read_globals = {
     "QuestUtils_IsQuestWorldQuest", "QuestUtils_GetQuestName",
     "QuestMapFrame_OpenToQuestDetails", "ToggleQuestLog", "GetQuestLogQuestText",
     "ObjectiveTrackerFrame",
+    "QuestMapQuestOptions_OpenQuestDetails", "QuestMapFrame_UpdateQuestDetailsButtons",
+    "QuestLogPopupDetailFrame_Update",
+    "StaticPopup_Show", "StaticPopup_Hide", "StaticPopupDialogs",
 
     -- Libraries
     "LibStub",

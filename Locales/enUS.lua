@@ -317,6 +317,10 @@ L["Providers are gated at load time by which TOC file your game flavor used. A p
 L["Plays the currently selected sound."] = true
 L["Clear"] = true
 
+-- Core/Init.lua
+L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = true
+L["Close"] = true
+
 -- Core/Migrate.lua
 L["imported %d settings from Everything Quests."] = true
 
@@ -392,6 +396,19 @@ L["Time Left: "] = true
 -- UI/Row.lua
 L["Find Group"] = true
 L["Open the Premade Group Finder for this quest."] = true
+
+-- UI/RowMenu.lua
+L["Pin to tracker"] = true
+L["Unpin from tracker"] = true
+L["Track Quest"] = true
+L["Untrack Quest"] = true
+L["Focus"] = true
+L["Unfocus"] = true
+L["Super-track (follow arrow)"] = true
+L["Open in Map & Quest Log"] = true
+L["Pop Out Quest Details"] = true
+L["Search on Wowhead"] = true
+L["Abandon Quest"] = true
 
 -- UI/Scenario.lua
 L["Final Stage"] = true

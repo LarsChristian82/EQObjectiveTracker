@@ -219,6 +219,10 @@ L["Commands"] = "Команды"
 -- Options/Frame.lua
 L["Clear"] = "Сбросить"
 
+-- Core/Init.lua
+L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "Скопируйте ссылку ниже (она уже выделена - просто нажмите Ctrl+C):"
+L["Close"] = "Закрыть"
+
 -- Data/Filter.lua
 L["World Quests"] = "Локальные задания"
 L["Bonus Objectives"] = "Бонусные цели"
@@ -255,6 +259,19 @@ L["Time Left: "] = "Осталось: "
 -- UI/Row.lua
 L["Find Group"] = "Найти группу"
 L["Open the Premade Group Finder for this quest."] = "Открыть поиск готовых групп для этого задания."
+
+-- UI/RowMenu.lua
+L["Pin to tracker"] = "Закрепить в трекере"
+L["Unpin from tracker"] = "Открепить от трекера"
+L["Track Quest"] = "Отслеживать задание"
+L["Untrack Quest"] = "Не отслеживать задание"
+L["Focus"] = "Фокус"
+L["Unfocus"] = "Снять фокус"
+L["Super-track (follow arrow)"] = "Суперотслеживание (следовать за стрелкой)"
+L["Open in Map & Quest Log"] = "Открыть на карте и в журнале заданий"
+L["Pop Out Quest Details"] = "Открепить подробности задания"
+L["Search on Wowhead"] = "Искать на Wowhead"
+L["Abandon Quest"] = "Отменить задание"
 
 -- UI/Scenario.lua
 L["Final Stage"] = "Финальный этап"

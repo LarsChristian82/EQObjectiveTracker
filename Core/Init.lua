@@ -2,7 +2,7 @@ local addonName, ns = ...
 
 _G.EQObjectiveTracker = ns
 ns.NAME    = addonName
-ns.VERSION = "1.2.0"
+ns.VERSION = "1.3.0"
 
 ns.modules     = {}
 ns.moduleOrder = {}
@@ -23,6 +23,23 @@ end
 
 function ns:Print(...)
     print("|cffEBB706EQObjectiveTracker|r:", ...)
+end
+
+-- The client offers no way to open a browser, so a link is handed over as selectable text.
+function ns:ShowURL(url)
+    local D = self:GetModule("Dialog")
+    if not (D and url) then return end
+    local L = self.L
+    D:Show({
+        title            = "EQ Objective Tracker",
+        -- Escaped em dash, not a literal: this file stays ASCII, and the port tool compares
+        -- decoded bytes, so this still matches EQ's key and inherits its three translations.
+        text             = L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"],
+        button1          = L["Close"],
+        hasEditBox       = true,
+        editBoxText      = url,
+        highlightEditBox = true,
+    })
 end
 
 -- Modules whose OnEnable is skipped this session, for bisecting a fault to one subsystem.

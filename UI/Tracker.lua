@@ -57,14 +57,79 @@ local function secureLocked()
     return (IB and IB.Locked and IB:Locked()) and true or false
 end
 
+-- Above the drag handle's frame level so the handle does not eat the click.
+local function makeHeaderIcon(f, texture, tooltip, onClick)
+    local b = CreateFrame("Button", nil, f)
+    b:SetSize(HEADER_ICON_SZ, HEADER_ICON_SZ)
+    b:SetFrameLevel(f:GetFrameLevel() + 10)
+    local tex = b:CreateTexture(nil, "ARTWORK")
+    tex:SetAllPoints()
+    tex:SetTexture(texture)
+    tex:SetAlpha(0.85)
+    b:SetScript("OnEnter", function(btn)
+        if Tracker:IsClickThrough() then return end
+        tex:SetAlpha(1)
+        if not tooltip then return end
+        GameTooltip:SetOwner(btn, "ANCHOR_BOTTOMLEFT")
+        GameTooltip:AddLine(tooltip)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function()
+        tex:SetAlpha(0.85)
+        GameTooltip:Hide()
+    end)
+    b:SetScript("OnClick", function()
+        if Tracker:IsClickThrough() then return end
+        onClick()
+    end)
+    return b
+end
+
+-- Icons registered through ns.API are built lazily here, so an addon that registers before or
+-- after the frame exists lands the same way. The list is empty in the standalone case.
+function Tracker:RebuildHeaderIcons()
+    local f = self.frame
+    if not (f and f.headerIcons) then return end
+
+    local specs = ns:GetModule("API"):HeaderIcons()
+    f._apiIcons = f._apiIcons or {}
+    for i = 1, #specs do
+        local spec = specs[i]
+        local b = f._apiIcons[spec.id]
+        if not b then
+            b = makeHeaderIcon(f, spec.texture, spec.tooltip, function() spec.onClick() end)
+            b._dbKey = spec.dbKey
+            f._apiIcons[spec.id] = b
+            f.headerIcons[#f.headerIcons + 1] = b
+        end
+    end
+
+    self:ApplyHeaderIcons()
+end
+
+-- Visibility and anchoring together, because a hidden icon has to drop out of the run rather
+-- than leave a gap in it - so toggling the cogwheel off slides the rest right.
 function Tracker:ApplyHeaderIcons()
     local f = self.frame
     if not (f and f.headerIcons) then return end
     local DB  = ns:GetModule("DB")
     local cfg = DB and DB:Tracker()
+
+    local prev
     for i = 1, #f.headerIcons do
         local b = f.headerIcons[i]
-        if cfg and b._dbKey and cfg[b._dbKey] == false then b:Hide() else b:Show() end
+        if cfg and b._dbKey and cfg[b._dbKey] == false then
+            b:Hide()
+        else
+            b:Show()
+            b:ClearAllPoints()
+            if prev then
+                b:SetPoint("RIGHT", prev, "LEFT", -3, 0)
+            else
+                b:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -1)
+            end
+            prev = b
+        end
     end
 end
 
@@ -196,32 +261,11 @@ function Tracker:BuildFrame()
         GameTooltip:Hide()
     end)
 
-    -- Above the drag handle's frame level so the handle does not eat the click.
-    local cog = CreateFrame("Button", nil, f)
-    cog:SetSize(HEADER_ICON_SZ, HEADER_ICON_SZ)
-    cog:SetFrameLevel(f:GetFrameLevel() + 10)
-    cog:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -1)
-    local cogTex = cog:CreateTexture(nil, "ARTWORK")
-    cogTex:SetAllPoints()
-    cogTex:SetTexture("Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\cogwheel.tga")
-    cogTex:SetAlpha(0.85)
-    cog:SetScript("OnEnter", function(btn)
-        if Tracker:IsClickThrough() then return end
-        cogTex:SetAlpha(1)
-        GameTooltip:SetOwner(btn, "ANCHOR_BOTTOMLEFT")
-        GameTooltip:AddLine(L["Open the options panel"])
-        GameTooltip:Show()
-    end)
-    cog:SetScript("OnLeave", function()
-        cogTex:SetAlpha(0.85)
-        GameTooltip:Hide()
-    end)
-    cog:SetScript("OnClick", function()
-        if Tracker:IsClickThrough() then return end
-        ns:GetModule("Options"):Toggle()
-    end)
-    f.headerIcons = { cog }
+    local cog = makeHeaderIcon(f, "Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\cogwheel.tga",
+        L["Open the options panel"], function() ns:GetModule("Options"):Toggle() end)
     cog._dbKey = "showOptionsIcon"
+    f.headerIcons = { cog }
+    self:RebuildHeaderIcons()
 
     local function stopDrag()
         if not f._dragging then return end

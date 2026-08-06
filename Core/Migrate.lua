@@ -111,6 +111,66 @@ local function eqGlobal()
     return sv.global
 end
 
+-- Not an AceDB scope: EQ assigns DB.char straight to this per-character saved variable and
+-- seeds it with CopyTable, so unlike the profile nothing is stripped at logout. That only
+-- matters for scalars - every table imported below defaults to empty, so a non-empty one is
+-- always the player's own doing.
+local function eqChar()
+    local sv = _G.EverythingQuestsCharDB
+    return (type(sv) == "table") and sv or nil
+end
+
+-- EQ keys hidden and pinned by bare quest ID. EQOT keys them by provider first so two
+-- providers can never collide on the same number, and quests is the only provider EQ could
+-- have been talking about.
+local function importIDSet(dst, src, key)
+    if type(src[key]) ~= "table" then return 0 end
+    local n = 0
+    for id, on in pairs(src[key]) do
+        if on and type(id) == "number" then
+            dst[key] = dst[key] or {}
+            dst[key].quests = dst[key].quests or {}
+            dst[key].quests[id] = true
+            n = n + 1
+        end
+    end
+    return n
+end
+
+-- EQ calls the world quest section "events"; EQOT calls it "worldquests". Every other section
+-- id is already identical, which is why only this one is listed.
+local COLLAPSE_ID = { events = "worldquests" }
+
+local function importChar(db)
+    local src = eqChar()
+    local dst = db and db.char
+    if not (src and dst) then return 0 end
+
+    local n = importIDSet(dst, src, "hidden") + importIDSet(dst, src, "pinned")
+
+    if type(src.sectionsCollapsed) == "table" then
+        for id, on in pairs(src.sectionsCollapsed) do
+            if on == true and type(id) == "string" then
+                dst.sectionsCollapsed = dst.sectionsCollapsed or {}
+                dst.sectionsCollapsed[COLLAPSE_ID[id] or id] = true
+                n = n + 1
+            end
+        end
+    end
+
+    if type(src.trackedWorldQuests) == "table" then
+        for id, on in pairs(src.trackedWorldQuests) do
+            if on and type(id) == "number" then
+                dst.trackedWorldQuests = dst.trackedWorldQuests or {}
+                dst.trackedWorldQuests[id] = true
+                n = n + 1
+            end
+        end
+    end
+
+    return n
+end
+
 -- EQ SetPoints these offsets raw and only then scales the frame, so what it stores lives in
 -- the frame's own scaled space. EQOT stores UIParent units, so multiply through on the way in.
 local function importFrame(dst, src, styleKeys)
@@ -207,6 +267,8 @@ function Migrate:ImportFromEQ(db)
         end
     end
 
+    n = n + importChar(db)
+
     -- The only global-scope key the two addons share. Both windows are 1020x720 and both
     -- sliders run 0.7-1.4, so an imported value is always representable.
     local sgl = eqGlobal()
@@ -253,7 +315,8 @@ end
 
 function Migrate:DebugLine()
     local g = ns.db and ns.db.global
-    return ("eq import: config %s, imported %s")
+    return ("eq import: config %s, char %s, imported %s")
         :format(self:HasEQConfig() and "present" or "absent",
+                eqChar() and "present" or "absent",
                 (g and g.eqConfigImported) and "yes" or "no")
 end

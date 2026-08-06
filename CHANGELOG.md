@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-06
+
+Right-clicking a quest now opens a menu instead of just untracking it, and quests can be
+pinned so they stay on the tracker no matter how you have your filters set.
+
+### New Features
+
+- Right-click a quest for a menu: pin it, track or untrack it, focus it, open it in the map
+  and quest log, pop out its details, look it up on Wowhead, or abandon it. World quests get
+  their own shorter menu. Achievements, professions and endeavors are unchanged, and still
+  untrack on a right-click.
+- Pin a quest to keep it on the tracker whatever your filters and "only show tracked" say. A
+  pinned quest carries a star, and pinning one you had hidden unhides it.
+- Other addons can add their own entries to the row menu and their own icons to the tracker
+  header, so a companion addon can put its features where you expect them.
+
+### Improvements
+
+- Importing from Everything Quests now also carries your per-character state: pinned and
+  hidden quests, which sections you had collapsed, and your saved world quest watches. Only
+  your settings came across before.
+- `/eqot status` reports how many quests are pinned.
+
 ## [1.2.0] - 2026-08-05
 
 A correctness pass over the whole addon, following a full read of the code. Most of what

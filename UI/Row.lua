@@ -239,6 +239,8 @@ end
 local TITLE_META_PROVIDER = "quests"
 local NEW_WINDOW = 3600
 local NEW_TAG    = "|cff6BAFFFNEW|r "
+-- Escaped U+2605 so this file stays ASCII, matching EQ's pinned marker.
+local PIN_TAG    = "|cffEBB706\226\152\133|r "
 
 local function decorateTitle(entry, cfg)
     local text = entry.title or ""
@@ -253,6 +255,11 @@ local function decorateTitle(entry, cfg)
     if cfg.showRecentlyAddedTag ~= false and entry.addedAt and entry.addedAt > 0
        and (time() - entry.addedAt) < NEW_WINDOW then
         text = NEW_TAG .. text
+    end
+    -- Prepended last so the star reads leftmost, and decorated here rather than gated
+    -- separately: row._sTitle stores the finished string, so the pin repaints for free.
+    if ns:GetModule("Filter"):IsPinned(entry) then
+        text = PIN_TAG .. text
     end
     return text
 end
@@ -308,6 +315,14 @@ local function onMouseUp(row, button)
         dispatch(row, "OnEntryOpenLog")
         return
     end
+
+    -- A provider that offers no menu keeps the plain right-click untrack, so nothing changes
+    -- for achievements, professions or endeavors.
+    if button == "RightButton" then
+        local RowMenu = ns:GetModule("RowMenu")
+        if RowMenu and RowMenu:Show(row) then return end
+    end
+
     dispatch(row, "OnEntryClick", button)
 end
 

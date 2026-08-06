@@ -34,11 +34,33 @@ function Filter:SetHidden(entry, hidden)
     byProvider[entry.id] = hidden or nil
 end
 
-local function countHidden(char)
-    local hidden = char and char.hidden
-    if not hidden then return 0, nil end
+-- Keyed the same way as hidden, and for the same reason: two providers must never collide on
+-- a bare numeric id.
+function Filter:IsPinned(entry)
+    local DB   = ns:GetModule("DB")
+    local char = DB and DB:Char()
+    local byProvider = char and char.pinned and char.pinned[entry.providerID]
+    return (byProvider and byProvider[entry.id]) and true or false
+end
+
+function Filter:SetPinned(entry, pinned)
+    local DB   = ns:GetModule("DB")
+    local char = DB and DB:Char()
+    if not char then return end
+    char.pinned = char.pinned or {}
+    local byProvider = char.pinned[entry.providerID]
+    if not byProvider then byProvider = {}; char.pinned[entry.providerID] = byProvider end
+    byProvider[entry.id] = pinned or nil
+    -- Pinning something you had hidden would otherwise store a contradiction the UI resolves
+    -- silently in hidden's favor, leaving a pin the player cannot see.
+    if pinned then self:SetHidden(entry, false) end
+end
+
+local function countSet(char, key)
+    local set = char and char[key]
+    if not set then return 0, nil end
     local total, parts = 0, {}
-    for providerID, byProvider in pairs(hidden) do
+    for providerID, byProvider in pairs(set) do
         local n = 0
         for _ in pairs(byProvider) do n = n + 1 end
         if n > 0 then
@@ -57,7 +79,7 @@ function Filter:ClearHidden()
     local DB   = ns:GetModule("DB")
     local char = DB and DB:Char()
     if not char then return 0 end
-    local total = countHidden(char)
+    local total = countSet(char, "hidden")
     char.hidden = {}
     return total
 end
@@ -65,10 +87,17 @@ end
 function Filter:DebugLine()
     local DB   = ns:GetModule("DB")
     local char = DB and DB:Char()
-    local total, parts = countHidden(char)
-    if total == 0 then return "hidden entries: none" end
-    return ("hidden entries: %d (%s) - /eqot unhide restores them")
-        :format(total, table.concat(parts, ", "))
+    local hidden, hParts = countSet(char, "hidden")
+    local pinned, pParts = countSet(char, "pinned")
+
+    local out = (hidden == 0) and "hidden entries: none"
+        or ("hidden entries: %d (%s) - /eqot unhide restores them")
+            :format(hidden, table.concat(hParts, ", "))
+
+    if pinned > 0 then
+        out = out .. ("  | pinned: %d (%s)"):format(pinned, table.concat(pParts, ", "))
+    end
+    return out
 end
 
 function Filter:PassesCategory(entry, f)
@@ -91,15 +120,22 @@ end
 -- must not.
 function Filter:Visible(entry, cfg, provider)
     if self:IsHidden(entry) then return false, true end
-    if cfg and cfg.showOnlyWatched and entry.isTracked == false then return false end
 
     -- A quest with a Complete popup is drawn as a popup box instead, so it must not also
     -- appear as a row. The suppression set is empty whenever the option is off, so this
     -- costs one lookup and needs no config branch of its own.
+    -- Above the pin check on purpose: a pin must not resurrect the row beside its own popup.
     if provider and provider.idSpace == "quest" then
         local Popups = ns:GetModule("AutoQuestPopups")
         if Popups and Popups:IsSuppressed(entry.id) then return false end
     end
+
+    -- Below hidden and the popup, above everything else, matching EQ: a pin is the player
+    -- saying "keep this on screen", so it outranks every display setting but not their own
+    -- decision to hide the row.
+    if self:IsPinned(entry) then return true end
+
+    if cfg and cfg.showOnlyWatched and entry.isTracked == false then return false end
 
     if provider and provider.filterCategories then
         local f = cfg and cfg.filters

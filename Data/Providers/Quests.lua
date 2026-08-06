@@ -319,6 +319,116 @@ function Quests:OnEntryOpenLog(entry)
     end
 end
 
+local function isFocused(id)
+    return ns.Has.SuperTrack and C_SuperTrack.GetSuperTrackedQuestID
+       and C_SuperTrack.GetSuperTrackedQuestID() == id
+end
+
+local function setWatched(id, watch)
+    if not ns.Has.QuestWatchAPI then return end
+    if watch then
+        -- Typed Manual on purpose: an untyped watch is AUTOMATIC, which the engine silently
+        -- evicts past a small cap, so the quest would drop off the tracker on its own.
+        local manual = Enum and Enum.QuestWatchType and Enum.QuestWatchType.Manual
+        C_QuestLog.AddQuestWatch(id, manual)
+    else
+        C_QuestLog.RemoveQuestWatch(id)
+    end
+end
+
+local function openQuestDetailsPopup(id)
+    if C_AddOns and C_AddOns.LoadAddOn then C_AddOns.LoadAddOn("Blizzard_QuestLog") end
+
+    if QuestMapQuestOptions_OpenQuestDetails then
+        QuestMapQuestOptions_OpenQuestDetails(id)
+        return
+    end
+    if not QuestLogPopupDetailFrame then return end
+    if not (C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(id)) then return end
+
+    QuestLogPopupDetailFrame.questID = id
+    if C_QuestLog.SetSelectedQuest then C_QuestLog.SetSelectedQuest(id) end
+    if StaticPopup_Hide then
+        StaticPopup_Hide("ABANDON_QUEST")
+        StaticPopup_Hide("ABANDON_QUEST_WITH_ITEMS")
+    end
+    if QuestMapFrame_UpdateQuestDetailsButtons then QuestMapFrame_UpdateQuestDetailsButtons() end
+    if QuestLogPopupDetailFrame_Update then QuestLogPopupDetailFrame_Update(true) end
+    QuestLogPopupDetailFrame:Show()
+end
+
+-- Routed through Blizzard's own confirmation popup rather than abandoning outright, so the
+-- item-loss warning still appears. SetSelectedQuest is global state the quest log reads, so
+-- the previous selection is put back or the log opens on a quest the player did not choose.
+local function abandonQuest(id)
+    if not (C_QuestLog.SetSelectedQuest and C_QuestLog.SetAbandonQuest
+            and C_QuestLog.GetAbandonQuest) then
+        return
+    end
+    if InCombatLockdown() then return end
+
+    local oldSelected = C_QuestLog.GetSelectedQuest and C_QuestLog.GetSelectedQuest() or 0
+    C_QuestLog.SetSelectedQuest(id)
+    C_QuestLog.SetAbandonQuest()
+
+    local abandonID = C_QuestLog.GetAbandonQuest()
+    local title = (QuestUtils_GetQuestName and QuestUtils_GetQuestName(abandonID))
+                  or (C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(abandonID))
+    local items = C_QuestLog.GetAbandonQuestItems and C_QuestLog.GetAbandonQuestItems()
+    if items and #items > 0 and StaticPopupDialogs and StaticPopupDialogs.ABANDON_QUEST_WITH_ITEMS then
+        StaticPopup_Show("ABANDON_QUEST_WITH_ITEMS", title, table.concat(items, ", "))
+    else
+        StaticPopup_Show("ABANDON_QUEST", title)
+    end
+
+    C_QuestLog.SetSelectedQuest(oldSelected or 0)
+end
+
+local menuOut = {}
+local pinShim = {}
+
+function Quests:GetEntryMenu(entry)
+    local Filter = ns:GetModule("Filter")
+    local id = entry.id
+
+    for i = #menuOut, 1, -1 do menuOut[i] = nil end
+
+    -- Spaced by ten so an extension can land between any two, which is how EQ puts its Chain
+    -- Guide "Get Directions" back between Focus and Open in Map.
+    menuOut[#menuOut + 1] = { kind = "title", text = entry.title, order = 0 }
+    menuOut[#menuOut + 1] = { id = Filter:IsPinned(entry) and "unpin" or "pin", order = 10 }
+    menuOut[#menuOut + 1] = { id = isWatched(id) and "untrack" or "track",      order = 20 }
+    menuOut[#menuOut + 1] = { id = isFocused(id) and "unfocus" or "focus",      order = 30 }
+    menuOut[#menuOut + 1] = { id = "openlog", order = 40 }
+    menuOut[#menuOut + 1] = { id = "popout",  order = 50 }
+    menuOut[#menuOut + 1] = { id = "wowhead", order = 60 }
+    menuOut[#menuOut + 1] = { kind = "divider", order = 70 }
+    menuOut[#menuOut + 1] = { id = "abandon", order = 80, danger = true }
+    return menuOut
+end
+
+function Quests:OnEntryMenuSelect(entryID, itemID)
+    if itemID == "pin" or itemID == "unpin" then
+        pinShim.id, pinShim.providerID = entryID, self.id
+        ns:GetModule("Filter"):SetPinned(pinShim, itemID == "pin")
+    elseif itemID == "track" then
+        setWatched(entryID, true)
+    elseif itemID == "untrack" then
+        setWatched(entryID, false)
+    elseif itemID == "focus" then
+        if ns.Has.SuperTrack then C_SuperTrack.SetSuperTrackedQuestID(entryID) end
+    elseif itemID == "unfocus" then
+        if ns.Has.SuperTrack then C_SuperTrack.SetSuperTrackedQuestID(0) end
+    elseif itemID == "openlog" then
+        self:OnEntryOpenLog({ id = entryID })
+    elseif itemID == "popout" then
+        openQuestDetailsPopup(entryID)
+    elseif itemID == "abandon" then
+        abandonQuest(entryID)
+    end
+    if self._notifyDirty then self._notifyDirty() end
+end
+
 function Quests:Enable(notifyDirty)
     local Events = ns:GetModule("Events")
 

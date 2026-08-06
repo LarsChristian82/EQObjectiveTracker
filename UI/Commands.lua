@@ -108,6 +108,9 @@ handlers.status = function()
     local MIG = ns:GetModule("Migrate")
     if MIG and MIG.DebugLine then ns:Print(MIG:DebugLine()) end
 
+    local API = ns:GetModule("API")
+    if API and API.DebugLine then ns:Print(API:DebugLine()) end
+
     local AQP = ns:GetModule("AutoQuestPopups")
     if AQP and AQP.DebugLine then ns:Print(AQP:DebugLine()) end
 

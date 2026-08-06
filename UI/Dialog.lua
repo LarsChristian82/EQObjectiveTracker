@@ -146,6 +146,8 @@ function Dialog:Show(opts)
         f.editBox:SetText(opts.editBoxText or "")
         f.editBox:SetCursorPosition(0)
         f.editBox:SetFocus()
+        -- After SetFocus, which clears any selection of its own.
+        if opts.highlightEditBox then f.editBox:HighlightText() end
     else
         f.editBox:Hide()
         f.editBox:ClearFocus()
