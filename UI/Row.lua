@@ -252,14 +252,15 @@ local function decorateTitle(entry, cfg)
     if cfg.showQuestID and entry.id then
         text = text .. (" |cff666666(#%d)|r"):format(entry.id)
     end
+    -- Pin before the NEW tag, matching EQ, so a quest that is both reads "NEW * Title".
+    -- Decorated here rather than gated separately: row._sTitle stores the finished string,
+    -- so the pin repaints for free.
+    if ns:GetModule("Filter"):IsPinned(entry) then
+        text = PIN_TAG .. text
+    end
     if cfg.showRecentlyAddedTag ~= false and entry.addedAt and entry.addedAt > 0
        and (time() - entry.addedAt) < NEW_WINDOW then
         text = NEW_TAG .. text
-    end
-    -- Prepended last so the star reads leftmost, and decorated here rather than gated
-    -- separately: row._sTitle stores the finished string, so the pin repaints for free.
-    if ns:GetModule("Filter"):IsPinned(entry) then
-        text = PIN_TAG .. text
     end
     return text
 end
@@ -316,8 +317,8 @@ local function onMouseUp(row, button)
         return
     end
 
-    -- A provider that offers no menu keeps the plain right-click untrack, so nothing changes
-    -- for achievements, professions or endeavors.
+    -- A provider that offers no menu keeps its existing right-click, so nothing changes for
+    -- achievements or professions.
     if button == "RightButton" then
         local RowMenu = ns:GetModule("RowMenu")
         if RowMenu and RowMenu:Show(row) then return end

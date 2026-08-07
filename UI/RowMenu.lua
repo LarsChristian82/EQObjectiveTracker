@@ -3,8 +3,9 @@ local _, ns = ...
 local RowMenu = ns:RegisterModule("RowMenu", {})
 local L       = ns.L
 
--- Providers return item IDs, never wording. Every user-facing string in the menu lives here,
--- so Data/ stays free of display text and the manifest has one place to harvest.
+-- Providers return item IDs, never translatable wording, so Data/ stays free of display text
+-- and the manifest has one place to harvest. The title row carries the quest name as data, and
+-- an API-registered item supplies its own already-translated label.
 local LABELS = {
     pin        = L["Pin to tracker"],
     unpin      = L["Unpin from tracker"],
@@ -29,8 +30,7 @@ local function byOrder(a, b)
 end
 
 -- Handled here rather than dispatched: opening a link needs the ID and nothing else, so
--- routing it through a provider would be Data/ reaching into UI/ for no gain. Every other
--- item calls a quest API and has to live on the provider.
+-- routing it through a provider would be Data/ reaching into UI/ for no gain.
 local function wowhead(entryID)
     ns:ShowURL("https://www.wowhead.com/quest=" .. tostring(entryID))
 end
@@ -53,6 +53,10 @@ local function run(providerID, entryID, item)
 end
 
 function RowMenu:Show(row)
+    -- No OnEnable, so ns:IsModuleDisabled never covers this. Honored directly, as DragDrop and
+    -- ItemButtons do, or /eqot disable all leaves the menu live - and MenuUtil, StaticPopup and
+    -- the quest log popout are the newest taint vectors a bisection would be trying to rule out.
+    if ns:SafeMode() then return false end
     if not (MenuUtil and MenuUtil.CreateContextMenu) then return false end
 
     local entry, providerID = row._entry, row._providerID

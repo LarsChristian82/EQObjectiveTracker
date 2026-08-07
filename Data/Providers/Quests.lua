@@ -372,8 +372,17 @@ local function abandonQuest(id)
     C_QuestLog.SetAbandonQuest()
 
     local abandonID = C_QuestLog.GetAbandonQuest()
+    -- SetAbandonQuest latches a target. If the quest left the log between opening the menu and
+    -- clicking, the latch can still hold the previous one, and abandoning that is unrecoverable.
+    if abandonID and abandonID ~= id then
+        C_QuestLog.SetSelectedQuest(oldSelected or 0)
+        return
+    end
+    -- Total by construction: a nil here reaches StaticPopup's no-arg branch and the
+    -- confirmation renders a literal %s instead of the quest name.
     local title = (QuestUtils_GetQuestName and QuestUtils_GetQuestName(abandonID))
                   or (C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(abandonID))
+                  or ("Quest #" .. tostring(id))
     local items = C_QuestLog.GetAbandonQuestItems and C_QuestLog.GetAbandonQuestItems()
     if items and #items > 0 and StaticPopupDialogs and StaticPopupDialogs.ABANDON_QUEST_WITH_ITEMS then
         StaticPopup_Show("ABANDON_QUEST_WITH_ITEMS", title, table.concat(items, ", "))

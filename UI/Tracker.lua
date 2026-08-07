@@ -85,23 +85,51 @@ local function makeHeaderIcon(f, texture, tooltip, onClick)
     return b
 end
 
--- Icons registered through ns.API are built lazily here, so an addon that registers before or
--- after the frame exists lands the same way. The list is empty in the standalone case.
+-- Icons registered through ns:GetModule("API") are built lazily here, so an addon that registers
+-- before or after the frame exists lands the same way. The list is empty in the standalone
+-- case. The whole run is rebuilt rather than appended to, because a de-registered icon has to
+-- disappear and a re-registered one has to pick up its new texture and handler - a button
+-- built once captures the spec it was made from.
 function Tracker:RebuildHeaderIcons()
     local f = self.frame
     if not (f and f.headerIcons) then return end
 
     local specs = ns:GetModule("API"):HeaderIcons()
     f._apiIcons = f._apiIcons or {}
+
+    local live = {}
+    for i = 1, #specs do live[specs[i].id] = true end
+    -- A frame cannot be destroyed, so a dropped icon is hidden and unanchored instead.
+    for id, b in pairs(f._apiIcons) do
+        if not live[id] then
+            b:Hide()
+            b:ClearAllPoints()
+            f._apiIcons[id] = nil
+        end
+    end
+
+    -- The cogwheel is EQOT's own and always index 1, so the API run is rebuilt after it.
+    for i = #f.headerIcons, 2, -1 do f.headerIcons[i] = nil end
+
     for i = 1, #specs do
         local spec = specs[i]
         local b = f._apiIcons[spec.id]
+        -- AddHeaderIcon stores a fresh table per call, so an id re-registered with a new
+        -- texture or handler arrives as a different spec and has to be rebuilt - the button
+        -- captured the spec it was made from.
+        if b and b._apiSpec ~= spec then
+            b:Hide()
+            b:ClearAllPoints()
+            f._apiIcons[spec.id] = nil
+            b = nil
+        end
         if not b then
             b = makeHeaderIcon(f, spec.texture, spec.tooltip, function() spec.onClick() end)
-            b._dbKey = spec.dbKey
+            b._apiSpec = spec
             f._apiIcons[spec.id] = b
-            f.headerIcons[#f.headerIcons + 1] = b
         end
+        b._dbKey = spec.dbKey
+        f.headerIcons[#f.headerIcons + 1] = b
     end
 
     self:ApplyHeaderIcons()

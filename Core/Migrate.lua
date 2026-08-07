@@ -137,8 +137,8 @@ local function importIDSet(dst, src, key)
     return n
 end
 
--- EQ calls the world quest section "events"; EQOT calls it "worldquests". Every other section
--- id is already identical, which is why only this one is listed.
+-- EQ calls the world quest section "events" where EQOT calls it "worldquests". Every other
+-- section id is already identical, which is why only this one is listed.
 local COLLAPSE_ID = { events = "worldquests" }
 
 local function importChar(db)
@@ -267,8 +267,6 @@ function Migrate:ImportFromEQ(db)
         end
     end
 
-    n = n + importChar(db)
-
     -- The only global-scope key the two addons share. Both windows are 1020x720 and both
     -- sliders run 0.7-1.4, so an imported value is always representable.
     local sgl = eqGlobal()
@@ -278,6 +276,19 @@ function Migrate:ImportFromEQ(db)
     end
 
     if db.global then db.global.eqConfigImported = true end
+    return n
+end
+
+-- Once per character, tracked by its own char-scope flag. force is the manual /eqot importeq
+-- path, which is the user explicitly asking for EQ's state again.
+function Migrate:ImportCharFromEQ(db, force)
+    local char = db and db.char
+    if not char then return 0 end
+    if char.eqCharImported and not force then return 0 end
+    if not self:HasEQConfig() then return 0 end
+
+    local n = importChar(db)
+    char.eqCharImported = true
     return n
 end
 
@@ -293,6 +304,12 @@ function Migrate:Run(db, isFreshInstall)
             ns:Print((L["imported %d settings from Everything Quests."]):format(n))
         end
     end
+
+    -- Gated per CHARACTER, not on the fresh-install flag. That flag reads an account-wide
+    -- saved variable, while EQ's pins, hidden quests and collapsed sections live in a
+    -- per-character one - so keying this off the same flag would import the first character
+    -- to log in and silently drop every alt's state.
+    self:ImportCharFromEQ(db)
 
     normalizeTrackerPosition(db)
 
@@ -315,8 +332,10 @@ end
 
 function Migrate:DebugLine()
     local g = ns.db and ns.db.global
-    return ("eq import: config %s, char %s, imported %s")
+    local c = ns.db and ns.db.char
+    return ("eq import: config %s, char %s, profile imported %s, char imported %s")
         :format(self:HasEQConfig() and "present" or "absent",
                 eqChar() and "present" or "absent",
-                (g and g.eqConfigImported) and "yes" or "no")
+                (g and g.eqConfigImported) and "yes" or "no",
+                (c and c.eqCharImported) and "yes" or "no")
 end

@@ -225,6 +225,7 @@ local function importEQ()
             -- offsets exactly as it does on a first run.
             if ns.db and ns.db.ResetProfile then ns.db:ResetProfile() end
             local n = Migrate:ImportFromEQ(ns.db)
+            n = n + Migrate:ImportCharFromEQ(ns.db, true)
             ns:Print((L["imported %d settings from Everything Quests."]):format(n or 0))
             ReloadUI()
         end,

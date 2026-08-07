@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-06
+
+Fixes for the right-click menu and the Everything Quests import that shipped in 1.3.0.
+
+### Bug Fixes
+
+- Importing your Everything Quests state now runs on every character. It previously ran only
+  on the first character you logged into after installing, so every other character silently
+  lost its pinned quests, hidden quests, collapsed sections and saved world quest watches.
+- Abandoning a quest from the menu now confirms the quest you actually clicked. If the quest
+  left your log while the menu was open it could offer to abandon a different one.
+- The abandon confirmation now names the quest even when its details have not loaded yet,
+  instead of showing a placeholder.
+- `/eqot disable all` now switches off the right-click menu too. It stayed active, which
+  defeated the point when using it to track down a fault.
+- A star on a pinned quest now sits after the NEW tag rather than before it, matching
+  Everything Quests.
+
+### Improvements
+
+- Addons adding their own icons to the tracker header can now remove them again, and can set
+  where each one sits. Removing one previously left it on screen until a reload, and adding
+  one back could move the others.
+
 ## [1.3.0] - 2026-08-06
 
 Right-clicking a quest now opens a menu instead of just untracking it, and quests can be
