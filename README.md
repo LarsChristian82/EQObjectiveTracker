@@ -6,6 +6,10 @@ It is the tracker half of [Everything Quests](https://github.com/wheelbarrel00/E
 extracted so you can use just the tracker without the rest of EQ. It does not require
 Everything Quests, and never will.
 
+The relationship runs the other way: as of Everything Quests v1.38.0, EQ has no tracker of its
+own and installs this one as a dependency. There is one copy of the tracker code now, so a fix
+lands in both places at once.
+
 ## Status
 
 Released, retail only. Tracks quests and campaign quests, world quests,
@@ -15,12 +19,13 @@ Also included: usable quest-item buttons, popups for newly discovered and comple
 quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is
 ready to turn in, and a highlight on the flight point nearest your tracked quest.
 
-The options panel is laid out to match Everything Quests, so the two addons are
-configured the same way round. A setting that only applies while another one is on is
-dimmed while that one is off, so it is clear which settings are actually in effect.
+A setting that only applies while another one is on is dimmed while that one is off, so it is
+clear which settings are actually in effect.
 
-If you already run Everything Quests, your tracker settings are imported the first time
-this addon loads, so it starts out looking the way yours already does.
+If you already ran Everything Quests, your tracker settings are imported the first time this
+addon loads, so it starts out looking the way yours already did. Your per-character state
+comes across too, on every character: pinned quests, hidden quests, collapsed sections and
+saved world quest watches.
 
 Partly translated into French, Russian and Korean. Anything not yet translated falls
 back to English on its own, so a partial translation is never a broken one.
@@ -86,7 +91,25 @@ There is no build step. The repository is the addon - clone it straight into
 `Interface\AddOns\EQObjectiveTracker`, or junction it there.
 
 Releases are produced by the [BigWigs packager](https://github.com/BigWigsMods/packager)
-on an annotated `v` tag.
+on an annotated `v` tag. A tag whose name carries a prerelease suffix, such as
+`v1.4.0-beta1`, publishes to the beta channel instead.
+
+## Extending it
+
+Another addon can add its own entries to a quest's right-click menu and its own icons to the
+tracker header, through the global `EQObjectiveTracker`:
+
+```lua
+local API = EQObjectiveTracker:GetModule("API")
+API:AddMenuItem{ id = "mine", providerID = "quests", label = "Do a thing", order = 35,
+                 onClick = function(providerID, questID) end }
+API:AddHeaderIcon{ id = "mine", texture = [[Interface\Icons\INV_Misc_QuestionMark]],
+                   tooltip = "Do a thing", order = 20, onClick = function() end }
+```
+
+Callbacks receive the provider ID and the entry ID, never the entry table, because entries are
+rebuilt on every quest event. `/eqot status` reports what is registered. Everything Quests uses
+this for its Chain Guide icon and its "Get Directions" menu entry.
 
 ## License
 
