@@ -28,7 +28,6 @@ if GetLocale() ~= "ruRU" then return end
 local _, ns = ...
 local L = ns.L
 
-
 -- Options/TabGeneral.lua
 L["General"] = "Основные"
 L["Lock tracker"] = "Заблокировать трекер"
@@ -44,10 +43,12 @@ L["Matches Blizzard's default."] = "Соответствует стандарт�
 L["Keep focused quest after relog"] = "Сохранять выбранное задание после перезахода"
 L["Restores the waypoint arrow."] = "Восстанавливает стрелку пути."
 L["Options Window Scale"] = "Масштаб окна настроек"
+L["Resizes this EQ Objective Tracker options window only. It does not change the quest tracker or anything shown in the game world. The new size applies when you let go of the slider."] = "Изменяет размер только этого окна настроек EQ Objective Tracker. Это не влияет на трекер заданий и ни на что, отображаемое в игровом мире. Новый размер применяется, когда вы отпускаете ползунок."
 L["Reset all settings"] = "Сбросить все настройки"
 L["Reset"] = "Сброс"
 L["Cancel"] = "Отмена"
 L["Profiles"] = "Профили"
+L["Switching profiles reloads the UI. Profiles are shared across characters. Use them to keep different setups such as raid and solo. |cffEBB706New Profile|r prompts for a name and creates it on the spot."] = "Переключение профилей перезагружает интерфейс. Профили общие для всех персонажей; используйте их для разных настроек (например, рейд vs соло). |cffEBB706Новый профиль|r запросит имя и создаст его на месте."
 L["Active profile"] = "Активный профиль"
 L["New Profile"] = "Новый профиль"
 L["Profile name:"] = "Имя профиля:"
@@ -75,11 +76,13 @@ L["Reorders where this section sits in the tracker. A section only shows while i
 L["Tracker"] = "Трекер"
 L["On-Screen Tracker"] = "Экранный трекер"
 L["Changes apply immediately to the on-screen tracker."] = "Изменения применяются к экранному трекеру немедленно."
+L["Show only tracked quests"] = "Показывать только отслеживаемые задания"
 L["Simplify Mode"] = "Упрощённый режим"
 L["Show only the first incomplete objective per quest."] = "Показывать только первое невыполненное условие задания."
 L["Simplify tracked achievements"] = "Упрощать отслеживаемые достижения"
 L["Show only incomplete criteria for tracked achievements."] = "Показывать только невыполненные критерии для отслеживаемых достижений."
 L["Sort Order"] = "Порядок сортировки"
+L["Drag and drop the quests in the tracker to reorder them however you like."] = "Перетаскивайте задания в трекере, чтобы изменить их порядок как угодно."
 L["Filters"] = "Фильтры"
 L["Show only quests in current zone"] = "Показывать только задания в текущей зоне"
 L["Reset filters to defaults"] = "Сбросить фильтры"
@@ -88,7 +91,11 @@ L["Auto-list current-zone world quests"] = "Авто-список локальн
 L["Lists every WQ in your zone without tracking each."] = "Показывает все локальные задания в зоне без отслеживания каждого."
 L["Set a custom World Quests height"] = "Задать свою высоту для локальных заданий"
 L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."] = "По умолчанию область локальных заданий делит место со списком заданий и сжимается, когда заданий много. Включите, чтобы задать ей собственную высоту с помощью ползунка ниже."
+L["World Quests Height"] = "Высота локальных заданий"
 L["Section Order"] = "Порядок разделов"
+L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom, so use the Top/Bottom control."] = "Меняйте порядок разделов трекера стрелками ниже. Раздел появляется в трекере только когда в нём что-то есть, поэтому перестановка пустого раздела может выглядеть так, будто ничего не изменилось. Локальные задания прокручиваются в собственной панели и могут находиться только в самом верху или в самом низу - используйте настройку «Вверху/Внизу»."
+L["World Quests Position"] = "Положение локальных заданий"
+L["Where the World Quests panel sits on the tracker. |cffffffffTop|r puts it above your quests. |cffffffffBottom|r keeps it below your quests, which is the default. World Quests scroll in their own capped panel, which is why they can't be mixed in between the other sections."] = "Где панель локальных заданий располагается в трекере. |cffffffffВверху|r ставит её над вашими заданиями; |cffffffffВнизу|r оставляет её под заданиями (по умолчанию). Локальные задания прокручиваются в собственной панели с ограниченной высотой, поэтому их нельзя разместить между другими разделами."
 L["Options"] = "Опции"
 L["Quest Title Color By Difficulty"] = "Цвет названия задания по сложности"
 L["Show quest level prefix"] = "Показывать уровень задания в префиксе"
@@ -143,7 +150,10 @@ L["Text Shadow"] = "Тень текста"
 L["Draws a soft drop-shadow behind all tracker text so it stays readable over bright or busy backgrounds. Use Shadow Color to tint it and Shadow Size to set how far it's cast."] = "Отрисовывает мягкую тень позади всего текста трекера, чтобы он оставался читаемым на ярких или насыщенных фонах. Используйте «Цвет тени» для оттенка и «Размер тени» для настройки её отступа."
 L["Shadow Color"] = "Цвет тени"
 L["Shadow Size"] = "Размер тени"
+L["How far the text drop-shadow is cast behind the letters. Higher values give a larger, more pronounced shadow. Lower values keep it tight. Only applies while Text Shadow is on."] = "Насколько далеко от букв отбрасывается тень. Большие значения создают более крупную и заметную тень, меньшие - делают её компактной. Применяется только при включённой тени текста."
 L["Scenario"] = "Сценарий"
+L["Draws a drop-shadow behind the scenario / delve banner text (the Stage and name lines). This is SEPARATE from the Text Shadow above, which affects only the quest and objective text. The banner is styled on its own."] = "Отрисовывает тень позади текста баннера сценария / вылазки (строки «Этап» и название). Это ОТДЕЛЬНАЯ настройка от «Тени текста» выше, которая влияет только на задания и цели - баннер стилизуется отдельно."
+L["How far the scenario banner's drop-shadow is cast. Higher values give a larger, more pronounced shadow. Lower values keep it tight. Only applies while the Scenario Text Shadow above is on."] = "Насколько далеко отбрасывается тень баннера сценария. Большие значения создают более крупную и заметную тень, меньшие - делают её компактной. Применяется только при включённой тени текста сценария."
 L["Banner Alignment"] = "Выравнивание баннера"
 L["Positions the scenario / delve banner within the tracker. Left lines it up with the quest text, Center keeps it centered (the default), and Right pushes it to the tracker's right edge."] = "Располагает баннер сценария / вылазки в трекере. Слева выравнивает его с текстом задания, По центру оставляет по центру (по умолчанию), а Справа прижимает к правому краю трекера."
 L["Banner Text Size"] = "Размер текста баннера"
@@ -154,6 +164,7 @@ L["Hide scroll bar"] = "Скрыть полосу прокрутки"
 L["Scroll Bar Background"] = "Фон полосы прокрутки"
 L["Scroll Bar Color"] = "Цвет полосы прокрутки"
 L["Solid color thumb"] = "Одноцветный бегунок"
+L["Replaces the tracker scroll bar's textured thumb (the draggable block) with a flat single-color block. Use the Thumb Color and Thumb Width controls to style it. Off restores the stock Blizzard bar."] = "Заменяет текстурированный бегунок полосы прокрутки трекера (перетаскиваемый блок) на плоский одноцветный блок. Используйте параметры «Цвет бегунка» и «Ширина бегунка» для настройки. Выкл. восстанавливает стандартную полосу Blizzard."
 L["Thumb Color"] = "Цвет бегунка"
 L["Thumb Width"] = "Ширина бегунка"
 L["Hide scroll bar arrows"] = "Скрыть стрелки полосы прокрутки"
@@ -164,12 +175,16 @@ L["Border"] = "Граница"
 L["Border Color"] = "Цвет границы"
 L["Border Thickness"] = "Толщина границы"
 L["Header Bar"] = "Полоса заголовка"
+L["Draws a colored gradient bar behind each section header (Quests, Campaign, World Quests, and so on), for a look closer to the default Blizzard tracker. Off by default."] = "Рисует цветную градиентную полосу за каждым заголовком раздела (Задания, Кампания, Локальные задания и т.д.), чтобы вид был ближе к стандартному трекеру Blizzard. По умолчанию выкл."
 L["Bar Color"] = "Цвет полосы"
 L["Bar Style"] = "Стиль полосы"
 L["Header Bar 1 is a horizontal gradient (bright on the left, dark on the right). Header Bar 2 is a vertical gradient (bright at the top, dark at the bottom). Bar Color, Bar Height, and Soft edges all apply to whichever style you pick."] = "«Полоса заголовка 1» - это горизонтальный градиент (яркий слева, тёмный справа). «Полоса заголовка 2» - это вертикальный градиент (яркий сверху, тёмный снизу). «Цвет полосы», «Высота полосы» и «Мягкие края» применяются к выбранному стилю."
 L["Soft edges"] = "Мягкие края"
+L["Feathers the top, left, and right edges of the header bar so it blends into the UI instead of sitting in a hard box. The gradient color is unchanged. Only applies while Header bars is on. Off by default."] = "Сглаживает верхний, левый и правый края полосы заголовка, чтобы она вписывалась в интерфейс, а не выглядела как чёткий прямоугольник. Цвет градиента не меняется. Применяется только при включённой «Полосе заголовка»; по умолчанию выкл."
 L["Bar Height"] = "Высота полосы"
+L["How tall the section-header bar is. The bar is centered on the header row, so larger values fill more of it."] = "Высота полосы заголовка раздела. Полоса выровнена по центру строки заголовка, поэтому большие значения заполняют её сильнее."
 L["Edge Softness"] = "Мягкость краёв"
+L["How soft the header bar's feathered edges are when Soft edges is on. Higher is softer, lower tightens toward a hard edge."] = "Насколько мягкими будут сглаженные края полосы заголовка, когда включены «Мягкие края». Больше - мягче; меньше - ближе к чёткому краю."
 L["Colors & Dimensions"] = "Цвета и размеры"
 L["Reset to Defaults"] = "Сбросить к стандартным"
 L["Quest Title Color Override"] = "Цвет заданий"
@@ -234,6 +249,9 @@ L["Normal quests"] = "Обычные задания"
 -- Data/Providers/Achievements.lua
 L["Left-click to open, right-click to untrack."] = "Щёлкните ЛКМ, чтобы открыть, ПКМ - чтобы убрать отслеживание."
 
+-- Data/Providers/Professions.lua
+L["Left-click to open the recipe, right-click to untrack."] = "Щёлкните ЛКМ, чтобы открыть, ПКМ - чтобы убрать отслеживание."
+
 -- Data/Providers/WorldQuests.lua
 L["Ready to turn in"] = "Готово к сдаче"
 
@@ -244,6 +262,9 @@ L["Delve Bonus Loot"] = "Бонусная добыча вылазки"
 L["Click to view quest"] = "Нажмите, чтобы посмотреть задание"
 L["Quest Complete!"] = "Задание выполнено!"
 L["Quest Discovered!"] = "Задание обнаружено!"
+
+-- UI/Commands.lua
+L["tracker locked."] = "Трекер заблокирован"
 
 -- UI/RewardTooltip.lua
 L["Equip \226\128\148 empty slot"] = "Экипировать - пустой слот"
@@ -291,4 +312,5 @@ L["Profession"] = "Профессия"
 
 -- UI/Tracker.lua
 L["Tracker locked"] = "Трекер заблокирован"
+L["/eqot for options"] = "/eqot для настроек"
 L["Open the options panel"] = "Открыть панель настроек"
