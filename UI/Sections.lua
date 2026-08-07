@@ -304,7 +304,9 @@ function Sections:Place(header, content, y, group, collapsed, showTotal, extra)
     else
         header.count:SetText(tostring(visible))
     end
-    header.collapse:SetText(collapsed and "+" or "\226\128\147")
+    -- ASCII rather than an en dash: the Korean client font has no glyph for U+2013
+    -- and every section header drew an empty box.
+    header.collapse:SetText(collapsed and "+" or "-")
     return HEADER_H
 end
 
