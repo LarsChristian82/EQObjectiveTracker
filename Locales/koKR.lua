@@ -229,14 +229,23 @@ L["Count Color"] = "개수 색상"
 L["About"] = "정보"
 L["Version %s"] = "버전 %s"
 L["by Wheelbarrel00"] = "제작: Wheelbarrel00"
+L["Join our Discord"] = "디스코드 참여"
+L["CurseForge"] = "CurseForge"
+L["GitHub"] = "GitHub"
+L["Report a Bug"] = "버그 신고"
 L["Commands"] = "명령어"
+L["Thanks"] = "감사의 말"
+L["Changelog"] = "변경 내역"
+L["Older versions are on CurseForge"] = "이전 버전은 CurseForge에 있습니다"
 
 -- Options/Frame.lua
 L["Clear"] = "비우기"
+L["Join our Discord!"] = "디스코드 참여!"
 
 -- Core/Init.lua
 L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "아래 링크를 복사하세요(이미 선택됨 - Ctrl+C):"
 L["Close"] = "닫기"
+L["Join the community for help, feedback, and updates.\nCopy the invite below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "도움, 피드백, 업데이트를 위해 커뮤니티에 참여하세요.\n아래 초대 링크를 복사하세요(이미 선택됨 - Ctrl+C):"
 
 -- Data/Filter.lua
 L["World Quests"] = "전역 퀘스트"

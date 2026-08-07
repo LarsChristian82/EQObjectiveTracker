@@ -869,6 +869,32 @@ function Options:Build()
     version:SetText("v" .. ns.VERSION)
     version:SetTextColor(1, 1, 1)
 
+    -- Gold rather than the panel's white, as EQ has it. This is the only LINK in the panel,
+    -- so it is the third sanctioned use of GOLD alongside tooltip titles and the swatch rim.
+    local discord = CreateFrame("Button", nil, f)
+    discord.icon = discord:CreateTexture(nil, "OVERLAY")
+    discord.icon:SetSize(16, 16)
+    discord.icon:SetPoint("LEFT", 0, 0)
+    discord.icon:SetTexture("Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\discord.tga")
+    discord.text = discord:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    discord.text:SetPoint("LEFT", discord.icon, "RIGHT", 5, 0)
+    discord.text:SetText(L["Join our Discord!"])
+    discord.text:SetTextColor(unpack(GOLD))
+    -- `<= 0` as well as nil, because 0 is truthy in Lua and an unmeasured string would size
+    -- the button to the icon alone, leaving the label unclickable with nothing to show why.
+    local discordW = discord.text:GetStringWidth()
+    if not discordW or discordW <= 0 then discordW = 90 end
+    discord:SetSize(16 + 5 + discordW + 4, 18)
+    discord:SetPoint("TOPLEFT", 14, -15)
+    discord:SetScript("OnClick", function() ns:ShowDiscord() end)
+    discord:SetScript("OnEnter", function(s) s.text:SetTextColor(1, 1, 1) end)
+    discord:SetScript("OnLeave", function(s) s.text:SetTextColor(unpack(GOLD)) end)
+    -- MUST stay below the two SetScript calls. AttachTooltip uses HookScript, so the color
+    -- swap runs and then the tooltip draws. Above them, SetScript would replace the hook
+    -- chain and the tooltip would vanish silently, with the hover color still working.
+    -- EQ wraps this tooltip's title but hardcodes its body in English.
+    self:AttachTooltip(discord, L["Join our Discord"], L["Click to copy the invite link."])
+
     -- Untemplated to match EQ - UIPanelCloseButton draws Blizzard's own red panel art.
     local close = CreateFrame("Button", nil, f)
     close:SetSize(20, 20)

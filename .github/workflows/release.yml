@@ -35,6 +35,13 @@ jobs:
       - name: Check TOC coverage
         run: python3 docs/check_toc.py
 
+      # Core/Changelog.lua is generated from CHANGELOG.md and rendered by the About tab.
+      # Skipping the regenerate ships an in-game changelog whose newest entry is the
+      # PREVIOUS version - the file still parses, so luacheck, check_toc and the locale
+      # gate all pass. This is the only thing that catches it.
+      - name: Check changelog is regenerated
+        run: python3 docs/_gen_changelog.py --check
+
       # Fails on a wrapped string missing from the manifest, a translation keyed on a
       # phrase the code no longer uses, or a translation carrying more format
       # specifiers than its English key - the last of which errors at runtime, in one

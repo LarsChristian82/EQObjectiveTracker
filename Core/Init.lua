@@ -2,7 +2,7 @@ local addonName, ns = ...
 
 _G.EQObjectiveTracker = ns
 ns.NAME    = addonName
-ns.VERSION = "1.3.1"
+ns.VERSION = "1.4.0"
 
 ns.modules     = {}
 ns.moduleOrder = {}
@@ -38,6 +38,25 @@ function ns:ShowURL(url)
         button1          = L["Close"],
         hasEditBox       = true,
         editBoxText      = url,
+        highlightEditBox = true,
+    })
+end
+
+-- One community server across every addon by this author. EQ titles this dialog with its
+-- own name, so the faithful mirror is this addon's own name - and a standalone user who has
+-- never installed EQ must not be shown another addon's branding.
+ns.DISCORD_URL = "https://discord.gg/vm8K2WfQUE"
+
+function ns:ShowDiscord()
+    local D = self:GetModule("Dialog")
+    if not D then return end
+    local L = self.L
+    D:Show({
+        title            = "EQ Objective Tracker",
+        text             = L["Join the community for help, feedback, and updates.\nCopy the invite below (it's pre-selected \226\128\148 just press Ctrl+C):"],
+        button1          = L["Close"],
+        hasEditBox       = true,
+        editBoxText      = self.DISCORD_URL,
         highlightEditBox = true,
     })
 end

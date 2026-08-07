@@ -229,14 +229,23 @@ L["Count Color"] = "Couleur du compteur"
 L["About"] = "À propos"
 L["Version %s"] = "Version %s"
 L["by Wheelbarrel00"] = "par Wheelbarrel00"
+L["Join our Discord"] = "Nous rejoindre sur Discord"
+L["CurseForge"] = "CurseForge"
+L["GitHub"] = "GitHub"
+L["Report a Bug"] = "Signaler un bug"
 L["Commands"] = "Commandes"
+L["Thanks"] = "Remerciements"
+L["Changelog"] = "Journal des modifications"
+L["Older versions are on CurseForge"] = "Les anciennes versions sont sur CurseForge"
 
 -- Options/Frame.lua
 L["Clear"] = "Nettoyer"
+L["Join our Discord!"] = "Rejoignez-nous sur Discord!"
 
 -- Core/Init.lua
 L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "Copiez le lien ci-dessous (pré-sélectionné - faites juste Ctrl+C):"
 L["Close"] = "Fermer"
+L["Join the community for help, feedback, and updates.\nCopy the invite below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "Rejoignez la communauté pour de l'aide, des suggestions, et des mises à jour.\nCopiez l'invitation ci-dessous (pré-sélectionnée - faites juste Ctrl+C):"
 
 -- Data/Filter.lua
 L["World Quests"] = "Expéditions"

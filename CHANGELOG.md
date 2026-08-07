@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-06
+
+The About tab now tells you what changed, where to get help, and who to thank.
+
+### New Features
+
+- The About tab now carries the full changelog, so what changed in every release can be read
+  in game rather than on the addon page.
+- A Thanks section on the About tab, crediting DrahgunFyre for the features, fixes and
+  reports that shaped the tracker, and Zox, Malevi4 and labrie75 for the French, Russian and
+  Korean translations that every non-English string in the addon comes from.
+- A Discord link in the top left of the options window and on the About tab, alongside links
+  to CurseForge, GitHub and the bug tracker. Clicking one offers the address as selectable
+  text, since the game cannot open a browser.
+
+### Improvements
+
+- The About tab's command list now includes `/eqot unhide` and `/eqot importeq`, and lines its
+  descriptions up in a column. Both were missing, and they are the two commands you need when
+  something has gone wrong: nothing else brings back an entry you hid by shift-clicking it, or
+  re-runs the Everything Quests import.
+
 ## [1.3.1] - 2026-08-06
 
 Fixes for the right-click menu and the Everything Quests import that shipped in 1.3.0.
@@ -79,7 +101,7 @@ tracker behaves as it did.
 - Reset to Defaults on the Appearance tab no longer switches off a configured zone progress
   bar, or pulls a docked one back out into a floating bar. It restyles the tracker, which is
   what it says it does.
-- Cancelling the color picker no longer writes a value. Opening Quest Title Color Override
+- Canceling the color picker no longer writes a value. Opening Quest Title Color Override
   and pressing Escape used to turn every quest title flat white and silently switch off
   coloring by difficulty. Closing the options window part way through a pick is covered too.
 - World quests you tracked by hand are no longer dropped from the saved watch list, so they
@@ -106,7 +128,7 @@ number of labels and tooltips that described the wrong thing have been corrected
   currencies, and items with an item level comparison against what you have equipped.
   Previously it showed only the quest name and a note about clicking.
 - Hovering a world quest additionally shows its faction and how long is left, with the time
-  coloured by how close it is to expiring, matching the countdown on the row itself.
+  colored by how close it is to expiring, matching the countdown on the row itself.
 - A control that only applies while another setting is on is now dimmed while that setting
   is off, so it is clear at a glance which settings are actually in effect.
 - Each of the eight sort orders now explains what it sorts by on hover.
@@ -121,8 +143,8 @@ number of labels and tooltips that described the wrong thing have been corrected
   Tracker tab to join its styling on the Appearance tab.
 - Hide scroll bar moved to the Appearance tab, at the top of the scroll bar settings it
   turns off, rather than sitting two tabs away from them.
-- Buttons, tabs, dropdowns and colour swatches now respond to the mouse.
-- Colour settings line up in a column, and the whole row is clickable rather than just the
+- Buttons, tabs, dropdowns and color swatches now respond to the mouse.
+- Color settings line up in a column, and the whole row is clickable rather than just the
   small swatch.
 - A dropdown list marks the setting you are using, opens scrolled to it, and opens upward
   when there is no room below.
@@ -137,9 +159,9 @@ number of labels and tooltips that described the wrong thing have been corrected
 
 ### Bug Fixes
 
-- Cancelling the colour picker no longer writes a colour. Opening an unset colour and
+- Canceling the color picker no longer writes a color. Opening an unset color and
   pressing Cancel or Escape used to save white, which turned every quest title white and
-  silently stopped difficulty colouring from applying.
+  silently stopped difficulty coloring from applying.
 - Options Window Scale can no longer push the window's tabs and close button off the top of
   the screen, and the window is kept on screen if dragged to an edge.
 - The section visibility tooltips said they hide a section when the box shows it.
@@ -150,7 +172,7 @@ number of labels and tooltips that described the wrong thing have been corrected
 - Quest Title Color By Difficulty and Show zone label under quest titles could not be
   clicked by their labels, unlike every other checkbox.
 - Reset filters to defaults no longer turns Show only tracked quests back on.
-- Dropdown lists follow the options window scale, and a list or colour picker left open no
+- Dropdown lists follow the options window scale, and a list or color picker left open no
   longer floats over the game world after the window is closed.
 - The Maximum height slider had no effect while a custom World Quests height was set, with
   nothing to indicate it.
@@ -158,7 +180,7 @@ number of labels and tooltips that described the wrong thing have been corrected
 - Pressing Enter on a confirmation dialog opened the chat box behind it.
 - The section reorder arrows kept naming the previous section after a move.
 - Filter tooltips read "Show or hide world quests entries in the tracker."
-- The tracker no longer rebuilds twice every time a checkbox or colour is changed.
+- The tracker no longer rebuilds twice every time a checkbox or color is changed.
 
 ## [1.0.0] - 2026-08-03
 
@@ -168,7 +190,7 @@ control, so moving between the two addons no longer means learning a second layo
 ### Improvements
 
 - The options window is rebuilt throughout: wider, laid out in two columns, and restyled to
-  match Everything Quests. Dropdowns, buttons, sliders, colour swatches and section headers
+  match Everything Quests. Dropdowns, buttons, sliders, color swatches and section headers
   all follow the same look now.
 - Sort order is a row of buttons instead of a button you had to click through to find the
   mode you wanted. All eight modes are visible at once.

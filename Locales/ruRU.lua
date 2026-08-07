@@ -229,14 +229,23 @@ L["Count Color"] = "Цвет счётчика"
 L["About"] = "Об аддоне"
 L["Version %s"] = "Версия %s"
 L["by Wheelbarrel00"] = "от Wheelbarrel00"
+L["Join our Discord"] = "Присоединиться к Discord"
+L["CurseForge"] = "CurseForge"
+L["GitHub"] = "GitHub"
+L["Report a Bug"] = "Сообщить об ошибке"
 L["Commands"] = "Команды"
+L["Thanks"] = "Благодарности"
+L["Changelog"] = "Список изменений"
+L["Older versions are on CurseForge"] = "Прошлые версии на CurseForge"
 
 -- Options/Frame.lua
 L["Clear"] = "Сбросить"
+L["Join our Discord!"] = "Вступай в наше Discord сообщество!"
 
 -- Core/Init.lua
 L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "Скопируйте ссылку ниже (она уже выделена - просто нажмите Ctrl+C):"
 L["Close"] = "Закрыть"
+L["Join the community for help, feedback, and updates.\nCopy the invite below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "Присоединяйтесь к сообществу за помощью, отзывами и обновлениями.\nСкопируйте приглашение ниже (оно уже выделено - просто нажмите Ctrl+C):"
 
 -- Data/Filter.lua
 L["World Quests"] = "Локальные задания"

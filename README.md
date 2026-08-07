@@ -10,6 +10,10 @@ The relationship runs the other way: as of Everything Quests v1.38.0, EQ has no 
 own and installs this one as a dependency. There is one copy of the tracker code now, so a fix
 lands in both places at once.
 
+[Discord](https://discord.gg/vm8K2WfQUE) &middot;
+[CurseForge](https://www.curseforge.com/wow/addons/eq-objective-tracker) &middot;
+[Report a bug](https://github.com/wheelbarrel00/EQObjectiveTracker/issues)
+
 ## Status
 
 Released, retail only. Tracks quests and campaign quests, world quests,
@@ -84,6 +88,9 @@ Profiles are shared across all your characters.
 that exist so far. To add or correct one, edit the file for that language - a phrase left
 out simply stays English. To add a language, copy an existing file, change the locale code
 in both places at the top, and add it to both `.toc` files.
+
+Every non-English string in this addon is somebody else's work. Thanks to **Zox** for the
+French, **Malevi4** for the Russian, and **labrie75** for the Korean.
 
 ## Building
 

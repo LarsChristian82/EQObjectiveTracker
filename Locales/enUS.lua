@@ -303,23 +303,39 @@ L["Lock moving and resizing"] = true
 L["Unlock moving and resizing"] = true
 L["Restore the default position and size"] = true
 L["Show or hide the tracker"] = true
+L["Bring back every entry you have hidden"] = true
+L["Import your Everything Quests settings"] = true
 L["Print provider status to chat"] = true
 L["Toggle entry validation warnings"] = true
+L["Special thanks to %s for the many features, fixes, and reports that keep shaping EQ Objective Tracker."] = true
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into French."] = true
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Russian."] = true
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Korean."] = true
 L["About"] = true
 L["Version %s"] = true
 L["by Wheelbarrel00"] = true
 L["A standalone replacement for the default objective tracker. It does not require Everything Quests, and never will."] = true
+L["Join our Discord"] = true
+L["CurseForge"] = true
+L["GitHub"] = true
+L["Report a Bug"] = true
 L["Commands"] = true
 L["Content providers"] = true
 L["Providers are gated at load time by which TOC file your game flavor used. A provider that is not listed was never loaded."] = true
+L["Thanks"] = true
+L["Changelog"] = true
+L["Older versions are on CurseForge"] = true
 
 -- Options/Frame.lua
 L["Plays the currently selected sound."] = true
 L["Clear"] = true
+L["Join our Discord!"] = true
+L["Click to copy the invite link."] = true
 
 -- Core/Init.lua
 L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = true
 L["Close"] = true
+L["Join the community for help, feedback, and updates.\nCopy the invite below (it's pre-selected \226\128\148 just press Ctrl+C):"] = true
 
 -- Core/Migrate.lua
 L["imported %d settings from Everything Quests."] = true
