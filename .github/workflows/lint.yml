@@ -1,0 +1,30 @@
+name: Lint
+
+# The release workflow lints too, but that only fires once a tag is already pushed -
+# too late to be a gate. This runs the same luacheck on every push and pull request so
+# a regression is caught before it can reach a release. The `branches` filter means a
+# tag push does NOT match here, so a release still lints exactly once.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  luacheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Same action and pinned container (ghcr.io/lunarmodules/luacheck:v1.2.0) as the
+      # release workflow's Lint step - keep the two on the same ref. Ubuntu's `lua-check`
+      # package is mpeterv's abandoned 0.23.0, which is why neither uses apt.
+      # EQOT's gate is 0 warnings AND 0 errors, and luacheck exits non-zero on either,
+      # so no extra threshold handling is needed here.
+      - name: Luacheck
+        uses: lunarmodules/luacheck@v1

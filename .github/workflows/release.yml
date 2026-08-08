@@ -49,10 +49,11 @@ jobs:
       - name: Check locales
         run: python3 docs/_verify_locale.py
 
+      # Ubuntu's `lua-check` package is mpeterv's abandoned 0.23.0. This action runs the
+      # maintained lunarmodules fork from its own container, so CI and the local binary
+      # stay on the same luacheck. Default args are ".", matching the old invocation.
       - name: Lint
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq lua-check
-          luacheck .
+        uses: lunarmodules/luacheck@v1
 
       - name: Show tag info
         run: |
