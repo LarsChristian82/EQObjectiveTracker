@@ -9,6 +9,15 @@ local _, ns = ...
 -- edit CHANGELOG.md and re-run the generator.
 ns.Changelog = {
     {
+        version = "1.4.2", date = "2026-08-07",
+        summary = "French and Russian are complete.",
+        sections = {
+            { head = "Improvements", items = {
+                "French and Russian now cover all 380 of the addon's phrases, up from 255 each, so every label, tooltip, message and command reply in the tracker and the options panel reads in your language. Translated by Zox and Malevi4. Korean is at 378 of the 380, the two outstanding being the World Quests tooltips reworded in 1.4.1.",
+            } },
+        },
+    },
+    {
         version = "1.4.1", date = "2026-08-07",
         summary = "The World Quests section gets the space it was always meant to have and now lists your whole zone, the font pickers show what each font actually looks like, and Korean covers nearly the entire addon.",
         sections = {
