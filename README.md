@@ -38,7 +38,9 @@ back to English on its own, so a partial translation is never a broken one.
 
 - **Quests and Campaign**, in separate sections, with objectives and completion
 - **World quests** in their own capped area, with the quest type on the marker, a
-  colour-coded countdown, and a Find Group button where the game allows one
+  colour-coded countdown, and a Find Group button where the game allows one. Every world
+  quest in your current zone is listed, not only the ones you have tracked, which you can
+  turn off
 - **Scenarios and delves**, with the stage banner and its criteria
 - **Bonus objectives**, on their own movable HUD, including the bonus loot
   mechanics inside a delve. Off by default
@@ -76,8 +78,9 @@ The tracker can hide itself while you are in combat, inside an instance, on a My
 or while the world map is open. Each is its own toggle, and all are off by default.
 
 Almost everything is configurable: fonts (42 bundled, plus anything from
-LibSharedMedia), sizes, spacing, colours, a card layout, section order and visibility,
-filters by quest type, and eight sort modes including by distance and by hand.
+LibSharedMedia, each shown in its own typeface in the picker), sizes, spacing, colours, a
+card layout, section order and visibility, filters by quest type, and eight sort modes
+including by distance and by hand.
 
 Settings live in profiles, so you can keep separate setups and switch between them.
 Profiles are shared across all your characters.
