@@ -1,0 +1,6 @@
+# Force LF in the working tree for authored Lua. Without this a fresh clone on a machine
+# with core.autocrlf=true gets CRLF for every .lua, and the two locale tools then disagree:
+# ../EverythingLocales/scan.py writes the manifest with a fixed LF, while build.py keeps
+# whatever ending the file already had - so the four Locales files end up mixed. Git hides
+# it either way, because autocrlf normalizes on the way into the index.
+*.lua text eol=lf
