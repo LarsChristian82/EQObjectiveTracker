@@ -966,17 +966,17 @@ function Tracker:Render()
     local fraction  = (cfg and cfg.worldQuestsPinnedMaxFraction) or WQ_PIN_FRACTION
     local band      = headerBand()
 
-    -- Quests get vertical-space priority so a trailing section is never left as a header
-    -- with no body, and the floor keeps the world quest region from vanishing entirely.
+    -- The world quest cap binds and quests take the remainder. Quests scroll, so height
+    -- costs them only a drag, where giving them priority instead starved world quests to
+    -- questFloor and clipped their first row - the fraction could never apply on a normal
+    -- quest log. questFloor is what stops a trailing section becoming a header with no body.
     local eventsCap
+    local questFloor = band + 40
     if cfg and cfg.worldQuestsHeightOverride then
-        local wqWant   = band + math.max(0, cfg.worldQuestsHeight or 0)
-        local questMin = band + 40
-        eventsCap = math.max(0, math.min(wqWant, available - questMin))
+        local wqWant = band + math.max(0, cfg.worldQuestsHeight or 0)
+        eventsCap = math.max(0, math.min(wqWant, available - questFloor))
     else
-        local wqFloor    = band + 40
-        local questWants = math.min(questContentH, math.max(1, available - wqFloor))
-        eventsCap = math.max(0, math.min(math.floor(available * fraction), available - questWants))
+        eventsCap = math.max(0, math.min(math.floor(available * fraction), available - questFloor))
     end
 
     local wqH, wqTimed = self:_RenderPinnedWorldQuests(byGroup[PINNED_GROUP], eventsCap, width, cfg)

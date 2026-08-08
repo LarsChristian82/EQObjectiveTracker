@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-08-07
+
+The World Quests section gets the space it was always meant to have and now lists your whole
+zone, the font pickers show what each font actually looks like, and Korean covers nearly the
+entire addon.
+
+### Bug Fixes
+
+- The World Quests section was squeezed to a single clipped row whenever the quest list was
+  long. Quests were handed all the vertical space they asked for and world quests were left a
+  68 pixel floor, so once your quest list filled the tracker the Maximum Height setting stopped
+  having any say. That cap now applies first and the quest list takes the space that is left,
+  which costs it only a scroll. A short world quest list still takes only the room it needs.
+- Section headers showed an empty box where the expand marker belongs on a Korean client. The
+  marker was an en dash, which the Korean game font has no glyph for, and it is a plain hyphen
+  now. Reported with a screenshot by labrie75.
+
+### Improvements
+
+- The world quests in your current zone are now listed by default, rather than only the ones
+  you have tracked yourself. Untick Auto-list current-zone world quests on the Tracker tab if
+  you would rather see only what you track. If you had already turned that off, this update
+  switches it back on once and you will need to untick it again.
+- Ticking Set a custom World Quests height now starts at 200 pixels rather than 120, which is
+  enough room to be worth turning on.
+- The font pickers now draw every font's name in that font, both in the open list and on the
+  closed dropdown, so you can tell the 42 bundled typefaces apart without applying one to find
+  out what it looks like.
+- Korean now covers 378 of the addon's 380 phrases, up from 256, so very nearly every label,
+  tooltip and message in the tracker and the options panel reads in Korean. Translated by
+  labrie75. The two still in English are the World Quests tooltips reworded in this release.
+
 ## [1.4.0] - 2026-08-06
 
 The About tab now tells you what changed, where to get help, and who to thank.

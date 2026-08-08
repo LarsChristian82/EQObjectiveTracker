@@ -159,11 +159,11 @@ DB.defaults = {
                 showBackground = true,
             },
 
-            autoListZoneWorldQuests      = false,
+            autoListZoneWorldQuests      = true,
             worldQuestsPosition          = "bottom",
             worldQuestsPinnedMaxFraction = 0.40,
             worldQuestsHeightOverride    = false,
-            worldQuestsHeight            = 120,
+            worldQuestsHeight            = 200,
         },
     },
     char = {

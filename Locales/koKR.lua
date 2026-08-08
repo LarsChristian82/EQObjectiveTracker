@@ -1,13 +1,16 @@
 -- Locales/koKR.lua
 -- Korean (koKR) translations for EQ Objective Tracker.
 --
--- HOW TO USE: type the Korean translation between the quotes after each "=".
--- The English text is the key inside L["..."]. Example:
---     L["Hide tracker in combat"] = "..."
+-- GENERATED FILE. Do not hand-edit: it is rebuilt from the shared translation store
+-- at github.com/wheelbarrel00/EverythingLocales, which feeds this addon and Everything
+-- Quests together so a phrase both use is only translated once. To add or correct a
+-- translation, edit store/koKR.lua there and open a pull request - a change made
+-- here is overwritten on the next build.
 --
 -- KEEP THESE EXACTLY AS THEY APPEAR (do not translate them):
---   |cffaaaaaa ... |r   -> colour codes
+--   |cffaaaaaa ... |r   -> color codes
 --   %d  %s              -> numbers / names get inserted here
+--   %1$s  %2$d          -> the same, when the order has to change in Korean
 --   \n                  -> line break
 --   \"                  -> an escaped quote inside the text
 --
@@ -17,11 +20,6 @@
 -- NOTE: do NOT add an @localization@ packager token here. CurseForge
 -- localization is not enabled on this project. That token fails the release
 -- build with errorCode 1002. Translations are bundled directly below.
---
--- Maintained by docs/_port_translations.py, which fills in any phrase Everything
--- Quests already translates and words identically. It is ADDITIVE: a line already
--- here wins over EQ's and survives a re-run, so corrections and contributions made
--- in this file are safe to keep.
 
 if GetLocale() ~= "koKR" then return end
 
@@ -115,11 +113,9 @@ L["Uncheck to hide this section from the tracker even while it has entries."] = 
 L["Auto-list current-zone world quests"] = "현재 지역 전역 퀘스트 자동 목록"
 L["Lists every WQ in your zone without tracking each."] = "각각 추적하지 않고 지역의 모든 전역 퀘스트를 나열합니다."
 L["Set a custom World Quests height"] = "전역 퀘스트 높이 사용자 지정"
-L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."] = "기본적으로 전역 퀘스트 영역은 퀘스트 목록과 공간을 공유하여 퀘스트가 많으면 좁아집니다. 이 설정을 켜면 아래 슬라이더로 지정한 자체 높이를 갖습니다."
 L["World Quests Height"] = "전역 퀘스트 높이"
 L["Height in pixels for the world quest area. Only used while Set a custom World Quests height is on."] = "전역 퀘스트 영역의 높이(픽셀)입니다. 전역 퀘스트 높이 직접 지정이 켜져 있을 때만 사용됩니다."
 L["Maximum Height (% of tracker)"] = "최대 높이 (추적기의 백분율)"
-L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation. Only used while Set a custom World Quests height is off."] = "전역 퀘스트 영역이 추적기에서 차지할 수 있는 최대치입니다. 퀘스트 섹션에 먼저 자리를 주므로 확보가 아니라 상한입니다. 전역 퀘스트 높이 직접 지정이 꺼져 있을 때만 사용됩니다."
 L["Section Order"] = "섹션 순서"
 L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom, so use the Top/Bottom control."] = "아래 화살표로 추적기의 섹션 순서를 바꿉니다. 섹션은 내용이 있을 때만 추적기에 나타나므로, 비어 있는 섹션의 순서를 바꿔도 변화가 없어 보일 수 있습니다. 전역 퀘스트는 자체 패널에서 스크롤되며 맨 위 또는 맨 아래에만 놓을 수 있습니다 - 위/아래 조절을 사용하세요."
 L["World Quests Position"] = "전역 퀘스트 위치"
@@ -307,8 +303,14 @@ L["Lock moving and resizing"] = "이동/크기 조절 잠금"
 L["Unlock moving and resizing"] = "이동/크기 조절 잠금 해제"
 L["Restore the default position and size"] = "기본 위치와 크기로 복원"
 L["Show or hide the tracker"] = "추적기 표시/숨김"
+L["Bring back every entry you have hidden"] = "숨긴 항목 모두 되살리기"
+L["Import your Everything Quests settings"] = "Everything Quests 설정 가져오기"
 L["Print provider status to chat"] = "제공자 상태를 채팅으로 출력"
 L["Toggle entry validation warnings"] = "항목 검증 경고 켜고 끄기"
+L["Special thanks to %s for the many features, fixes, and reports that keep shaping EQ Objective Tracker."] = "EQ Objective Tracker를 계속 다듬어 주는 수많은 기능과 수정, 제보를 보내 주신 %s 님께 특별히 감사드립니다."
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into French."] = "EQ Objective Tracker의 프랑스어 번역에 많은 시간을 쏟아 주신 %s 님께 특별히 감사드립니다."
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Russian."] = "EQ Objective Tracker의 러시아어 번역에 많은 시간을 쏟아 주신 %s 님께 특별히 감사드립니다."
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Korean."] = "EQ Objective Tracker의 한국어 번역에 많은 시간을 쏟아 주신 %s 님께 특별히 감사드립니다."
 L["About"] = "정보"
 L["Version %s"] = "버전 %s"
 L["by Wheelbarrel00"] = "제작: Wheelbarrel00"
@@ -328,6 +330,7 @@ L["Older versions are on CurseForge"] = "이전 버전은 CurseForge에 있습�
 L["Plays the currently selected sound."] = "현재 선택한 소리를 재생합니다."
 L["Clear"] = "비우기"
 L["Join our Discord!"] = "디스코드 참여!"
+L["Click to copy the invite link."] = "클릭하면 초대 링크가 복사됩니다."
 
 -- Core/Init.lua
 L["Copy the link below (it's pre-selected \226\128\148 just press Ctrl+C):"] = "아래 링크를 복사하세요(이미 선택됨 - Ctrl+C):"

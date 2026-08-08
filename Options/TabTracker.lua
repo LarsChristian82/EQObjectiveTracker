@@ -274,11 +274,11 @@ Options:RegisterTab({
                 setWqHeightEnabled(v)
                 render()
             end,
-            L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."])
+            L["By default the World Quests area is capped to a share of the tracker, set by the slider below that. Turn this on to give it a fixed height in pixels instead."])
         wqhCheck:SetPoint("TOPLEFT", autoWQ, "BOTTOMLEFT", 0, -2)
 
         wqHeightSlider = self:CreateSlider(content, L["World Quests Height"], 40, 400, 10,
-            function() return DB().worldQuestsHeight or 120 end,
+            function() return DB().worldQuestsHeight or 200 end,
             function(v) DB().worldQuestsHeight = v; render() end,
             L["Height in pixels for the world quest area. Only used while Set a custom World Quests height is on."])
         wqHeightSlider:SetPoint("TOPLEFT", wqhCheck, "BOTTOMLEFT", 0, -8)
@@ -291,7 +291,7 @@ Options:RegisterTab({
                 DB().worldQuestsPinnedMaxFraction = v / 100
                 render()
             end,
-            L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation. Only used while Set a custom World Quests height is off."])
+            L["The most of the tracker the world quest area may take. It is capped here first and your quest list takes the space that is left, scrolling for whatever does not fit. Only used while Set a custom World Quests height is off."])
         wqMaxSlider:SetPoint("TOPLEFT", wqHeightSlider, "BOTTOMLEFT", 0, -14)
         setWqHeightEnabled(DB().worldQuestsHeightOverride)
 

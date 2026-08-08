@@ -33,6 +33,11 @@ local candidates, seen, watched = {}, {}, {}
 local sourceStats = { watched = 0, autozone = 0, inzone = 0, questlog = 0,
                       wq = 0, bonus = 0, logOwned = 0 }
 local currentSource
+-- Values only, formatted on demand in DebugLine. GetEntries runs on the render path, so
+-- building the strings here would allocate on every repaint for a line nobody has asked for.
+local rawZoneList, autoListOn = 0, false
+local detailN = 0
+local detailID, detailKind, detailMins, detailNamed = {}, {}, {}, {}
 
 local function push(qid)
     if qid and not seen[qid] then
@@ -42,12 +47,24 @@ local function push(qid)
     end
 end
 
+local detailBuf = {}
+
 function WorldQuests:DebugLine()
     local m = ns.Has.Map and C_Map.GetBestMapForUnit("player")
-    return ("sources: watched %d, zone-list %d, in-zone %d, quest log %d   map %s\n      kinds: %d real world quests, %d task/bonus, %d normal log quests (left to Quests)")
+    for i = 1, detailN do
+        detailBuf[i] = ("%d:%s%s%s"):format(detailID[i], detailKind[i],
+            detailMins[i] and ("/" .. detailMins[i] .. "m") or "",
+            detailNamed[i] and "" or "/noname")
+    end
+    return ("sources: watched %d, zone-list %d, in-zone %d, quest log %d   map %s\n      kinds: %d real world quests, %d task/bonus, %d normal log quests (left to Quests)\n      autoList %s, raw map list %d, api IsWorldQuest=%s IsQuestWorldQuest=%s time=%s\n      candidates: %s")
         :format(sourceStats.watched, sourceStats.autozone, sourceStats.inzone,
                 sourceStats.questlog, tostring(m),
-                sourceStats.wq, sourceStats.bonus, sourceStats.logOwned)
+                sourceStats.wq, sourceStats.bonus, sourceStats.logOwned,
+                tostring(autoListOn), rawZoneList,
+                tostring(C_QuestLog.IsWorldQuest ~= nil),
+                tostring(QuestUtils_IsQuestWorldQuest ~= nil),
+                tostring(ns.Has.WorldQuestTime and true or false),
+                detailN > 0 and table.concat(detailBuf, "  ", 1, detailN) or "none")
 end
 
 local function addWatched()
@@ -118,11 +135,13 @@ end
 local function addZoneWorldQuests()
     local DB  = ns:GetModule("DB")
     local cfg = DB and DB:Tracker()
-    if not (cfg and cfg.autoListZoneWorldQuests) then return end
+    autoListOn = (cfg and cfg.autoListZoneWorldQuests) and true or false
+    if not autoListOn then return end
     if not ns.Has.Map then return end
     local m = C_Map.GetBestMapForUnit("player")
     if not m or m <= 0 then return end
     local list = taskQuestsForMap(m)
+    rawZoneList = list and #list or 0
     for i = 1, (list and #list or 0) do
         local q   = list[i]
         local qid = q and (q.questId or q.questID)
@@ -254,6 +273,8 @@ function WorldQuests:GetEntries()
     sourceStats.watched, sourceStats.inzone, sourceStats.questlog = 0, 0, 0
     sourceStats.autozone = 0
     sourceStats.wq, sourceStats.bonus, sourceStats.logOwned = 0, 0, 0
+    rawZoneList = 0
+    detailN = 0
     currentSource = "watched";  addWatched()
     currentSource = "autozone"; addZoneWorldQuests()
     currentSource = "inzone";   addInZoneTaskQuests()
@@ -279,6 +300,14 @@ function WorldQuests:GetEntries()
             sourceStats.logOwned = sourceStats.logOwned + 1
         else
             sourceStats.bonus = sourceStats.bonus + 1
+        end
+
+        if detailN < 10 then
+            detailN = detailN + 1
+            detailID[detailN]    = qid
+            detailKind[detailN]  = wq and "wq" or (logOwned and "log" or "bonus")
+            detailMins[detailN]  = mins
+            detailNamed[detailN] = name and true or false
         end
 
         -- A watched entry with no time left is an expired ghost. Liveness cannot come

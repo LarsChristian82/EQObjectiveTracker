@@ -1,13 +1,16 @@
 -- Locales/ruRU.lua
 -- Russian (ruRU) translations for EQ Objective Tracker.
 --
--- HOW TO USE: type the Russian translation between the quotes after each "=".
--- The English text is the key inside L["..."]. Example:
---     L["Hide tracker in combat"] = "..."
+-- GENERATED FILE. Do not hand-edit: it is rebuilt from the shared translation store
+-- at github.com/wheelbarrel00/EverythingLocales, which feeds this addon and Everything
+-- Quests together so a phrase both use is only translated once. To add or correct a
+-- translation, edit store/ruRU.lua there and open a pull request - a change made
+-- here is overwritten on the next build.
 --
 -- KEEP THESE EXACTLY AS THEY APPEAR (do not translate them):
---   |cffaaaaaa ... |r   -> colour codes
+--   |cffaaaaaa ... |r   -> color codes
 --   %d  %s              -> numbers / names get inserted here
+--   %1$s  %2$d          -> the same, when the order has to change in Russian
 --   \n                  -> line break
 --   \"                  -> an escaped quote inside the text
 --
@@ -17,11 +20,6 @@
 -- NOTE: do NOT add an @localization@ packager token here. CurseForge
 -- localization is not enabled on this project. That token fails the release
 -- build with errorCode 1002. Translations are bundled directly below.
---
--- Maintained by docs/_port_translations.py, which fills in any phrase Everything
--- Quests already translates and words identically. It is ADDITIVE: a line already
--- here wins over EQ's and survives a re-run, so corrections and contributions made
--- in this file are safe to keep.
 
 if GetLocale() ~= "ruRU" then return end
 
@@ -90,7 +88,6 @@ L["Tracker Visibility"] = "Категории"
 L["Auto-list current-zone world quests"] = "Авто-список локальных заданий текущей зоны"
 L["Lists every WQ in your zone without tracking each."] = "Показывает все локальные задания в зоне без отслеживания каждого."
 L["Set a custom World Quests height"] = "Задать свою высоту для локальных заданий"
-L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."] = "По умолчанию область локальных заданий делит место со списком заданий и сжимается, когда заданий много. Включите, чтобы задать ей собственную высоту с помощью ползунка ниже."
 L["World Quests Height"] = "Высота локальных заданий"
 L["Section Order"] = "Порядок разделов"
 L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom, so use the Top/Bottom control."] = "Меняйте порядок разделов трекера стрелками ниже. Раздел появляется в трекере только когда в нём что-то есть, поэтому перестановка пустого раздела может выглядеть так, будто ничего не изменилось. Локальные задания прокручиваются в собственной панели и могут находиться только в самом верху или в самом низу - используйте настройку «Вверху/Внизу»."

@@ -50,6 +50,13 @@ end
 
 local function DB() return ns:GetModule("DB"):Tracker() end
 
+-- Empty is the zone bar's "same as tracker" sentinel, which has no file of its own and so
+-- correctly falls back to the interface font in the list.
+local function fontPreview(name)
+    if not name or name == "" then return nil end
+    return ns:GetModule("Media"):GetFontFile(name)
+end
+
 -- Font, size, outline and shadow all feed the SetFont pass that pooled rows only redo
 -- when the generation bumps, so every one of these setters must invalidate.
 local function restyle(key, v)
@@ -114,7 +121,8 @@ Options:RegisterTab({
             function() return mediaOptions(ns:GetModule("Media"):GetFontList()) end,
             function() return DB().font end,
             function(v) restyle("font", v) end,
-            L["Fonts registered through LibSharedMedia, so anything from ElvUI or SharedMedia appears here too."])
+            L["Fonts registered through LibSharedMedia, so anything from ElvUI or SharedMedia appears here too."],
+            nil, nil, fontPreview)
         fontDD:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, self.GAP.tabHead)
 
         local sizeSlider = self:CreateSlider(content, L["Font Size"], 8, 24, 0.5,
@@ -544,7 +552,8 @@ Options:RegisterTab({
             end,
             function() local st = zbState(); return (st and st.font) or "" end,
             function(v) zbSet("font", v ~= "" and v or nil) end,
-            L["Font for the floating bar's zone name, count and percentage. The docked section uses the tracker font."])
+            L["Font for the floating bar's zone name, count and percentage. The docked section uses the tracker font."],
+            nil, nil, fontPreview)
         zbFontDD:SetPoint("TOPLEFT", zbScaleSlider, "BOTTOMLEFT", 0, -14)
 
         local zbTexDD = self:CreateDropdown(content, L["Bar Texture"],

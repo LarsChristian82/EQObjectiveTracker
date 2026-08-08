@@ -79,13 +79,20 @@ handlers.status = function()
     if FILT and FILT.DebugLine then ns:Print(FILT:DebugLine()) end
 
     ns:Print("sections (in render order):")
-    for _, id in ipairs(Sections:Order()) do
+    local function sectionLine(id)
         local g = Feed.byGroup[id]
-        ns:Print(("  %-14s %d/%d visible%s%s%s"):format(id,
+        ns:Print(("  %-14s %d/%d visible%s%s%s%s"):format(id,
             g and g.visibleCount or 0, g and g.totalCount or 0,
             Sections:IsVirtual(id) and "  [virtual]" or "",
+            Sections:IsPinned(id) and "  [pinned]" or "",
             Sections:IsHidden(id) and "  [hidden]" or "",
             Sections:IsCollapsed(id) and "  [collapsed]" or ""))
+    end
+    for _, id in ipairs(Sections:Order()) do sectionLine(id) end
+    -- Order() excludes pinned groups, so without this a pinned region reports nothing
+    -- about its own hidden or collapsed state and an empty one reads as switched off.
+    for _, id in ipairs(Sections:Known()) do
+        if Sections:IsPinned(id) then sectionLine(id) end
     end
 
     local active, free = RowPool:Count()

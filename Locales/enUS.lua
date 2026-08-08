@@ -15,8 +15,9 @@
 -- with the code. If you reword an English string, update it here too or the
 -- existing translation orphans (and the new text falls back to English).
 --
--- GENERATED FILE: produced by docs/_gen_enus.py from the L[...] usages in the
--- code. Do not hand-edit. Re-run the generator after an extraction pass.
+-- GENERATED FILE: the phrase list is a pure function of the L[...] usages in the
+-- code. Do not hand-edit. It is rebuilt by scan.py in the EverythingLocales repo,
+-- which also regenerates the translation files from the shared store.
 
 
 local _, ns = ...
@@ -111,11 +112,11 @@ L["Uncheck to hide this section from the tracker even while it has entries."] = 
 L["Auto-list current-zone world quests"] = true
 L["Lists every WQ in your zone without tracking each."] = true
 L["Set a custom World Quests height"] = true
-L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."] = true
+L["By default the World Quests area is capped to a share of the tracker, set by the slider below that. Turn this on to give it a fixed height in pixels instead."] = true
 L["World Quests Height"] = true
 L["Height in pixels for the world quest area. Only used while Set a custom World Quests height is on."] = true
 L["Maximum Height (% of tracker)"] = true
-L["The most of the tracker the world quest area may take. Quest sections are given their space first, so this is a ceiling rather than a reservation. Only used while Set a custom World Quests height is off."] = true
+L["The most of the tracker the world quest area may take. It is capped here first and your quest list takes the space that is left, scrolling for whatever does not fit. Only used while Set a custom World Quests height is off."] = true
 L["Section Order"] = true
 L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom, so use the Top/Bottom control."] = true
 L["World Quests Position"] = true

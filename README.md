@@ -84,10 +84,18 @@ Profiles are shared across all your characters.
 
 ## Translations
 
-`Locales/enUS.lua` is the phrase list; `frFR`, `ruRU` and `koKR` carry the translations
-that exist so far. To add or correct one, edit the file for that language - a phrase left
-out simply stays English. To add a language, copy an existing file, change the locale code
-in both places at the top, and add it to both `.toc` files.
+`Locales/frFR.lua`, `ruRU.lua` and `koKR.lua` are generated, and so is the `enUS.lua` phrase
+list. The translations live in
+[EverythingLocales](https://github.com/wheelbarrel00/EverythingLocales), shared with
+Everything Quests so that a phrase used by both is only ever translated once, and so that a
+phrase moving between the two addons keeps its translation.
+
+**To add or correct a translation, edit `store/<language>.lua` there and open a pull request
+against that repository.** A change made in this repo is overwritten the next time the files
+are built. A phrase left untranslated simply stays English, so partial work is always safe.
+
+A new language needs adding to that repo's language list, and its `Locales/<code>.lua` listed
+in both `.toc` files here.
 
 Every non-English string in this addon is somebody else's work. Thanks to **Zox** for the
 French, **Malevi4** for the Russian, and **labrie75** for the Korean.

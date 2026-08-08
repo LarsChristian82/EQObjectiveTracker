@@ -20,10 +20,13 @@ local function normalizeTrackerPosition(db)
     t.positionInScreenUnits = true
 end
 
--- Keys whose name and meaning are identical on both sides. EQOT's defaults deliberately
--- match EQ's value for value, and AceDB strips defaults at logout, so whatever survives in
--- EQ's saved variables IS the user's deviation - copying it onto EQOT's defaults reproduces
--- their tracker without needing to reason about defaults at all.
+-- Keys whose name and meaning are identical on both sides. EQOT's defaults match EQ's value
+-- for value, and AceDB strips defaults at logout, so whatever survives in EQ's saved variables
+-- IS the user's deviation - copying it onto EQOT's defaults reproduces their tracker without
+-- needing to reason about defaults at all.
+-- Two keys deliberately no longer match EQ: autoListZoneWorldQuests defaults to true here and
+-- worldQuestsHeight to 200. An EQ user who left either alone therefore gets EQOT's value, not
+-- EQ's, which is the intent - EQ's tracker no longer exists to be reproduced faithfully.
 local TRACKER_KEYS = {
     "anchor", "relativePoint", "xOffset", "yOffset", "width", "maxHeight", "scale",
     "simplifyMode", "sortMode", "manualOrder", "showOnlyWatched",

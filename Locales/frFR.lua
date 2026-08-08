@@ -1,13 +1,16 @@
 -- Locales/frFR.lua
 -- French (frFR) translations for EQ Objective Tracker.
 --
--- HOW TO USE: type the French translation between the quotes after each "=".
--- The English text is the key inside L["..."]. Example:
---     L["Hide tracker in combat"] = "..."
+-- GENERATED FILE. Do not hand-edit: it is rebuilt from the shared translation store
+-- at github.com/wheelbarrel00/EverythingLocales, which feeds this addon and Everything
+-- Quests together so a phrase both use is only translated once. To add or correct a
+-- translation, edit store/frFR.lua there and open a pull request - a change made
+-- here is overwritten on the next build.
 --
 -- KEEP THESE EXACTLY AS THEY APPEAR (do not translate them):
---   |cffaaaaaa ... |r   -> colour codes
+--   |cffaaaaaa ... |r   -> color codes
 --   %d  %s              -> numbers / names get inserted here
+--   %1$s  %2$d          -> the same, when the order has to change in French
 --   \n                  -> line break
 --   \"                  -> an escaped quote inside the text
 --
@@ -17,11 +20,6 @@
 -- NOTE: do NOT add an @localization@ packager token here. CurseForge
 -- localization is not enabled on this project. That token fails the release
 -- build with errorCode 1002. Translations are bundled directly below.
---
--- Maintained by docs/_port_translations.py, which fills in any phrase Everything
--- Quests already translates and words identically. It is ADDITIVE: a line already
--- here wins over EQ's and survives a re-run, so corrections and contributions made
--- in this file are safe to keep.
 
 if GetLocale() ~= "frFR" then return end
 
@@ -90,7 +88,6 @@ L["Tracker Visibility"] = "Visibilité du module de suivi"
 L["Auto-list current-zone world quests"] = "Lister automatiquement les expéditions de la zone actuelle"
 L["Lists every WQ in your zone without tracking each."] = "Liste les expéditions de la zone sans les suivre."
 L["Set a custom World Quests height"] = "Définir une hauteur personnalisée pour les Expéditions"
-L["By default the World Quests area shares space with your quest list and gets squeezed when you have a lot of quests. Turn this on to give it its own height, set by the slider below."] = "Par défaut, la zone des Expéditions partage l'espace avec votre liste de quêtes et se retrouve à l'étroit quand vous avez beaucoup de quêtes. Activez ceci pour lui donner sa propre hauteur, réglée par le curseur ci-dessous."
 L["World Quests Height"] = "Hauteur des Expéditions"
 L["Section Order"] = "Ordre des sections"
 L["Rearrange the tracker's sections with the arrows below. A section only appears on the tracker while it has something in it, so reordering an empty section won't look like anything changed. World Quests scroll in their own panel and can only sit at the very top or bottom, so use the Top/Bottom control."] = "Réorganisez les sections du module de suivi avec les flèches ci-dessous. Une section n'apparaît sur le module que lorsqu'elle contient quelque chose, donc réordonner une section vide ne semblera rien changer. Les Expéditions défilent dans leur propre panneau et ne peuvent être placées qu'en haut ou en bas. Utilisez le réglage Haut/Bas."

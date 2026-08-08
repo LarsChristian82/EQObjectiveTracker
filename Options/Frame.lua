@@ -354,9 +354,27 @@ end
 
 local SWATCH_W, SWATCH_H = 60, 12
 
+local DD_PREVIEW_SIZE = 14
+
+-- SetFont in BOTH directions, because an explicit SetFont is what has to be undone and
+-- SetFontObject was observed not undoing it: the shared popup's rows are pooled across every
+-- dropdown, and a font list left its faces on the profile and sound lists that reused them.
+-- Success is read back with GetFont rather than from SetFont's return value, which is only
+-- documented for EditBox - a file that fails to load leaves the string with no font at all.
+local function applyPreviewFont(fs, path)
+    if path and path ~= "" then
+        fs:SetFont(path, DD_PREVIEW_SIZE, "")
+        if fs:GetFont() then return end
+    end
+    local file, size, flags = _G.GameFontNormal:GetFont()
+    if file then fs:SetFont(file, size, flags) else fs:SetFontObject(_G.GameFontNormal) end
+    fs:SetTextColor(1, 1, 1)
+end
+
 -- One popup is shared by every dropdown, so a row that grew a swatch has to give it back
 -- when a plain list reuses it.
-local function decorateRow(b, item, decorate)
+local function decorateRow(b, item, decorate, previewFont)
+    applyPreviewFont(b.text, previewFont and previewFont(item))
     if decorate then
         if not b.swatch then
             b.swatchBg = b:CreateTexture(nil, "BACKGROUND")
@@ -382,7 +400,7 @@ local function decorateRow(b, item, decorate)
     end
 end
 
-local function showDropdown(anchor, opts, onPick, decorate, current)
+local function showDropdown(anchor, opts, onPick, decorate, current, previewFont)
     local p = dropdownPopup()
     -- The popup hangs off UIParent, so it does not inherit the options window's scale.
     -- Matching it also puts anchor and popup back in one unit space, which the width
@@ -427,7 +445,7 @@ local function showDropdown(anchor, opts, onPick, decorate, current)
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT",  p.content, "TOPLEFT",  0, -(i - 1) * DD_ROW)
         b:SetPoint("TOPRIGHT", p.content, "TOPRIGHT", 0, -(i - 1) * DD_ROW)
-        decorateRow(b, opt.value, decorate)
+        decorateRow(b, opt.value, decorate, previewFont)
         b.text:SetText(opt.label)
         -- Marked the way the radio buttons mark their active choice, so 42 fonts or 27
         -- sounds do not open with nothing saying which one is in use.
@@ -458,8 +476,10 @@ end
 -- reach the profile and a setter never has to compare against a display string.
 -- decorate(frame, value) draws a preview on the closed button and on every row. Passed by
 -- pickers whose values are not self-describing, such as a status bar texture.
+-- previewFont(value) returns a font file to draw that row's own label in, which is the only
+-- preview a font list can have - a swatch cannot show a typeface.
 -- onTest(value) adds a speaker button left of the closed bar that replays the current pick.
-function Options:CreateDropdown(content, label, options, getter, setter, tooltip, decorate, onTest)
+function Options:CreateDropdown(content, label, options, getter, setter, tooltip, decorate, onTest, previewFont)
     local holder = CreateFrame("Frame", nil, content)
     holder:SetSize(280, 44)
 
@@ -521,6 +541,7 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
     local function refresh()
         local current = getter()
         if decorate then decorate(btn, current) end
+        applyPreviewFont(btn.text, previewFont and previewFont(current))
         -- "NONE" is this addon's no-sound sentinel (Core/Media.lua returns no file for it),
         -- so previewing it can only ever be silent. Hidden rather than left to look broken.
         if speaker then speaker:SetShown(current ~= nil and current ~= "NONE") end
@@ -535,7 +556,7 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
         showDropdown(btn, resolveOptions(), function(v)
             setter(v)
             refresh()
-        end, decorate, getter())
+        end, decorate, getter(), previewFont)
     end)
 
     holder.button  = btn
