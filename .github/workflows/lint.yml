@@ -28,3 +28,22 @@ jobs:
       # so no extra threshold handling is needed here.
       - name: Luacheck
         uses: lunarmodules/luacheck@v1
+
+  # Its own job so a TOC failure and a lint failure are distinguishable at a glance, and
+  # so neither blocks the other from reporting. The release workflow runs the TOC gate
+  # too, but only once a tag is already pushed - the same reason luacheck runs here.
+  toc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Runs before the gate: a gate that cannot fail is worse than no gate, and this
+      # repo has shipped one that was wrong in both directions. The self-test builds
+      # throwaway trees under a temp directory and never reads the checkout.
+      - name: Prove the TOC gate still fires
+        run: python3 docs/test_check_toc.py
+
+      - name: Check TOC coverage
+        run: python3 docs/check_toc.py
