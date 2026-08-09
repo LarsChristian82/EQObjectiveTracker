@@ -61,6 +61,7 @@ Data\Providers\Professions.lua
 
 # Display layer. Operates on frames, never on a quest API.
 UI\Blizzard.lua
+UI\Questie.lua
 UI\RowPool.lua
 UI\Card.lua
 UI\DragDrop.lua
@@ -85,4 +86,7 @@ Options\TabTracker.lua
 Options\TabAppearance.lua
 Options\TabAbout.lua
 
+# Temporary cross-flavor measurement command. Remove with its dispatcher branch
+# in UI\Commands.lua, or keep it deliberately, before the first Classic release.
+UI\FlavorProbe.lua
 UI\Commands.lua

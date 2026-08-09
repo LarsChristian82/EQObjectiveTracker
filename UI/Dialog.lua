@@ -45,7 +45,9 @@ function Dialog:Build()
 
     -- Deliberately unnamed. A named frame can be read out of _G, which is the whole
     -- mechanism behind the UISpecialFrames taint - see closeOnEscape in Options/Frame.lua.
-    local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    -- Template argument guarded: CreateFrame raises on a template the client does not know,
+    -- and every backdrop frame in this addon takes the same guard for that reason.
+    local f = CreateFrame("Frame", nil, UIParent, BackdropTemplateMixin and "BackdropTemplate")
     f:SetFrameStrata("FULLSCREEN_DIALOG")
     f:SetSize(430, 160)
     f:SetPoint("CENTER")

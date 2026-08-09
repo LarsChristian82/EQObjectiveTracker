@@ -53,6 +53,11 @@ handlers.status = function()
 
     ns:Print(("version %s"):format(ns.VERSION))
 
+    -- Early, because a refused event registration explains a whole subsystem being silent
+    -- and every counter below it would otherwise read as a clean zero.
+    local EV = ns:GetModule("Events")
+    if EV and EV.DebugLine then ns:Print(EV:DebugLine()) end
+
     -- Rebuild first so the counters describe the current state, not the last repaint.
     -- Render skips entirely while the tracker is hidden, so the feed is built directly too
     -- or a rule-hidden tracker would report whatever the last paint happened to leave.
@@ -126,6 +131,9 @@ handlers.status = function()
 
     local BZ = ns:GetModule("Blizzard")
     if BZ and BZ.DebugLine then ns:Print(BZ:DebugLine()) end
+
+    local QC = ns:GetModule("QuestieCoexist")
+    if QC and QC.DebugLine then ns:Print(QC:DebugLine()) end
 
     local VIS = ns:GetModule("Visibility")
     if VIS and VIS.DebugLine then ns:Print(VIS:DebugLine()) end
@@ -254,6 +262,17 @@ function Commands:OnEnable()
             if strtrim(rest or ""):lower() == "test" then BH:ToggleTest() else BH:Dump() end
         elseif cmd == "importeq" then
             importEQ()
+        elseif cmd == "flavorprobe" then
+            -- Deliberately absent from the usage line and from the About tab's command
+            -- list: a temporary measurement command, not a feature, and advertising it
+            -- would put a phrase in the manifest for a translator to carry.
+            local P = ns:GetModule("FlavorProbe")
+            -- The watch subcommand is opt in because it is the one probe that writes:
+            -- it adds a watch and removes it again, and refuses to run at all unless the
+            -- watch list is already empty.
+            if P then
+                if strtrim(rest or ""):lower() == "watch" then P:WatchTest() else P:Dump() end
+            end
         elseif fn then
             fn()
         elseif cmd == "" then

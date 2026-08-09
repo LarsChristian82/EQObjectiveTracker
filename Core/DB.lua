@@ -15,6 +15,12 @@ DB.defaults = {
             hideInMythicPlus = false,
             autoTrackAccepted = true,
             restoreSuperTrackOnLogin = true,
+            -- A NEW key defaulting to false is safe. This is not the AceDB default-flip
+            -- trap, which is about CHANGING an existing default and silently reverting
+            -- everyone who chose the old value. The companion global.questieTrackerPrompted
+            -- is deliberately absent from these defaults, as an absence flag: a default of
+            -- false could not tell "answered no" from "never asked".
+            hideQuestieTracker = false,
         },
         tracker = {
             anchor        = "TOPRIGHT",

@@ -20,7 +20,7 @@ local GHOST_BORDER = 1
 local function ensureGhost()
     if DragDrop.ghost then return DragDrop.ghost end
 
-    local g = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    local g = CreateFrame("Frame", nil, UIParent, BackdropTemplateMixin and "BackdropTemplate")
     g:SetSize(220, GHOST_H)
     g:SetFrameStrata("TOOLTIP")
     g:Hide()

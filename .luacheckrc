@@ -39,6 +39,9 @@ read_globals = {
     -- Everything Quests' saved variable, read one way for the config import. Never its
     -- addon table: EQ depends on EQOT, so EQOT loads first and that table is always nil.
     "EverythingQuestsDB",
+    -- Questie's tracker root, read one way for the coexistence prompt. Questie's own
+    -- disable path is never called - it wipes its tracked quests and reloads.
+    "Questie", "Questie_BaseFrame",
 
     -- Namespaced API
     "C_Timer", "C_Map", "C_QuestLog", "C_QuestInfoSystem", "C_CampaignInfo",
@@ -64,6 +67,14 @@ read_globals = {
     "GetItemInfoInstant",
     "GetQuestLogSpecialItemInfo", "GetQuestLogSpecialItemCooldown",
     "IsQuestLogSpecialItemInRange",
+    -- The Classic quest log, which is index driven and lives on flat globals rather than
+    -- C_QuestLog. Read only by Data/Providers/QuestsClassic.lua, which the retail TOCs
+    -- do not list. Measured present on 1.15.9 and 2.5.6.
+    "GetNumQuestLogEntries", "GetQuestLogTitle", "GetQuestLogIndexByID",
+    "SelectQuestLogEntry", "GetNumQuestLeaderBoards", "GetQuestLogLeaderBoard",
+    "IsQuestWatched", "AddQuestWatch", "RemoveQuestWatch", "GetQuestTagInfo",
+    "BackdropTemplateMixin", "QuestWatchFrame",
+
     "GetNumAutoQuestPopUps", "GetAutoQuestPopUp", "RemoveAutoQuestPopUp",
     "ShowQuestComplete", "ShowQuestOffer",
     "QuestUtils_IsQuestWorldQuest", "QuestUtils_GetQuestName",

@@ -4,15 +4,32 @@ local Events = ns:RegisterModule("Events", {})
 
 local frame     = CreateFrame("Frame")
 local listeners = {}
+local unknown   = {}
 
 function Events:On(event, fn)
+    if unknown[event] then return end
     local list = listeners[event]
     if not list then
+        -- RegisterEvent raises on an event the client does not know, and non-provider
+        -- modules are listed on every flavor. Refusing the listener makes the feature
+        -- inert there instead of aborting whatever was enabling it. Recorded rather than
+        -- swallowed, or a whole subsystem goes quiet with nothing on screen to say why.
+        if not pcall(frame.RegisterEvent, frame, event) then
+            unknown[event] = true
+            return
+        end
         list = {}
         listeners[event] = list
-        frame:RegisterEvent(event)
     end
     list[#list + 1] = fn
+end
+
+function Events:DebugLine()
+    local names = {}
+    for event in pairs(unknown) do names[#names + 1] = event end
+    if #names == 0 then return "events: every registration accepted by this client" end
+    table.sort(names)
+    return ("events: %d unknown on this client - %s"):format(#names, table.concat(names, ", "))
 end
 
 function Events:Off(event, fn)

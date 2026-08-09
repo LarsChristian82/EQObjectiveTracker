@@ -67,7 +67,7 @@ local function buildCriteriaRow(parent)
     row.bar.bg:SetAllPoints()
     row.bar.bg:SetColorTexture(0.04, 0.07, 0.18, 0.9)
 
-    row.bar.border = CreateFrame("Frame", nil, row.bar, "BackdropTemplate")
+    row.bar.border = CreateFrame("Frame", nil, row.bar, BackdropTemplateMixin and "BackdropTemplate")
     row.bar.border:SetPoint("TOPLEFT", -1, 1)
     row.bar.border:SetPoint("BOTTOMRIGHT", 1, -1)
     row.bar.border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
@@ -115,7 +115,11 @@ function Scenario:Build(container)
     subHeader.cat:SetJustifyH("LEFT")
     subHeader.cat:SetTextColor(CATEGORY_COLOR[1], CATEGORY_COLOR[2], CATEGORY_COLOR[3])
 
-    subHeader.text = subHeader:CreateFontString(nil, "OVERLAY", "ObjectiveTrackerHeaderFont")
+    -- Chosen rather than corrected afterwards: CreateFontString raises outright when the
+    -- inherited template is absent, so the check below can never run on a client that
+    -- lacks it. ObjectiveTrackerHeaderFont is retail only.
+    subHeader.text = subHeader:CreateFontString(nil, "OVERLAY",
+        ObjectiveTrackerHeaderFont and "ObjectiveTrackerHeaderFont" or "GameFontNormalLarge")
     if not subHeader.text:GetFont() then subHeader.text:SetFontObject("GameFontNormalLarge") end
     subHeader.text:SetTextColor(HEADER_COLOR[1], HEADER_COLOR[2], HEADER_COLOR[3])
 

@@ -157,7 +157,7 @@ end
 function HUD:_Acquire()
     if self.frame then return self.frame end
 
-    local f = CreateFrame("Frame", "EQOTScenarioBonusHUD", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "EQOTScenarioBonusHUD", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     f:SetSize(FRAME_W, 40)
     f:SetFrameStrata("MEDIUM")
     f:SetClampedToScreen(true)

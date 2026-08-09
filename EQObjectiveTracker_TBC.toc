@@ -1,4 +1,4 @@
-## Interface: 120100, 120007, 120005
+## Interface: 20506
 ## Title: EQ Objective Tracker
 ## Notes: Standalone replacement for the default objective tracker.
 ## Author: Wheelbarrel00
@@ -51,13 +51,11 @@ Data\ZoneRouting.lua
 Data\ZoneProgress.lua
 Data\ScenarioBonus.lua
 
-# Providers. THE ONLY FLAVOR-VARYING SECTION OF THIS FILE.
-Data\Providers\Quests.lua
-Data\Providers\WorldQuests.lua
-Data\Providers\Scenarios.lua
-Data\Providers\Achievements.lua
-Data\Providers\Endeavors.lua
-Data\Providers\Professions.lua
+# Providers. THE ONLY FLAVOR-VARYING SECTION OF THIS FILE. World quests are Legion and
+# later, endeavors are the retail Traveler's Log, and tracked recipes need the retail
+# profession API. The quest log here is index driven and lives on flat globals rather
+# than C_QuestLog, so it gets its own provider - measured on 1.15.9 and 2.5.6.
+Data\Providers\QuestsClassic.lua
 
 # Display layer. Operates on frames, never on a quest API.
 UI\Blizzard.lua

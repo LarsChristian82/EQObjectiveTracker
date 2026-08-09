@@ -32,7 +32,7 @@ local function onClick(box)
 end
 
 local function buildBox()
-    local box = CreateFrame("Button", nil, UIParent, "BackdropTemplate")
+    local box = CreateFrame("Button", nil, UIParent, BackdropTemplateMixin and "BackdropTemplate")
     box:SetBackdrop({
         bgFile   = "Interface\\Buttons\\WHITE8x8",
         edgeFile = "Interface\\Buttons\\WHITE8x8",

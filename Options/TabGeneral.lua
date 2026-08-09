@@ -69,6 +69,35 @@ Options:RegisterTab({
             L["Restores the waypoint arrow."])
         restore:SetPoint("TOPLEFT", autoTrack, "BOTTOMLEFT", 0, -2)
 
+        -- Offered only where Questie is actually installed: a toggle that could never do
+        -- anything is worse than no toggle. Everything below anchors to prev2 for that
+        -- reason, not to restore.
+        local prev2 = restore
+        if ns.Has.AddOns and C_AddOns.IsAddOnLoaded("Questie") then
+            local questie = self:CreateCheckbox(content, L["Hide Questie's quest tracker"],
+                function() return DB:General().hideQuestieTracker end,
+                function(v)
+                    DB:General().hideQuestieTracker = v
+                    local Q = ns:GetModule("QuestieCoexist")
+                    if v then
+                        if Q then Q:Apply() end
+                        return
+                    end
+                    -- Unticking stops this addon hiding it, but showing it again is only
+                    -- correct if Questie itself wants it shown.
+                    local q, f = Questie, Questie_BaseFrame
+                    local wanted = not (type(q) == "table" and type(q.db) == "table"
+                                        and type(q.db.profile) == "table")
+                                   or q.db.profile.trackerEnabled ~= false
+                    if wanted and type(f) == "table" and type(f.Show) == "function" then
+                        f:Show()
+                    end
+                end,
+                L["Hides Questie's tracker frame while EQ Objective Tracker is running. Questie's own settings and tracked quests are not touched."])
+            questie:SetPoint("TOPLEFT", restore, "BOTTOMLEFT", 0, -2)
+            prev2 = questie
+        end
+
         local owScale = self:CreateSlider(content, L["Options Window Scale"], 0.7, 1.4, 0.05,
             function() return (DB:Global() and DB:Global().optionsWindowScale) or 1.0 end,
             function(v)
@@ -76,7 +105,7 @@ Options:RegisterTab({
                 if g and type(v) == "number" and v > 0 then g.optionsWindowScale = v end
             end,
             L["Resizes this EQ Objective Tracker options window only. It does not change the quest tracker or anything shown in the game world. The new size applies when you let go of the slider."])
-        owScale:SetPoint("TOPLEFT", restore, "BOTTOMLEFT", 0, -18)
+        owScale:SetPoint("TOPLEFT", prev2, "BOTTOMLEFT", 0, -18)
         -- The slider sits inside the window it scales, so applying mid-drag fights the drag
         -- and snaps to the ends.
         if owScale.slider then

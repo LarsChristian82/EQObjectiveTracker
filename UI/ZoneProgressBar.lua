@@ -114,7 +114,7 @@ end
 function ZoneBar:_Acquire()
     if self.frame then return self.frame end
 
-    local f = CreateFrame("Frame", "EQOTZoneProgressBar", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "EQOTZoneProgressBar", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     f:SetSize(FRAME_W, FRAME_H)
     f:SetFrameStrata("MEDIUM")
     f:SetClampedToScreen(true)
@@ -192,7 +192,7 @@ function ZoneBar:_AcquireDocked(parent)
     bar.bg:SetAllPoints()
     bar.bg:SetColorTexture(0.04, 0.07, 0.18, 0.9)
 
-    bar.border = CreateFrame("Frame", nil, bar, "BackdropTemplate")
+    bar.border = CreateFrame("Frame", nil, bar, BackdropTemplateMixin and "BackdropTemplate")
     bar.border:SetPoint("TOPLEFT", -1, 1)
     bar.border:SetPoint("BOTTOMRIGHT", 1, -1)
     bar.border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })

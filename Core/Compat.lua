@@ -51,6 +51,7 @@ Has.ScenarioBonus       = method(C_Scenario, "GetBonusSteps")
 Has.Map                 = method(C_Map, "GetBestMapForUnit")
 Has.MythicPlus          = method(C_ChallengeMode, "IsChallengeModeActive")
 Has.Atlas               = method(C_Texture, "GetAtlasInfo")
+Has.AddOns              = method(C_AddOns, "IsAddOnLoaded")
 
 Has.Achievements        = global("GetAchievementInfo") and global("GetAchievementNumCriteria")
                           and global("GetAchievementCriteriaInfo")

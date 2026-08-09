@@ -16,8 +16,17 @@ lands in both places at once.
 
 ## Status
 
-Released, retail only. Tracks quests and campaign quests, world quests,
-scenarios and delves, achievements, professions, and Traveler's Log endeavors.
+Released. Runs on retail, on Classic Era (1.15.9) and on TBC Anniversary (2.5.6).
+
+On retail it tracks quests and campaign quests, world quests, scenarios and delves,
+achievements, professions, and Traveler's Log endeavors. The Classic builds track quests
+only - world quests, scenarios, achievements, endeavors and tracked recipes are retail
+features, and their sections simply do not appear. The zone progress bar is retail-only
+for the same reason.
+
+If Questie is installed, EQ Objective Tracker offers once to hide Questie's own tracker,
+and that choice becomes a permanent toggle on the General tab. It only hides the frame -
+Questie's settings and its tracked quests are left alone.
 
 Also included: usable quest-item buttons, popups for newly discovered and completed
 quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is

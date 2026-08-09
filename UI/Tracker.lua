@@ -330,7 +330,7 @@ function Tracker:BuildFrame()
     grip:SetScript("OnMouseUp", stopDrag)
 
     -- Its own frame one level below so the backdrop never draws over rows
-    local bg = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    local bg = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate")
     bg:SetAllPoints(f)
     bg:SetFrameLevel(math.max(0, f:GetFrameLevel() - 1))
     f.bgFrame = bg

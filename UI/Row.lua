@@ -22,6 +22,13 @@ local WQ_RING_TEXTURE  = "Interface/WorldMap/UI-QuestPoi-NumberIcons"
 local WQ_RING_TRACKED  = { 0.500, 0.625, 0.375, 0.5 }
 local WQ_RING_NORMAL   = { 0.875, 1.000, 0.375, 0.5 }
 local WQ_FALLBACK      = "Worldquest-icon"
+
+-- Used only where the retail POI atlas art is absent, which is every pre-Legion client.
+-- SafeSetAtlas blanks the texture on a miss, so without these the icon column is empty
+-- while the row still pays for its width. Both files were measured present on 1.15.9 and
+-- 2.5.6; if one were missing too, the result is the same blank it would have been.
+local POI_FALLBACK_ACTIVE    = "Interface/GossipFrame/ActiveQuestIcon"
+local POI_FALLBACK_AVAILABLE = "Interface/GossipFrame/AvailableQuestIcon"
 local GROUP_EYE_SIZE   = 16
 local TITLE_TO_SUB     = 1
 local SUB_TO_LINES     = 2
@@ -116,6 +123,16 @@ local function applyIcon(row, entry)
         if entry.isFocused and face then face = face .. "-SuperTracked" end
         local glowOK = Util.SafeSetAtlas(row.iconGlow, glow)
         local faceOK = Util.SafeSetAtlas(row.icon, face)
+        if not faceOK then
+            -- SetTexCoord is load-bearing: SetAtlas sets its own, and this row may have
+            -- been pooled from a world quest render that left the ring's coords on it.
+            row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+            row.icon:SetTexture(entry.state == STATE.COMPLETE
+                                and POI_FALLBACK_ACTIVE or POI_FALLBACK_AVAILABLE)
+            row.icon:SetTexCoord(0, 1, 0, 1)
+            row.iconBang:SetTexture(nil)
+            return
+        end
         if entry.state == STATE.COMPLETE then
             Util.SafeSetAtlas(row.iconBang, lookup(CENTER_TURNIN, icon.classification))
         else

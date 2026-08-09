@@ -41,6 +41,8 @@ L["Auto-track accepted quests"] = true
 L["Matches Blizzard's default."] = true
 L["Keep focused quest after relog"] = true
 L["Restores the waypoint arrow."] = true
+L["Hide Questie's quest tracker"] = true
+L["Hides Questie's tracker frame while EQ Objective Tracker is running. Questie's own settings and tracked quests are not touched."] = true
 L["Options Window Scale"] = true
 L["Resizes this EQ Objective Tracker options window only. It does not change the quest tracker or anything shown in the game world. The new size applies when you let go of the slider."] = true
 L["Reset position and size"] = true
@@ -398,6 +400,11 @@ L["commands:"] = true
 
 -- UI/Dialog.lua
 L["OK"] = true
+
+-- UI/Questie.lua
+L["Questie's own quest tracker is on screen alongside this one.\n\nHide Questie's tracker? You can change this later on the General tab. This only hides the frame, and leaves Questie's settings and tracked quests alone."] = true
+L["Hide it"] = true
+L["Keep both"] = true
 
 -- UI/RewardTooltip.lua
 L["Equip \226\128\148 empty slot"] = true

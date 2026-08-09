@@ -12,11 +12,28 @@ local function silence(frame)
     if frame.Hide then frame:Hide() end
 end
 
+-- Blizzard's tracker has a different global on each flavor and this addon carries no
+-- runtime flavor branch, so the frame is resolved by trying the names it can have.
+-- ObjectiveTrackerFrame is retail; QuestWatchFrame is Vanilla and TBC, measured on 1.15.9
+-- and 2.5.6. WatchFrame is Wrath and later and is deliberately absent - no TOC targets
+-- that flavor, so handling it would ship untested.
+local function findTracker()
+    local f = ObjectiveTrackerFrame
+    if type(f) == "table" and type(f.Hide) == "function" then
+        return f, "ObjectiveTrackerFrame"
+    end
+    f = QuestWatchFrame
+    if type(f) == "table" and type(f.Hide) == "function" then
+        return f, "QuestWatchFrame"
+    end
+    return nil, nil
+end
+
 -- Deliberately NOT latched behind a "done" flag. Another addon touching the tracker can
 -- re-register its modules or re-show it, and a one-shot suppress could never recover -
 -- that is exactly how a second tracker reappears mid-session.
 function Blizzard:Suppress()
-    local tracker = ObjectiveTrackerFrame
+    local tracker = findTracker()
     if not tracker then return end
 
     silence(tracker)
@@ -29,9 +46,12 @@ function Blizzard:Suppress()
     -- EQ has always paid. Hiding the parent hides them, and the OnShow hook below catches
     -- any attempt to re-show it.
 
-    -- Hooking is the one part that must happen once, or every Suppress stacks another
-    if not self._hooked then
-        self._hooked = true
+    -- Hooking is the one part that must happen once, or every Suppress stacks another.
+    -- Keyed on the frame rather than a boolean: only one of the two globals exists per
+    -- flavor, but a flag cannot tell "already hooked this frame" from "hooked a different
+    -- one".
+    if self._hookedFrame ~= tracker then
+        self._hookedFrame = tracker
         tracker:HookScript("OnShow", function(f)
             -- Hidden unconditionally, combat included, exactly as EQ does it. EQOT used to
             -- bail out in combat believing the Hide was protected, which left Blizzard's
@@ -51,13 +71,18 @@ function Blizzard:Suppress()
     end
 end
 
+-- Names the frame it resolved. This line is the standing regression check for the
+-- double-tracker bug, and it reported "frame absent" on Classic while QuestWatchFrame was
+-- live - a check reporting a comfortable answer is worse than no check. Classic's frame
+-- has no .modules, so it reports 0 there; the eleven-module count is a retail fact.
 function Blizzard:DebugLine()
-    local t = ObjectiveTrackerFrame
-    if not t then return "blizzard tracker: frame absent" end
+    local t, name = findTracker()
+    if not t then return "blizzard tracker: no known tracker frame on this client" end
     local n = (type(t.modules) == "table") and #t.modules or 0
-    return ("blizzard tracker: %s, %d modules, hook %s"):format(
+    return ("blizzard tracker: %s %s, %d modules, hook %s"):format(
+        name,
         t:IsShown() and "SHOWN - suppression lost" or "hidden",
-        n, self._hooked and "installed" or "missing")
+        n, self._hookedFrame and "installed" or "missing")
 end
 
 function Blizzard:OnEnable()

@@ -108,7 +108,7 @@ local function addHighlight(frame, alpha)
 end
 
 local function flatButton(parent, label, onClick)
-    local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    local b = CreateFrame("Button", nil, parent, BackdropTemplateMixin and "BackdropTemplate")
     b:SetSize(160, 28)
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
@@ -167,7 +167,7 @@ function Options:CreateRadioGroup(content, label, options, getter, setter, maxWi
     local rowOffsetY = labelFS and -4 or 0
     local x, y, maxX = 0, 0, 0
     for _, opt in ipairs(options) do
-        local btn = CreateFrame("Button", nil, container, "BackdropTemplate")
+        local btn = CreateFrame("Button", nil, container, BackdropTemplateMixin and "BackdropTemplate")
         btn:SetHeight(BTN_H)
         local bg = btn:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
@@ -308,7 +308,7 @@ local DD_MAX_ROWS = 10
 
 local function dropdownPopup()
     if Options._ddPopup then return Options._ddPopup end
-    local p = CreateFrame("Frame", "EQOTDropdownPopup", UIParent, "BackdropTemplate")
+    local p = CreateFrame("Frame", "EQOTDropdownPopup", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     p:SetFrameStrata("FULLSCREEN_DIALOG")
     p:SetSize(240, 300)
     p:Hide()
@@ -503,7 +503,7 @@ function Options:CreateDropdown(content, label, options, getter, setter, tooltip
         speaker:SetScript("OnClick", function() onTest(getter()) end)
     end
 
-    local btn = CreateFrame("Button", nil, holder, "BackdropTemplate")
+    local btn = CreateFrame("Button", nil, holder, BackdropTemplateMixin and "BackdropTemplate")
     btn:SetHeight(22)
     -- Both TOP anchors carry the same y. Giving TOPLEFT and TOPRIGHT different offsets sets
     -- one edge twice, silently, and nothing decides which wins.
@@ -839,7 +839,7 @@ end
 function Options:Build()
     if self.frame then return end
 
-    local f = CreateFrame("Frame", "EQOTOptionsFrame", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "EQOTOptionsFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     self.frame = f
     f:SetSize(W, H)
     f:SetPoint("CENTER")
