@@ -401,7 +401,7 @@ L["commands:"] = true
 -- UI/Dialog.lua
 L["OK"] = true
 
--- UI/Questie.lua
+-- UI/QuestieCoexist.lua
 L["Questie's own quest tracker is on screen alongside this one.\n\nHide Questie's tracker? You can change this later on the General tab. This only hides the frame, and leaves Questie's settings and tracked quests alone."] = true
 L["Hide it"] = true
 L["Keep both"] = true

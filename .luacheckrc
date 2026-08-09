@@ -39,8 +39,8 @@ read_globals = {
     -- Everything Quests' saved variable, read one way for the config import. Never its
     -- addon table: EQ depends on EQOT, so EQOT loads first and that table is always nil.
     "EverythingQuestsDB",
-    -- Questie's tracker root, read one way for the coexistence prompt. Questie's own
-    -- disable path is never called - it wipes its tracked quests and reloads.
+    -- The other quest tracker's addon table and its tracker root frame. Read only, for the
+    -- coexistence toggle.
     "Questie", "Questie_BaseFrame",
 
     -- Namespaced API
@@ -68,11 +68,14 @@ read_globals = {
     "GetQuestLogSpecialItemInfo", "GetQuestLogSpecialItemCooldown",
     "IsQuestLogSpecialItemInRange",
     -- The Classic quest log, which is index driven and lives on flat globals rather than
-    -- C_QuestLog. Read only by Data/Providers/QuestsClassic.lua, which the retail TOCs
-    -- do not list. Measured present on 1.15.9 and 2.5.6.
+    -- C_QuestLog. Measured present on 1.15.9 and 2.5.6.
     "GetNumQuestLogEntries", "GetQuestLogTitle", "GetQuestLogIndexByID",
     "SelectQuestLogEntry", "GetNumQuestLeaderBoards", "GetQuestLogLeaderBoard",
     "IsQuestWatched", "AddQuestWatch", "RemoveQuestWatch", "GetQuestTagInfo",
+
+    -- Read on every flavor, not only Classic. BackdropTemplateMixin guards 13 CreateFrame
+    -- template arguments across UI/ and Options/, and QuestWatchFrame is Blizzard's tracker
+    -- on Vanilla and TBC where ObjectiveTrackerFrame is retail's.
     "BackdropTemplateMixin", "QuestWatchFrame",
 
     "GetNumAutoQuestPopUps", "GetAutoQuestPopUp", "RemoveAutoQuestPopUp",

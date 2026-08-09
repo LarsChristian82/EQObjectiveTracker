@@ -264,12 +264,11 @@ function Commands:OnEnable()
             importEQ()
         elseif cmd == "flavorprobe" then
             -- Deliberately absent from the usage line and from the About tab's command
-            -- list: a temporary measurement command, not a feature, and advertising it
-            -- would put a phrase in the manifest for a translator to carry.
+            -- list: a temporary measurement command, not a feature, and every About tab row
+            -- carries a wrapped description a translator would then have to carry.
             local P = ns:GetModule("FlavorProbe")
-            -- The watch subcommand is opt in because it is the one probe that writes:
-            -- it adds a watch and removes it again, and refuses to run at all unless the
-            -- watch list is already empty.
+            -- The watch subcommand is opt in because it is the one probe that writes. It
+            -- toggles one quest's watch state and toggles it back to whatever it found.
             if P then
                 if strtrim(rest or ""):lower() == "watch" then P:WatchTest() else P:Dump() end
             end

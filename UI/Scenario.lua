@@ -147,7 +147,11 @@ function Scenario:Build(container)
     banner.Stage._baseFont = { banner.Stage:GetFont() }
     banner.Name._baseFont  = { banner.Name:GetFont() }
 
-    banner.WidgetContainer = CreateFrame("Frame", nil, banner, "UIWidgetContainerTemplate")
+    -- Guarded for the same reason line 118 was: CreateFrame raises on a template the client
+    -- does not know, Build runs from Render on every flavor, and a raise here aborts the
+    -- whole tracker. This is the only Legion or later template in the tree.
+    banner.WidgetContainer = CreateFrame("Frame", nil, banner,
+        C_UIWidgetManager and "UIWidgetContainerTemplate" or nil)
     banner.WidgetContainer.verticalAnchorPoint   = "TOP"
     banner.WidgetContainer.verticalRelativePoint = "TOP"
     banner.WidgetContainer:SetPoint("TOP", banner, "TOP")

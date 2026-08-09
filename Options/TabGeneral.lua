@@ -69,11 +69,13 @@ Options:RegisterTab({
             L["Restores the waypoint arrow."])
         restore:SetPoint("TOPLEFT", autoTrack, "BOTTOMLEFT", 0, -2)
 
-        -- Offered only where Questie is actually installed: a toggle that could never do
-        -- anything is worse than no toggle. Everything below anchors to prev2 for that
-        -- reason, not to restore.
+        -- Offered only where the other tracker is loaded: a toggle that could never do
+        -- anything is worse than no toggle. The condition comes from the module so this row
+        -- and the login prompt cannot disagree. owScale below anchors to prev2 because this
+        -- row is conditional, not to restore.
         local prev2 = restore
-        if ns.Has.AddOns and C_AddOns.IsAddOnLoaded("Questie") then
+        local Coexist = ns:GetModule("QuestieCoexist")
+        if Coexist and Coexist:QuestiePresent() then
             local questie = self:CreateCheckbox(content, L["Hide Questie's quest tracker"],
                 function() return DB:General().hideQuestieTracker end,
                 function(v)
@@ -84,7 +86,7 @@ Options:RegisterTab({
                         return
                     end
                     -- Unticking stops this addon hiding it, but showing it again is only
-                    -- correct if Questie itself wants it shown.
+                    -- correct if that addon itself wants it shown.
                     local q, f = Questie, Questie_BaseFrame
                     local wanted = not (type(q) == "table" and type(q.db) == "table"
                                         and type(q.db.profile) == "table")

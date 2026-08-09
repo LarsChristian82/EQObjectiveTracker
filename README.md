@@ -16,17 +16,42 @@ lands in both places at once.
 
 ## Status
 
-Released. Runs on retail, on Classic Era (1.15.9) and on TBC Anniversary (2.5.6).
+**Retail is released and stable. Classic Era (1.15.9) and TBC Anniversary (2.5.6) support
+is EARLY and a WORK IN PROGRESS - expect rough edges and things that do not work yet.**
+Please report anything you find rather than assuming it is known.
 
 On retail it tracks quests and campaign quests, world quests, scenarios and delves,
-achievements, professions, and Traveler's Log endeavors. The Classic builds track quests
-only - world quests, scenarios, achievements, endeavors and tracked recipes are retail
-features, and their sections simply do not appear. The zone progress bar is retail-only
-for the same reason.
+achievements, professions, and Traveler's Log endeavors.
 
-If Questie is installed, EQ Objective Tracker offers once to hide Questie's own tracker,
-and that choice becomes a permanent toggle on the General tab. It only hides the frame -
-Questie's settings and its tracked quests are left alone.
+### What works on Classic today
+
+Quest tracking and the customization around it: sorting, manual drag ordering, per-quest
+pinning, filters, section visibility and ordering, the card layout, fonts and colours,
+profiles, row tooltips, and the row right-click menu. Blizzard's own quest watch frame is
+suppressed so you do not get two trackers.
+
+### What is missing or limited on Classic
+
+- **No map pins and no TomTom arrow yet.** These are coming, in the companion addon - see
+  below. This is the biggest gap and it is known.
+- World quests, scenarios, achievements, endeavors and tracked recipes have no section.
+  Most need APIs these clients do not have.
+- The zone progress bar stays empty. Its zone routing data covers Midnight only.
+- Distance sorting does nothing, because the distance API is retail-only.
+- Some options still appear that cannot do anything on Classic, for the same reasons.
+
+### Questie
+
+If Questie is loaded, EQ Objective Tracker offers once to hide Questie's own tracker, and
+that choice becomes a permanent toggle on the General tab. It only hides the frame -
+Questie's settings and its tracked quests are left alone, and Questie's own disable path
+is never called.
+
+### Everything Quests, the companion addon
+
+Everything Quests is a **work in progress on Classic** and will add the other half of the
+picture, map pins and a TomTom waypoint arrow among them. Installing it pulls this tracker
+in automatically. Until it lands, this addon is the tracker only.
 
 Also included: usable quest-item buttons, popups for newly discovered and completed
 quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is

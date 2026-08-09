@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-08
+
+EQ Objective Tracker now runs on Classic Era and Burning Crusade Anniversary. Classic support
+is early and a work in progress, so expect rough edges and please report anything you find.
+Retail behaviour is unchanged.
+
+### New Features
+
+- Classic Era (1.15.9) and Burning Crusade Anniversary (2.5.6) are now supported. The tracker
+  draws your quests with zone subtitles, objective counts and progress, and everything built
+  around them comes with it: eight sort modes, manual drag ordering, per-quest pinning, the
+  filter list, section visibility and ordering, the card layout, all 42 fonts and the colour
+  options, profiles, row tooltips and the row right-click menu.
+- Blizzard's own quest watch list is suppressed on Classic, so you do not end up with two
+  trackers on screen.
+- If Questie is loaded, the tracker offers once to hide Questie's tracker, and that choice
+  becomes a permanent toggle on the General tab. It hides the frame and nothing else. Questie's
+  own settings and its tracked quests are left alone, and its own disable path is never used.
+
+### Improvements
+
+- The Classic builds track quests only. World quests, scenarios, achievements, endeavors and
+  tracked recipes need APIs those clients do not have, so those sections simply do not appear
+  rather than showing up empty. The zone progress bar stays empty for the same reason, and
+  distance sorting does nothing there.
+- Five new phrases came with the Questie option and are English-only for now, so French,
+  Russian and Korean sit a little below their previous full coverage until they are picked up.
+
 ## [1.4.2] - 2026-08-07
 
 French and Russian are complete.

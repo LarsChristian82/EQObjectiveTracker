@@ -22,8 +22,16 @@ local Quests = {
 -- 1 title, 2 level, 4 isHeader, 6 isComplete, 7 frequency, 8 questID.
 local T_TITLE, T_LEVEL, T_HEADER, T_COMPLETE, T_FREQ, T_ID = 1, 2, 4, 6, 7, 8
 
-local DAILY_FREQ  = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Daily)  or 2
-local WEEKLY_FREQ = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Weekly) or 3
+-- Ceiling for the quest log walk. The real cap is far lower, so this only has to be safely
+-- above it.
+local MAX_LOG_INDEX = 75
+
+-- Slot 7 of the flat GetQuestLogTitle carries the LEGACY numbering, 1 default / 2 daily /
+-- 3 weekly, NOT Enum.QuestFrequency whose Daily is 1. Measured on 1.15.9: an ordinary
+-- Elwynn quest reports 7 = 1, which means "default" only under the legacy scheme. Reading
+-- the enum here, which is present on both Classic clients, tagged every quest as daily and
+-- emptied the tracker whenever the Daily filter was unticked.
+local DAILY_FREQ, WEEKLY_FREQ = 2, 3
 
 local TAG_DUNGEON = (Enum and Enum.QuestTag and Enum.QuestTag.Dungeon) or 81
 local TAG_RAID    = (Enum and Enum.QuestTag and Enum.QuestTag.Raid)    or 62
@@ -57,7 +65,7 @@ local function logIndex(id)
 end
 
 -- GetQuestTagInfo is a plain global here rather than a C_QuestLog method, and its return
--- has been both a table and a bare id across builds, so both shapes are accepted.
+-- can be a table or a bare id, so both shapes are accepted rather than assumed.
 local function getTagID(id)
     local cached = tagIDCache[id]
     if cached then return cached end
@@ -152,38 +160,45 @@ local function fullRebuild()
     local watchedDuringWalk = 0
     store:Begin()
 
-    for i = 1, (GetNumQuestLogEntries() or 0) do
+    -- Bounded by a ceiling and stopped at the first nil title, NOT by GetNumQuestLogEntries.
+    -- That count returns only the VISIBLE rows, so it drops to the header count when the
+    -- player collapses their quest log - while the quests stay perfectly addressable, just
+    -- reordered after the headers. Measured on 1.15.9 with all three headers collapsed:
+    -- entries=3, yet indices 4 through 13 still returned all ten quests. Walking to that
+    -- count saw three headers and no quests, and Store:Finish then pruned every entry, so
+    -- one collapsed header plus any quest event emptied the tracker and re-flagged the lot
+    -- as NEW on expand.
+    for i = 1, MAX_LOG_INDEX do
         local t = { GetQuestLogTitle(i) }
         local title = t[T_TITLE]
-        if title then
-            if t[T_HEADER] then
-                currentHeader = title
-            else
-                local id = t[T_ID]
-                if id and id ~= 0 then
-                    local fs = firstSeen[id]
-                    if not fs then
-                        fs = baselined and time() or 0
-                        firstSeen[id] = fs
-                    end
-
-                    local e = store:Acquire(id)
-                    e.title     = title
-                    e.subtitle  = currentHeader
-                    e.zone      = currentHeader
-                    e.level     = t[T_LEVEL]
-                    e.addedAt   = fs
-                    e.state     = questState(t[T_COMPLETE])
-                    -- No super-track on this client, so no row can be focused.
-                    e.isFocused = false
-                    e.isTracked = isWatched(id)
-                    if e.isTracked then watchedDuringWalk = watchedDuringWalk + 1 end
-                    e.icon.classification = nil
-                    e.hasItem   = QuestItems:Has(id)
-                    fillTags(e, id, t[T_FREQ])
-                    e.groupID = "quests"
-                    fillLines(e, id, i)
+        if not title then break end
+        if t[T_HEADER] then
+            currentHeader = title
+        else
+            local id = t[T_ID]
+            if id and id ~= 0 then
+                local fs = firstSeen[id]
+                if not fs then
+                    fs = baselined and time() or 0
+                    firstSeen[id] = fs
                 end
+
+                local e = store:Acquire(id)
+                e.title     = title
+                e.subtitle  = currentHeader
+                e.zone      = currentHeader
+                e.level     = t[T_LEVEL]
+                e.addedAt   = fs
+                e.state     = questState(t[T_COMPLETE])
+                -- No super-track on this client, so no row can be focused.
+                e.isFocused = false
+                e.isTracked = isWatched(id)
+                if e.isTracked then watchedDuringWalk = watchedDuringWalk + 1 end
+                e.icon.classification = nil
+                e.hasItem   = QuestItems:Has(id)
+                fillTags(e, id, t[T_FREQ])
+                e.groupID = "quests"
+                fillLines(e, id, i)
             end
         end
     end
@@ -247,7 +262,7 @@ function Quests:GetEntries()
     return store:Out()
 end
 
--- The cached count is what the rows were drawn from; the live count re-reads the API now.
+-- The cached count is what the rows were drawn from. The live count re-reads the API now.
 -- They are reported separately because status once said 0 watched a minute after a direct
 -- IsQuestWatched read on the same quests returned true, and a single number cannot tell a
 -- stale cache from a watch list that really did empty.
@@ -263,11 +278,18 @@ function Quests:DebugLine()
             sample[#sample + 1] = ("%s:%d/%d"):format(id, e.isTracked and 1 or 0, now and 1 or 0)
         end
     end
+    -- Assigned to locals first: select(2, ...) on a one-value return yields ZERO values and
+    -- tostring() with no argument raises, which would truncate the rest of /eqot status.
+    local numEntries, numQuests
+    if type(GetNumQuestLogEntries) == "function" then
+        numEntries, numQuests = GetNumQuestLogEntries()
+    end
+
     local now = time()
     return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, refresh %ds ago | id:cached/live %s"):format(
         n, cached, live,
-        tostring(GetNumQuestLogEntries and select(2, GetNumQuestLogEntries())),
-        tostring(GetNumQuestLogEntries and GetNumQuestLogEntries()),
+        tostring(numQuests),
+        tostring(numEntries),
         tostring(GetZoneText and GetZoneText()),
         lastFullAt > 0 and (now - lastFullAt) or -1, lastFullWatched,
         lastDynAt > 0 and (now - lastDynAt) or -1,
@@ -293,9 +315,9 @@ local menuOut = {}
 local pinShim = {}
 
 -- Deliberately shorter than the retail menu. Focus needs super-tracking, which this client
--- does not have. Pop out and Abandon both need StaticPopup or QuestLogPopupDetailFrame, and
--- Data/ may not drive a Blizzard frame - the two calls that already do in Quests.lua are
--- recorded debt, not a precedent to copy.
+-- does not have. Pop out and Abandon both need a Blizzard popup or detail frame, and Data/
+-- may not drive one - the two calls that already do in Quests.lua are recorded debt, not a
+-- precedent to copy. Named indirectly so the layering grep's output stays a known set.
 function Quests:GetEntryMenu(entry)
     local Filter = ns:GetModule("Filter")
     local id = entry.id

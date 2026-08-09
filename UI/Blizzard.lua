@@ -14,9 +14,9 @@ end
 
 -- Blizzard's tracker has a different global on each flavor and this addon carries no
 -- runtime flavor branch, so the frame is resolved by trying the names it can have.
--- ObjectiveTrackerFrame is retail; QuestWatchFrame is Vanilla and TBC, measured on 1.15.9
--- and 2.5.6. WatchFrame is Wrath and later and is deliberately absent - no TOC targets
--- that flavor, so handling it would ship untested.
+-- ObjectiveTrackerFrame is retail. QuestWatchFrame is Vanilla and TBC, measured on 1.15.9
+-- and 2.5.6. WatchFrame is the Wrath through Mists name and is deliberately absent - no TOC
+-- targets those flavors, so handling it would ship untested.
 local function findTracker()
     local f = ObjectiveTrackerFrame
     if type(f) == "table" and type(f.Hide) == "function" then
@@ -74,7 +74,7 @@ end
 -- Names the frame it resolved. This line is the standing regression check for the
 -- double-tracker bug, and it reported "frame absent" on Classic while QuestWatchFrame was
 -- live - a check reporting a comfortable answer is worse than no check. Classic's frame
--- has no .modules, so it reports 0 there; the eleven-module count is a retail fact.
+-- has no .modules there, so 0 is not a fault. The eleven-module count is a retail fact.
 function Blizzard:DebugLine()
     local t, name = findTracker()
     if not t then return "blizzard tracker: no known tracker frame on this client" end

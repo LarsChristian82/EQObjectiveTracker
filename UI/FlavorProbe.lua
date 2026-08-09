@@ -1,9 +1,9 @@
 local _, ns = ...
 
 -- Temporary cross-flavor measurement command, added for the Classic port. It creates no
--- frames and reaches every global through _G with a variable name, so it needs no
--- .luacheckrc entry of its own. The build number it prints is reported only - nothing in
--- this addon may branch on a build number or a project id.
+-- frames, and every PROBED global is reached through _G with a variable name, so probing a
+-- new one needs no .luacheckrc entry. The build number it prints is reported only - nothing
+-- in this addon may branch on a build number or a project id.
 local Probe = ns:RegisterModule("FlavorProbe", {})
 local Util  = ns.Util
 
@@ -13,7 +13,7 @@ local GLOBALS = {
     "Questie", "QuestieTracker", "Questie_BaseFrame",
 }
 
--- The quest log surface, both spellings. Retail moved these into C_QuestLog; Classic kept
+-- The quest log surface, both spellings. Retail moved these into C_QuestLog. Classic kept
 -- the flat globals for years. Which set answers decides whether the Quests provider can
 -- work at all on this client, so both are listed rather than assumed.
 local QUEST_API = {
@@ -94,6 +94,10 @@ local function emit(list, per)
     end
 end
 
+local function countAndPack(...)
+    return select("#", ...), { ... }
+end
+
 -- Return signatures differ by flavor and existence alone cannot tell you the shape, so
 -- the Classic quest log is CALLED here and its actual returns are printed. Everything is
 -- pcall wrapped: a probe that errors tells you nothing.
@@ -103,13 +107,18 @@ local function callDump(label, path, ...)
         ns:Print(("  %s: %s ABSENT"):format(label, path))
         return
     end
-    local packed = { pcall(fn, ...) }
+    -- Counted with select('#') rather than '#' on the table: a probed function returning
+    -- nil in any slot leaves a hole, and '#' finds a border rather than the count, so the
+    -- tuple would print short and read as a genuinely shorter return. This file's output is
+    -- what gets recorded as ground truth, so it must not be able to lie. Packed in one call
+    -- because the probed function must not be invoked twice.
+    local n, packed = countAndPack(pcall(fn, ...))
     if not packed[1] then
         ns:Print(("  %s: %s RAISED - %s"):format(label, path, tostring(packed[2])))
         return
     end
     local out = {}
-    for i = 2, #packed do
+    for i = 2, n do
         local v = packed[i]
         out[#out + 1] = ("[%d]=%s(%s)"):format(i - 1, type(v), tostring(v))
     end
@@ -277,8 +286,9 @@ function Probe:WatchTest()
 
     ns:Print(("watchtest: target walk=%d %s"):format(target, tostring(targetTitle)))
 
-    -- Blizzard's own frame is hidden here with quests watched, which another addon hiding
-    -- it would explain, so its parent and alpha are reported alongside its shown state.
+    -- Parent and alpha are reported alongside the shown state. This addon suppresses
+    -- QuestWatchFrame itself, so a hidden reading here is expected and is not evidence
+    -- about what any other addon is doing.
     if type(frame) == "table" then
         local parent = frame.GetParent and frame:GetParent()
         ns:Print(("  QuestWatchFrame: %s alpha=%s parent=%s"):format(
@@ -314,9 +324,11 @@ function Probe:Dump()
     local build = _G["GetBuildInfo"]
     local version, buildNum, toc = "?", "?", "?"
     if type(build) == "function" then
-        version  = tostring(select(1, build()))
-        buildNum = tostring(select(2, build()))
-        toc      = tostring(select(4, build()))
+        -- One call, and indexed rather than selected: select(4, ...) on a shorter return
+        -- yields ZERO values, and tostring() with no argument raises, which would kill the
+        -- whole probe on its first line.
+        local _, info = countAndPack(build())
+        version, buildNum, toc = tostring(info[1]), tostring(info[2]), tostring(info[4])
     end
     ns:Print(("flavorprobe: addon %s | client %s.%s | client reports interface %s")
         :format(tostring(ns.VERSION), version, buildNum, toc))
@@ -339,15 +351,25 @@ function Probe:Dump()
     ns:Print(("  present (%d):"):format(#present))
     emit(present, 2)
 
+    -- MEMBER VALUES, not just a count. A count cannot be compared against the numbers the
+    -- flat quest log actually returns, and that gap hid a real defect: Enum.QuestFrequency
+    -- exists here but GetQuestLogTitle reports the legacy scheme, so reading the enum
+    -- tagged every quest daily.
     ns:Print("enums:")
-    local enums = {}
     for _, name in ipairs(ENUM_TABLES) do
         local tbl = (type(_G["Enum"]) == "table") and _G["Enum"][name] or nil
-        local n = 0
-        if type(tbl) == "table" then for _ in pairs(tbl) do n = n + 1 end end
-        enums[#enums + 1] = ("Enum.%s=%s(%d)"):format(name, type(tbl), n)
+        if type(tbl) ~= "table" then
+            ns:Print(("  Enum.%s=%s"):format(name, type(tbl)))
+        else
+            local members = {}
+            for k, v in pairs(tbl) do
+                members[#members + 1] = ("%s=%s"):format(tostring(k), tostring(v))
+            end
+            table.sort(members)
+            ns:Print(("  Enum.%s (%d):"):format(name, #members))
+            emit(members, 4)
+        end
     end
-    emit(enums, 2)
 
     ns:Print("ns.Has (false first):")
     local off, on = {}, {}

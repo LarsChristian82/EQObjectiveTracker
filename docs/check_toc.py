@@ -7,8 +7,8 @@ step, but they cost one file list per flavor to keep in sync. This checks four t
   1. every path referenced by any TOC exists on disk
   2. every authored .lua under SOURCE_DIRS is referenced by at least one TOC, so adding
      UI/Foo.lua and forgetting to list it is caught
-  3. every path referenced by a NON-flavor TOC is also in the reference TOC, so the two
-     retail files cannot drift apart
+  3. the two retail TOCs list exactly the same files, checked in both directions, so they
+     cannot drift apart
   4. '## Version:' and '## X-Curse-Project-ID:' agree across every TOC
 
 Check 2 is deliberately "at least one TOC" rather than "the reference TOC". A flavor

@@ -23,10 +23,10 @@ local WQ_RING_TRACKED  = { 0.500, 0.625, 0.375, 0.5 }
 local WQ_RING_NORMAL   = { 0.875, 1.000, 0.375, 0.5 }
 local WQ_FALLBACK      = "Worldquest-icon"
 
--- Used only where the retail POI atlas art is absent, which is every pre-Legion client.
--- SafeSetAtlas blanks the texture on a miss, so without these the icon column is empty
--- while the row still pays for its width. Both files were measured present on 1.15.9 and
--- 2.5.6; if one were missing too, the result is the same blank it would have been.
+-- Used only where the retail POI atlas art is absent. SafeSetAtlas blanks the texture on a
+-- miss, so without these the icon column is empty while the row still pays for its width.
+-- Both files were measured present on 1.15.9 and 2.5.6. If one were missing too, the result
+-- is the same blank it would have been.
 local POI_FALLBACK_ACTIVE    = "Interface/GossipFrame/ActiveQuestIcon"
 local POI_FALLBACK_AVAILABLE = "Interface/GossipFrame/AvailableQuestIcon"
 local GROUP_EYE_SIZE   = 16
@@ -119,13 +119,20 @@ local function applyIcon(row, entry)
         row.icon:SetSize(POI_ICON_SIZE, POI_ICON_SIZE)
         row.iconBang:SetSize(POI_ICON_SIZE, POI_ICON_SIZE)
         local glow = lookup(OUTER_GLOW, icon.classification)
-        local face = lookup(CENTER_FACE, icon.classification)
+        local baseFace = lookup(CENTER_FACE, icon.classification)
+        local face = baseFace
         if entry.isFocused and face then face = face .. "-SuperTracked" end
         local glowOK = Util.SafeSetAtlas(row.iconGlow, glow)
         local faceOK = Util.SafeSetAtlas(row.icon, face)
-        if not faceOK then
-            -- SetTexCoord is load-bearing: SetAtlas sets its own, and this row may have
-            -- been pooled from a world quest render that left the ring's coords on it.
+        -- Keyed on the UNSUFFIXED atlas, never on faceOK alone. lookup falls back to the
+        -- Normal face, which resolves on retail, so faceOK is false there only when the
+        -- -SuperTracked suffix above found nothing - the open square icon case, which must
+        -- keep its existing blank face and still reach the probe below.
+        if not faceOK and not Util.AtlasExists(baseFace) then
+            row.iconGlow:SetTexture(nil)
+            -- The size and texcoord resets are both load-bearing: SetAtlas sets its own of
+            -- each, and this row may have been pooled from a world quest render that left
+            -- the ring's 33px size and coords on it.
             row.icon:SetSize(ICON_SIZE, ICON_SIZE)
             row.icon:SetTexture(entry.state == STATE.COMPLETE
                                 and POI_FALLBACK_ACTIVE or POI_FALLBACK_AVAILABLE)
