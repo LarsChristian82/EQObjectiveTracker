@@ -32,44 +32,44 @@ local function pickAnchor(owner)
     return ownerPx > screenMid and "ANCHOR_LEFT" or "ANCHOR_RIGHT"
 end
 
-local function addComparison(e)
+local function addComparison(tip, e)
     if e.cmpEmpty then
         -- The em dash escape sits INSIDE the key. Concatenated on, the phrase would never
         -- reach the manifest and could never be translated.
-        GameTooltip:AddLine(INDENT .. L["Equip \226\128\148 empty slot"], 0.2, 1.0, 0.2)
+        tip:AddLine(INDENT .. L["Equip \226\128\148 empty slot"], 0.2, 1.0, 0.2)
         return
     end
     local lowest = e.cmpLowest
     if not lowest then return end
 
     local label = e.slotLabel or ""
-    GameTooltip:AddLine((INDENT .. L["Equipped: ilvl %d"]):format(lowest)
+    tip:AddLine((INDENT .. L["Equipped: ilvl %d"]):format(lowest)
         .. (label ~= "" and ("  (" .. label .. ")") or ""), 0.7, 0.7, 0.7)
 
     local delta = (e.ilvl or 0) - lowest
     if delta > 0 then
-        GameTooltip:AddLine((INDENT .. L["+%d ilvl upgrade"]):format(delta), 0.2, 1.0, 0.2)
+        tip:AddLine((INDENT .. L["+%d ilvl upgrade"]):format(delta), 0.2, 1.0, 0.2)
     elseif delta < 0 then
-        GameTooltip:AddLine((INDENT .. L["%d ilvl lower"]):format(delta), 1.0, 0.3, 0.3)
+        tip:AddLine((INDENT .. L["%d ilvl lower"]):format(delta), 1.0, 0.3, 0.3)
     else
-        GameTooltip:AddLine(INDENT .. L["Same item level"], 1.0, 0.82, 0.0)
+        tip:AddLine(INDENT .. L["Same item level"], 1.0, 0.82, 0.0)
     end
 end
 
-local function addItem(e)
+local function addItem(tip, e)
     local label = e.name or ""
     if e.count and e.count > 1 then label = label .. " " .. TIMES .. e.count end
     if e.showIlvl and e.ilvl then
         label = label .. ("  |cff999999" .. L["ilvl %d"] .. "|r"):format(e.ilvl)
     end
 
-    GameTooltip:AddLine(label, qualityColor(e.quality))
+    tip:AddLine(label, qualityColor(e.quality))
 
-    addComparison(e)
+    addComparison(tip, e)
 end
 
 -- Returns whether anything was drawn, so a caller can decide about a separator below it.
-local function renderLines(questID)
+local function renderLines(tip, questID)
     local QR = ns:GetModule("QuestRewards")
     if not QR then return false end
 
@@ -78,22 +78,22 @@ local function renderLines(questID)
         local e = lines[i]
         if e.kind == "objective" then
             if e.done then
-                GameTooltip:AddLine("- " .. e.text, 0.40, 0.85, 0.40, true)
+                tip:AddLine("- " .. e.text, 0.40, 0.85, 0.40, true)
             else
-                GameTooltip:AddLine("- " .. e.text, 0.95, 0.95, 0.95, true)
+                tip:AddLine("- " .. e.text, 0.95, 0.95, 0.95, true)
             end
         elseif e.kind == "money" then
-            GameTooltip:AddLine(coinText(e.amount), 1, 1, 1)
+            tip:AddLine(coinText(e.amount), 1, 1, 1)
         elseif e.kind == "xp" then
-            GameTooltip:AddLine((L["%d XP"]):format(e.amount), 1, 1, 1)
+            tip:AddLine((L["%d XP"]):format(e.amount), 1, 1, 1)
         elseif e.kind == "item" then
-            addItem(e)
+            addItem(tip, e)
         elseif e.kind == "choices" then
-            GameTooltip:AddLine(L["Choose one:"], 0.9, 0.8, 0.3)
+            tip:AddLine(L["Choose one:"], 0.9, 0.8, 0.3)
         elseif e.kind == "currency" then
             local label = e.name or ""
             if e.count and e.count > 1 then label = label .. " " .. TIMES .. e.count end
-            GameTooltip:AddLine(label, 0.85, 0.85, 1.0)
+            tip:AddLine(label, 0.85, 0.85, 1.0)
         end
     end
     return #lines > 0
@@ -107,10 +107,11 @@ function RT:Show(owner, questID)
     local QR = ns:GetModule("QuestRewards")
     if not QR then return end
 
-    GameTooltip:SetOwner(owner, pickAnchor(owner))
-    GameTooltip:SetText(QR:Title(questID) or "", 1.0, 0.82, 0.0, 1, true)
-    renderLines(questID)
-    GameTooltip:Show()
+    local tip = Util.Tooltip()
+    tip:SetOwner(owner, pickAnchor(owner))
+    tip:SetText(QR:Title(questID) or "", 1.0, 0.82, 0.0, 1, true)
+    renderLines(tip, questID)
+    tip:Show()
     self.drawn = self.drawn + 1
 end
 
@@ -127,28 +128,29 @@ function RT:ShowForEntry(owner, entry)
     -- reads the same field - so it gates both of EQ's world-quest-only lines.
     local expiresAt = entry.expiresAt
 
-    GameTooltip:SetOwner(owner, pickAnchor(owner))
-    GameTooltip:SetText(QR:Title(entry.id) or entry.title or "", 1.0, 0.82, 0.0, 1, true)
+    local tip = Util.Tooltip()
+    tip:SetOwner(owner, pickAnchor(owner))
+    tip:SetText(QR:Title(entry.id) or entry.title or "", 1.0, 0.82, 0.0, 1, true)
 
     if expiresAt then
         local faction = QR:FactionName(entry.id)
-        if faction then GameTooltip:AddLine(faction, 0.7, 0.7, 0.7) end
+        if faction then tip:AddLine(faction, 0.7, 0.7, 0.7) end
     end
 
-    local drew = renderLines(entry.id)
+    local drew = renderLines(tip, entry.id)
 
     if expiresAt then
         local mins = math.floor((expiresAt - time()) / 60)
         if mins > 0 then
-            if drew then GameTooltip:AddLine(" ") end
-            GameTooltip:AddLine(L["Time Left: "] .. Util.FmtDuration(mins * 60),
-                                Util.TimeColor(mins))
+            if drew then tip:AddLine(" ") end
+            tip:AddLine(L["Time Left: "] .. Util.FmtDuration(mins * 60),
+                        Util.TimeColor(mins))
         end
     end
 
-    GameTooltip:Show()
+    tip:Show()
 end
 
 function RT:Hide()
-    GameTooltip:Hide()
+    Util.Tooltip():Hide()
 end

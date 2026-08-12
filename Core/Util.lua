@@ -98,4 +98,18 @@ function Util.SafeSetAtlas(tex, atlas)
     return false
 end
 
+-- Never the shared GameTooltip. Taint left on that singleton was reported killing Blizzard's
+-- next AreaPOI hover with a secret-value error.
+local _tooltip
+function Util.Tooltip()
+    if not _tooltip then
+        _tooltip = CreateFrame("GameTooltip", "EQOTTooltip", UIParent, "GameTooltipTemplate")
+        -- Nothing skins a private tooltip and the inherited fill reads through to the panel.
+        _tooltip.eqotBG = _tooltip:CreateTexture(nil, "BACKGROUND", nil, -8)
+        _tooltip.eqotBG:SetAllPoints()
+        _tooltip.eqotBG:SetColorTexture(0, 0, 0, 0.94)
+    end
+    return _tooltip
+end
+
 ns.Util = Util

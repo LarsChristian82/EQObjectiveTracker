@@ -49,6 +49,7 @@ function Feed:Build()
         g.visibleCount, g.totalCount = 0, 0
     end
     for _, s in pairs(spaces) do wipe(s) end
+    Filter:BeginPass()
 
     for _, p in ipairs(Registry:Active()) do
         if p._available then

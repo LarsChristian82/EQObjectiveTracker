@@ -70,13 +70,14 @@ local function makeHeaderIcon(f, texture, tooltip, onClick)
         if Tracker:IsClickThrough() then return end
         tex:SetAlpha(1)
         if not tooltip then return end
-        GameTooltip:SetOwner(btn, "ANCHOR_BOTTOMLEFT")
-        GameTooltip:AddLine(tooltip)
-        GameTooltip:Show()
+        local tip = ns.Util.Tooltip()
+        tip:SetOwner(btn, "ANCHOR_BOTTOMLEFT")
+        tip:AddLine(tooltip)
+        tip:Show()
     end)
     b:SetScript("OnLeave", function()
         tex:SetAlpha(0.85)
-        GameTooltip:Hide()
+        ns.Util.Tooltip():Hide()
     end)
     b:SetScript("OnClick", function()
         if Tracker:IsClickThrough() then return end
@@ -258,6 +259,9 @@ function Tracker:BuildFrame()
     f:SetResizable(true)
     if ns.Has.ResizeBounds then f:SetResizeBounds(MIN_W, MIN_H, MAX_W, MAX_H) end
     f:SetClampedToScreen(true)
+    -- The tooltip hangs off UIParent, so hiding the tracker under the cursor delivers no
+    -- OnLeave. The shared tooltip used to be cleared by the next hover anywhere.
+    f:HookScript("OnHide", function() ns.Util.Tooltip():Hide() end)
 
     local drag = CreateFrame("Frame", nil, f)
     drag:SetPoint("TOPLEFT")
@@ -273,20 +277,21 @@ function Tracker:BuildFrame()
     drag:SetScript("OnEnter", function()
         if Tracker:IsClickThrough() then return end
         hint:SetColorTexture(1, 1, 1, 0.15)
-        GameTooltip:SetOwner(drag, "ANCHOR_BOTTOM")
-        GameTooltip:SetText("EQ Objective Tracker", 0.92, 0.72, 0.02)
+        local tip = ns.Util.Tooltip()
+        tip:SetOwner(drag, "ANCHOR_BOTTOM")
+        tip:SetText("EQ Objective Tracker", 0.92, 0.72, 0.02)
         if Tracker:IsLocked() then
-            GameTooltip:AddLine(L["Tracker locked"], 1, 0.3, 0.3)
-            GameTooltip:AddLine(L["Use /eqot unlock to move it."], 0.8, 0.8, 0.8)
+            tip:AddLine(L["Tracker locked"], 1, 0.3, 0.3)
+            tip:AddLine(L["Use /eqot unlock to move it."], 0.8, 0.8, 0.8)
         else
-            GameTooltip:AddLine(L["Drag to move, corner grip to resize."], 1, 1, 1)
-            GameTooltip:AddLine(L["/eqot for options"], 0.8, 0.8, 0.8)
+            tip:AddLine(L["Drag to move, corner grip to resize."], 1, 1, 1)
+            tip:AddLine(L["/eqot for options"], 0.8, 0.8, 0.8)
         end
-        GameTooltip:Show()
+        tip:Show()
     end)
     drag:SetScript("OnLeave", function()
         hint:SetColorTexture(1, 1, 1, 0)
-        GameTooltip:Hide()
+        ns.Util.Tooltip():Hide()
     end)
 
     local cog = makeHeaderIcon(f, "Interface\\AddOns\\EQObjectiveTracker\\Media\\Textures\\cogwheel.tga",

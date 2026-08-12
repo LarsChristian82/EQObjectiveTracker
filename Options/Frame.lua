@@ -52,13 +52,14 @@ function Options:AttachTooltip(frame, title, body)
     for _, t in ipairs(targets) do
         if t.EnableMouse then t:EnableMouse(true) end
         t:HookScript("OnEnter", function(s)
-            GameTooltip:SetOwner(s, "ANCHOR_RIGHT")
+            local tip = ns.Util.Tooltip()
+            tip:SetOwner(s, "ANCHOR_RIGHT")
             -- SetText arg 5 is alpha, not wrap - wrap is 6th. Pass 1 or the title is invisible.
-            if title then GameTooltip:SetText(title, GOLD[1], GOLD[2], GOLD[3], 1, true) end
-            if body and body ~= "" then GameTooltip:AddLine(body, 0.82, 0.82, 0.82, true) end
-            GameTooltip:Show()
+            if title then tip:SetText(title, GOLD[1], GOLD[2], GOLD[3], 1, true) end
+            if body and body ~= "" then tip:AddLine(body, 0.82, 0.82, 0.82, true) end
+            tip:Show()
         end)
-        t:HookScript("OnLeave", function() GameTooltip:Hide() end)
+        t:HookScript("OnLeave", function() ns.Util.Tooltip():Hide() end)
     end
 end
 
@@ -859,6 +860,7 @@ function Options:Build()
     -- list or a color picker would be left floating over the game world.
     f:HookScript("OnHide", function()
         if Options._ddPopup then Options._ddPopup:Hide() end
+        ns.Util.Tooltip():Hide()
         -- Closing the window mid-edit has to CANCEL the picker, not merely hide it. The live
         -- preview writes on every drag frame, so hiding alone commits whatever color the
         -- wheel was last sitting on. Captured before the Hide, which clears it.

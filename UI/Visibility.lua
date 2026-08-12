@@ -53,6 +53,8 @@ end
 -- give up their own mouse, so an alpha-0 tracker cannot take clicks, tooltips or the wheel.
 local function setVisible(f, visible)
     local IB = ns:GetModule("ItemButtons")
+    -- The alpha-only path fires no OnHide, so the frame's own hook cannot catch this one
+    if not visible then ns.Util.Tooltip():Hide() end
     f:SetAlpha(visible and 1 or 0)
     f._eqotHidden = (not visible) or nil
     if not (IB and IB.Locked and IB:Locked()) then

@@ -81,6 +81,7 @@ handlers.status = function()
     end
 
     local FILT = ns:GetModule("Filter")
+    if FILT and FILT.FiltersLine then ns:Print(FILT:FiltersLine()) end
     if FILT and FILT.DebugLine then ns:Print(FILT:DebugLine()) end
 
     ns:Print("sections (in render order):")

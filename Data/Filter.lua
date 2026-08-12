@@ -15,6 +15,16 @@ Filter.CATEGORIES = {
     { tag = nil,          key = "showNormal",   label = L["Normal quests"]    },
 }
 
+-- Feed reports "filtered N" and could never say why, which has cost a misdiagnosis: a stale
+-- isTracked and an active zone filter look identical from that number. One integer bump per
+-- rejected entry, so it stays on in release.
+Filter.rejects = { hidden = 0, popup = 0, watched = 0, category = 0, zone = 0 }
+
+function Filter:BeginPass()
+    local r = self.rejects
+    r.hidden, r.popup, r.watched, r.category, r.zone = 0, 0, 0, 0, 0
+end
+
 -- Hidden is keyed by provider then entry id so two providers can never collide on a
 -- bare numeric id.
 function Filter:IsHidden(entry)
@@ -100,6 +110,26 @@ function Filter:DebugLine()
     return out
 end
 
+-- Categories are walked from CATEGORIES rather than listed, so a new one reports itself.
+function Filter:FiltersLine()
+    local DB  = ns:GetModule("DB")
+    local cfg = DB and DB:Tracker()
+    local f   = cfg and cfg.filters
+    local r   = self.rejects
+
+    local cats = {}
+    for i = 1, #self.CATEGORIES do
+        local key = self.CATEGORIES[i].key
+        cats[i] = ("%s=%s"):format(key, tostring((f and f[key]) ~= false))
+    end
+
+    return ("filters: onlyWatched=%s onlyCurrentZone=%s | %s\n      rejected this pass: watched %d, category %d, zone %d, hidden %d, popup %d")
+        :format(tostring(cfg and cfg.showOnlyWatched and true or false),
+                tostring(f and f.onlyCurrentZone and true or false),
+                f and table.concat(cats, " ") or "no filters table",
+                r.watched, r.category, r.zone, r.hidden, r.popup)
+end
+
 function Filter:PassesCategory(entry, f)
     if not f then return true end
     local tags = entry.tags
@@ -119,7 +149,8 @@ end
 -- setting. Feed needs the difference: a hidden quest must claim its ID space, a filtered one
 -- must not.
 function Filter:Visible(entry, cfg, provider)
-    if self:IsHidden(entry) then return false, true end
+    local rejects = self.rejects
+    if self:IsHidden(entry) then rejects.hidden = rejects.hidden + 1; return false, true end
 
     -- A quest with a Complete popup is drawn as a popup box instead, so it must not also
     -- appear as a row. The suppression set is empty whenever the option is off, so this
@@ -127,7 +158,10 @@ function Filter:Visible(entry, cfg, provider)
     -- Above the pin check on purpose: a pin must not resurrect the row beside its own popup.
     if provider and provider.idSpace == "quest" then
         local Popups = ns:GetModule("AutoQuestPopups")
-        if Popups and Popups:IsSuppressed(entry.id) then return false end
+        if Popups and Popups:IsSuppressed(entry.id) then
+            rejects.popup = rejects.popup + 1
+            return false
+        end
     end
 
     -- Below hidden and the popup, above everything else, matching EQ: a pin is the player
@@ -135,14 +169,21 @@ function Filter:Visible(entry, cfg, provider)
     -- decision to hide the row.
     if self:IsPinned(entry) then return true end
 
-    if cfg and cfg.showOnlyWatched and entry.isTracked == false then return false end
+    if cfg and cfg.showOnlyWatched and entry.isTracked == false then
+        rejects.watched = rejects.watched + 1
+        return false
+    end
 
     if provider and provider.filterCategories then
         local f = cfg and cfg.filters
-        if not self:PassesCategory(entry, f) then return false end
+        if not self:PassesCategory(entry, f) then
+            rejects.category = rejects.category + 1
+            return false
+        end
         -- nil from IsCurrentZone means the provider cannot tell, so fail open
         if f and f.onlyCurrentZone and provider.IsCurrentZone
            and provider:IsCurrentZone(entry) == false then
+            rejects.zone = rejects.zone + 1
             return false
         end
     end

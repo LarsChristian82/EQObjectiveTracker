@@ -366,13 +366,14 @@ local function onEnter(row)
         return
     end
     if not provider.OnEntryTooltip then return end
-    GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    provider:OnEntryTooltip(row._entry, GameTooltip)
-    GameTooltip:Show()
+    local tip = ns.Util.Tooltip()
+    tip:SetOwner(row, "ANCHOR_RIGHT")
+    provider:OnEntryTooltip(row._entry, tip)
+    tip:Show()
 end
 
 local function onLeave()
-    GameTooltip:Hide()
+    ns.Util.Tooltip():Hide()
 end
 
 function Row:Build()
@@ -425,10 +426,11 @@ function Row:Build()
     end)
     r.groupFinder:SetScript("OnEnter", function(btn)
         if clickThrough() then return end
-        GameTooltip:SetOwner(btn, "ANCHOR_LEFT")
-        GameTooltip:SetText(L["Find Group"], 1, 1, 1)
-        GameTooltip:AddLine(L["Open the Premade Group Finder for this quest."], 0.7, 0.7, 0.7, true)
-        GameTooltip:Show()
+        local tip = ns.Util.Tooltip()
+        tip:SetOwner(btn, "ANCHOR_LEFT")
+        tip:SetText(L["Find Group"], 1, 1, 1)
+        tip:AddLine(L["Open the Premade Group Finder for this quest."], 0.7, 0.7, 0.7, true)
+        tip:Show()
     end)
     r.groupFinder:SetScript("OnLeave", onLeave)
 

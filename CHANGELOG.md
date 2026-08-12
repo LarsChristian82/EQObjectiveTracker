@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-08-11
+
+A fix for a Lua error the world map could throw while this addon was loaded.
+
+### Bug Fixes
+
+- The tracker no longer causes the "secret value" Lua error that Blizzard's world map throws
+  when you hover a point of interest. It drew its own tooltips on the game's shared tooltip
+  frame, which left them carrying the addon's taint, and under Midnight's UI protection rules
+  Blizzard's own map tooltip then failed while laying itself out. Every tooltip the tracker
+  draws now goes on its own private frame and the shared one is never touched. That error names
+  whichever addon last used the shared tooltip, so it can still turn up from something else,
+  but the tracker is no longer one of them. Reported by caladorn.
+
+### Improvements
+
+- `/eqot status` now reports what the filters are actually set to and which rule rejected each
+  entry, so a quest missing from the tracker can be traced to the setting hiding it instead of
+  just showing a count. Useful when reporting a problem.
+
 ## [1.5.0] - 2026-08-08
 
 EQ Objective Tracker now runs on Classic Era and Burning Crusade Anniversary. Classic support

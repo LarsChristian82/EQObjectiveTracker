@@ -96,15 +96,16 @@ local function makeOrderArrow(parent, dir)
     b:HookScript("OnEnter", function(self)
         local row = self:GetParent()
         local name = (row and row.sectionID and sectionLabel(row.sectionID)) or ""
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        local tip = ns.Util.Tooltip()
+        tip:SetOwner(self, "ANCHOR_RIGHT")
         -- SetText arg 5 is alpha, not wrap. Pass 1 or the line renders invisible.
-        GameTooltip:SetText((isUp and L["Move %s up"] or L["Move %s down"]):format(name),
-                            1, 1, 1, 1, true)
-        GameTooltip:AddLine(L["Reorders where this section sits in the tracker. A section only shows while it has something in it, so empty sections won't visibly move."],
-                            0.82, 0.82, 0.82, true)
-        GameTooltip:Show()
+        tip:SetText((isUp and L["Move %s up"] or L["Move %s down"]):format(name),
+                    1, 1, 1, 1, true)
+        tip:AddLine(L["Reorders where this section sits in the tracker. A section only shows while it has something in it, so empty sections won't visibly move."],
+                    0.82, 0.82, 0.82, true)
+        tip:Show()
     end)
-    b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    b:HookScript("OnLeave", function() ns.Util.Tooltip():Hide() end)
     return b
 end
 
@@ -344,13 +345,13 @@ Options:RegisterTab({
                     Sections:Move(id, -1)
                     render()
                     renderOrderRows()
-                    GameTooltip:Hide()
+                    ns.Util.Tooltip():Hide()
                 end)
                 row.down:SetScript("OnClick", function()
                     Sections:Move(id, 1)
                     render()
                     renderOrderRows()
-                    GameTooltip:Hide()
+                    ns.Util.Tooltip():Hide()
                 end)
                 row:Show()
             end
