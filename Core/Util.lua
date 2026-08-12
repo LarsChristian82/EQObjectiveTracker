@@ -89,7 +89,10 @@ function Util.AtlasExists(atlas)
     return ok
 end
 
+-- Texcoords are cleared first: SetAtlas was measured leaving an earlier SetTexCoord in place,
+-- so a pooled row that last drew a world quest rendered its POI face through the ring's crop.
 function Util.SafeSetAtlas(tex, atlas)
+    tex:SetTexCoord(0, 1, 0, 1)
     if Util.AtlasExists(atlas) then
         tex:SetAtlas(atlas, false)
         return true

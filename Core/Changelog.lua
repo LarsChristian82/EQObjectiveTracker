@@ -9,6 +9,20 @@ local _, ns = ...
 -- edit CHANGELOG.md and re-run the generator.
 ns.Changelog = {
     {
+        version = "1.5.2", date = "2026-08-11",
+        summary = "Two fixes for quests going missing from the tracker, and zone progress for the new 12.1 zone.",
+        sections = {
+            { head = "Bug Fixes", items = {
+                "A possible fix for quest markers sometimes drawing as a square instead of the round icon. Tracker rows get recycled as your quest list changes, and a row that had previously drawn a world quest handed on the crop it was using for the world quest ring, so the next quest to reuse that row drew its marker through the wrong window. That matched every reading taken while it was happening. It was never reproducible on demand, so this is reported as a likely rather than a confirmed fix. It turned up most often shortly after logging in and cleared on a reload, so if you still see it, please say so.",
+                "\"Only current zone\" no longer hides quests that are not in any zone. Midnight groups the quest log into categories such as Battlegrounds, Dungeon, Professions and Ritual Sites, and those quests have no location on any map. The filter was reading \"not on this map\" as \"somewhere else\" and hiding them, which with that setting turned on could leave the Quests section nearly empty. Quests the game can point you to somewhere on the map are still hidden, which is what the setting is for.",
+            } },
+            { head = "Improvements", items = {
+                "The zone progress bar now covers The Coiled Isle, the zone added in patch 12.1.",
+                "/eqot status reports more about the quest list: how many entries the game reports against how many the tracker read, how many quests it thinks are tracked against how many the game says are, and how many the game places in your current zone. Useful when reporting a quest that is missing from the tracker.",
+            } },
+        },
+    },
+    {
         version = "1.5.1", date = "2026-08-11",
         summary = "A fix for a Lua error the world map could throw while this addon was loaded.",
         sections = {

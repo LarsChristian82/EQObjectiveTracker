@@ -191,20 +191,35 @@ end
 function Quests:IsCurrentZone(entry)
     local set = currentZoneSet()
     if not set then return nil end
-    return set[entry.id] == true
+    if set[entry.id] then return true end
+    -- Absent from this map is not the same as being somewhere else, and answering false for a
+    -- quest with no location hid every category quest - GetQuestsOnMap measured 1 against a
+    -- sixteen-quest log. All three returns are required: a mapID with no coordinates is an
+    -- unresolved POI, guarded the same way in UI/TaxiHighlight.lua.
+    if not ns.Has.NextWaypoint then return nil end
+    local wm, wx, wy = C_QuestLog.GetNextWaypoint(entry.id)
+    if wm and wx and wy then return false end
+    return nil
 end
+
+-- Unlike 1.15.9, this bound is safe: on retail the count read 50 with every quest log header
+-- collapsed and the walk still found all 15 quests.
+local walkEntries, walkQuests = 0, 0
 
 local function fullRebuild()
     local focused = superTrackedID()
     local currentHeader
     store:Begin()
 
-    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+    walkEntries, walkQuests = C_QuestLog.GetNumQuestLogEntries() or 0, 0
+
+    for i = 1, walkEntries do
         local info = C_QuestLog.GetInfo(i)
         if info then
             if info.isHeader then
                 currentHeader = info.title
             elseif not info.isHidden then
+                walkQuests = walkQuests + 1
                 local id = info.questID
                 local fs = firstSeen[id]
                 if not fs then
@@ -290,11 +305,28 @@ function Quests:DebugLine()
             id, tostring(e.icon.classification), e.isFocused and "*" or "")
     end
     table.sort(parts)
-    -- The enum values are printed because they decide the POI shape, and a wrong one is
-    -- otherwise only visible as an odd icon nobody can map back to a number.
-    return ("quests: normal=%s questline=%s campaign=%s meta=%s important=%s | class %s"):format(
+
+    -- Cached against live, separately, because one number cannot tell a stale cache from a
+    -- watch list that really is empty. The cached answer is what the rows were filtered on;
+    -- the live one re-reads outside the GetInfo walk that fullRebuild writes it from.
+    local cached, live = 0, 0
+    for id, e in store:Each() do
+        if e.isTracked then cached = cached + 1 end
+        if isWatched(id) then live = live + 1 end
+    end
+
+    local map  = ns.Has.Map and C_Map.GetBestMapForUnit("player") or nil
+    local list = (map and ns.Has.QuestsOnMap) and C_QuestLog.GetQuestsOnMap(map) or nil
+
+    -- Live rather than the walk's copy: the counters are written in fullRebuild only, so on a
+    -- refreshDynamic pass the stored pair describes an older log state than this line.
+    local apiNow = C_QuestLog.GetNumQuestLogEntries() or 0
+
+    return ("quests: normal=%s questline=%s campaign=%s meta=%s important=%s | class %s\n      log api %d now %d walked %d | watched cached %d live %d | zone set map %s list %s"):format(
         tostring(QC.Normal), tostring(QC.Questline), tostring(QC.Campaign),
-        tostring(QC.Meta), tostring(QC.Important), table.concat(parts, " "))
+        tostring(QC.Meta), tostring(QC.Important), table.concat(parts, " "),
+        walkEntries, apiNow, walkQuests, cached, live, tostring(map),
+        list and tostring(#list) or "nil")
 end
 
 function Quests:OnEntryClick(entry, button)

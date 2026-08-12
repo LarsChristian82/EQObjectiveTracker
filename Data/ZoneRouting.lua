@@ -17,9 +17,10 @@ ns.CAT = {
     VOIDSTORM         = 1104,
     ARATOR            = 1105,
     WAR_LIGHT_SHADOW  = 1106,
-    REVELATIONS       = 1107,
+    CURSE_OF_ULATEK   = 1107,
     VOID_ACROPOLIS    = 1108,
     SUNSTRIDER_OMNIUM = 1109,
+    COILED_ISLE       = 1110,
 }
 
 -- Eversong Woods lists Silvermoon City (2393) on purpose so the city shows the zone's
@@ -32,9 +33,10 @@ ns.ZONE_CATEGORIES = {
     [ns.CAT.HARANDAR]          = { name = "Harandar",                    mapIDs = { 2413 } },
     [ns.CAT.ARATOR]            = { name = "Arator",                      mapIDs = {} },
     [ns.CAT.VOIDSTORM]         = { name = "Voidstorm",                   mapIDs = { 2405 } },
-    [ns.CAT.REVELATIONS]       = { name = "Revelations (12.0.7)",        mapIDs = { 2424 } },
+    [ns.CAT.CURSE_OF_ULATEK]   = { name = "The Curse of Ula'tek",        mapIDs = { 2424 } },
     [ns.CAT.SUNSTRIDER_OMNIUM] = { name = "The Sunstrider Omnium",       mapIDs = {} },
     [ns.CAT.VOID_ACROPOLIS]    = { name = "Void Acropolis",              mapIDs = { 2599 } },
+    [ns.CAT.COILED_ISLE]       = { name = "The Coiled Isle",             mapIDs = { 2512 } },
 }
 
 ns.QUESTLINE_ROUTING = {
@@ -117,14 +119,28 @@ ns.QUESTLINE_ROUTING = {
     [5932] = { cat = ns.CAT.HARANDAR, name = "Trials of the Shulka" },
     [5750] = { cat = ns.CAT.ARATOR, name = "The Path of Light" },
     [5751] = { cat = ns.CAT.ARATOR, name = "Regrets of the Past" },
-    [6050] = { cat = ns.CAT.REVELATIONS, name = "Legacy of the Amani" },
-    [6229] = { cat = ns.CAT.REVELATIONS, name = "An Island of Fangs" },
-    [6230] = { cat = ns.CAT.REVELATIONS, name = "Ghosts of the Past" },
-    [6231] = { cat = ns.CAT.REVELATIONS, name = "Original Sin" },
-    [6232] = { cat = ns.CAT.REVELATIONS, name = "The Battle for Atal'Utek" },
+    [6050] = { cat = ns.CAT.CURSE_OF_ULATEK, name = "Legacy of the Amani" },
+    [6229] = { cat = ns.CAT.CURSE_OF_ULATEK, name = "An Island of Fangs" },
+    [6230] = { cat = ns.CAT.CURSE_OF_ULATEK, name = "Ghosts of the Past" },
+    [6231] = { cat = ns.CAT.CURSE_OF_ULATEK, name = "Original Sin" },
+    [6232] = { cat = ns.CAT.CURSE_OF_ULATEK, name = "The Battle for Atal'Utek" },
     [6272] = { cat = ns.CAT.VOID_ACROPOLIS, name = "Umbral Blitz" },
     [6309] = { cat = ns.CAT.VOID_ACROPOLIS, name = "Assault and Strike Back: Val" },
     [6275] = { cat = ns.CAT.SUNSTRIDER_OMNIUM, name = "The Sunstrider Omnium" },
+    -- Map 2512, added in 12.1. The other eight questlines the client reports there are already
+    -- routed to Zul'Aman above, and a routed category wins over the map that surfaced it.
+    [6114] = { cat = ns.CAT.COILED_ISLE, name = "Bone Deep" },
+    [6115] = { cat = ns.CAT.COILED_ISLE, name = "Renown of Midnight" },
+    [6128] = { cat = ns.CAT.COILED_ISLE, name = "A Fiery Blast from the Past" },
+    [6224] = { cat = ns.CAT.COILED_ISLE, name = "Something Vile This Way Comes" },
+    [6276] = { cat = ns.CAT.COILED_ISLE, name = "Strange Friends in Odd Places" },
+    [6277] = { cat = ns.CAT.COILED_ISLE, name = "Ancient Anthropology" },
+    [6302] = { cat = ns.CAT.COILED_ISLE, name = "Living Legend" },
+    -- Deliberately unlike Everything Quests, which routes 6121 to CURSE_OF_ULATEK: that
+    -- category's only mapID is 2424 and the zone bar runs off this copy, so matching it would
+    -- make Atal'Utek count 14 quests from a zone the player is not in. GetAvailableQuestLines
+    -- does not report campaign chapters, so a sync cannot re-derive this row - do not drop it.
+    [6121] = { cat = ns.CAT.COILED_ISLE, name = "The Call of the Void" },
     -- EQ sources the campaign spine live through C_CampaignInfo, so campaign questlines
     -- are deliberately absent here
 }
