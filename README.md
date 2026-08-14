@@ -54,25 +54,15 @@ is never called.
 
 ### Everything Quests, the companion addon
 
-Everything Quests is a **work in progress on Classic** and adds the other half of the
-picture, map pins and a TomTom waypoint arrow among them. It carries the quest database, so
-it is what turns a focused row into an arrow. Installing it pulls this tracker in
-automatically. Without it, this addon is the tracker only.
-
-Also included: usable quest-item buttons, popups for newly discovered and completed
-quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is
-ready to turn in, and a highlight on the flight point nearest your tracked quest.
-
-A setting that only applies while another one is on is dimmed while that one is off, so it is
-clear which settings are actually in effect.
+Everything Quests adds the other half of the picture, map pins and a TomTom waypoint arrow
+among them. It carries the quest database, so it is what turns a focused row into an arrow.
+Its Classic support is still growing - check its own page for what it covers today.
+Installing it pulls this tracker in automatically. Without it, this addon is the tracker only.
 
 If you already ran Everything Quests, your tracker settings are imported the first time this
 addon loads, so it starts out looking the way yours already did. Your per-character state
 comes across too, on every character: pinned quests, hidden quests, collapsed sections and
 saved world quest watches.
-
-Partly translated into French, Russian and Korean. Anything not yet translated falls
-back to English on its own, so a partial translation is never a broken one.
 
 ## What it tracks
 
@@ -90,6 +80,9 @@ back to English on its own, so a partial translation is never a broken one.
 - **Hover any quest** for its objectives and full rewards, including item level
   comparisons against what you have equipped. World quests also show their faction and
   how long is left
+
+Also included: a zone progress bar, a sound when a quest is ready to turn in, and a
+highlight on the flight point nearest your tracked quest.
 
 ## Usage
 
@@ -109,10 +102,15 @@ back to English on its own, so a partial translation is never a broken one.
 | `/eqot debug` | Toggle entry validation warnings |
 
 Drag the strip along the top to move the tracker, and the corner grip to resize it.
-Left-click a quest to super-track it, and shift-click to hide it. Right-click opens a menu
-to pin, track, focus, open the quest log, pop out the details, look the quest up on
-Wowhead, or abandon it. A pinned quest stays on the tracker whatever your filters say.
-In manual sort mode you can also drag quests into whatever order you like.
+Left-click a quest to super-track it on retail, or to focus it on Classic, and shift-click to
+hide it. Right-click opens a menu to pin, track, focus, open the quest log, pop out the
+details, look the quest up on Wowhead, or abandon it - the Classic menu is shorter, since
+popping out and abandoning need frames those clients do not have. A pinned quest stays on the
+tracker whatever your filters say. In manual sort mode you can also drag quests into whatever
+order you like.
+
+A setting that only applies while another one is on is dimmed while that one is off, so it is
+clear which settings are actually in effect.
 
 The tracker can hide itself while you are in combat, inside an instance, on a Mythic+ run,
 or while the world map is open. Each is its own toggle, and all are off by default.
@@ -138,7 +136,10 @@ against that repository.** A change made in this repo is overwritten the next ti
 are built. A phrase left untranslated simply stays English, so partial work is always safe.
 
 A new language needs adding to that repo's language list, and its `Locales/<code>.lua` listed
-in both `.toc` files here.
+in all four `.toc` files here.
+
+A phrase that has not been translated yet falls back to English on its own, so a partial
+translation is never a broken one.
 
 Every non-English string in this addon is somebody else's work. Thanks to **Zox** for the
 French, **Malevi4** for the Russian, and **labrie75** for the Korean.
