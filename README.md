@@ -30,10 +30,15 @@ pinning, filters, section visibility and ordering, the card layout, fonts and co
 profiles, row tooltips, and the row right-click menu. Blizzard's own quest watch frame is
 suppressed so you do not get two trackers.
 
+You can also focus a quest, which these clients have no super-tracking for. Click a row's
+icon to focus it and click the icon again to clear it, or use Focus in the right-click menu.
+The focused quest's title is tinted. If Everything Quests and TomTom are both installed,
+focusing a quest also points a TomTom arrow at it.
+
 ### What is missing or limited on Classic
 
-- **No map pins and no TomTom arrow yet.** These are coming, in the companion addon - see
-  below. This is the biggest gap and it is known.
+- **No map pins.** Those come from the companion addon - see below. The TomTom arrow needs it
+  too, so on the tracker alone a focused quest is the tint and nothing more.
 - World quests, scenarios, achievements, endeavors and tracked recipes have no section.
   Most need APIs these clients do not have.
 - The zone progress bar stays empty. Its zone routing data covers Midnight only.
@@ -49,9 +54,10 @@ is never called.
 
 ### Everything Quests, the companion addon
 
-Everything Quests is a **work in progress on Classic** and will add the other half of the
-picture, map pins and a TomTom waypoint arrow among them. Installing it pulls this tracker
-in automatically. Until it lands, this addon is the tracker only.
+Everything Quests is a **work in progress on Classic** and adds the other half of the
+picture, map pins and a TomTom waypoint arrow among them. It carries the quest database, so
+it is what turns a focused row into an arrow. Installing it pulls this tracker in
+automatically. Without it, this addon is the tracker only.
 
 Also included: usable quest-item buttons, popups for newly discovered and completed
 quests, a zone progress bar, a movable bonus objectives HUD, a sound when a quest is
@@ -149,7 +155,7 @@ on an annotated `v` tag. A tag whose name carries a prerelease suffix, such as
 ## Extending it
 
 Another addon can add its own entries to a quest's right-click menu and its own icons to the
-tracker header, through the global `EQObjectiveTracker`:
+tracker header, and follow whichever quest is focused, through the global `EQObjectiveTracker`:
 
 ```lua
 local API = EQObjectiveTracker:GetModule("API")
@@ -157,11 +163,15 @@ API:AddMenuItem{ id = "mine", providerID = "quests", label = "Do a thing", order
                  onClick = function(providerID, questID) end }
 API:AddHeaderIcon{ id = "mine", texture = [[Interface\Icons\INV_Misc_QuestionMark]],
                    tooltip = "Do a thing", order = 20, onClick = function() end }
+API:AddFocusListener{ id = "mine",
+                      onFocus = function(providerID, questID) end }
 ```
 
 Callbacks receive the provider ID and the entry ID, never the entry table, because entries are
-rebuilt on every quest event. `/eqot status` reports what is registered. Everything Quests uses
-this for its Chain Guide icon and its "Get Directions" menu entry.
+rebuilt on every quest event. `onFocus` is called with a nil quest ID when the focus is
+cleared, and only fires on clients with no super-tracking of their own, which today means
+Classic Era and TBC. `/eqot status` reports what is registered. Everything Quests uses this
+for its Chain Guide icon, its "Get Directions" menu entry, and its TomTom arrow.
 
 ## License
 

@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-08-13
+
+Focus a quest on Classic Era and TBC Anniversary, and a fix for overlapping controls on the
+Appearance tab.
+
+### New Features
+
+- Classic Era and TBC Anniversary: clicking a quest's icon in the tracker now focuses that
+  quest, and clicking the icon again clears it. The focused quest's title is tinted so you can
+  see at a glance which one you picked. Retail is unchanged, because it already marks the
+  super-tracked quest with its own artwork.
+- Classic Era and TBC Anniversary: if Everything Quests is also installed, focusing a quest
+  drops a TomTom arrow on it, and a quest that is ready to hand in points at the person who
+  takes it rather than at the place you farmed it. The arrow clears itself when you turn the
+  quest in or abandon it. The tracker on its own carries no quest coordinates, so without
+  Everything Quests and TomTom the focus is the tint alone.
+- Classic Era and TBC Anniversary: Focus and Unfocus are in the right-click row menu too, in
+  the same place they sit on retail.
+- Other addons can follow the focused quest through a new `AddFocusListener` call on the public
+  API, alongside the existing `AddMenuItem` and `AddHeaderIcon`.
+
+### Bug Fixes
+
+- Appearance tab: several color pickers overlapped the checkbox beside them, so "Show header
+  bars" ran into "Bar Color" and the zone bar's "Background" ran into "Background Color". The
+  color pickers now measure the checkbox label they sit next to instead of assuming a width.
+  This was worst in French and Russian, where the affected labels are around half again as wide
+  as the English ones.
+
+### Changed
+
+- Classic Era and TBC Anniversary: with Split quest click on, left-clicking a quest's title
+  opens the quest log and left-clicking its icon sets the focus. Left-clicking anywhere on the
+  row used to open the quest log. With Split quest click off the whole row sets the focus and
+  the quest log is reached from the right-click menu, which is how retail already behaves.
+
 ## [1.5.2] - 2026-08-11
 
 Two fixes for quests going missing from the tracker, and zone progress for the new 12.1 zone.

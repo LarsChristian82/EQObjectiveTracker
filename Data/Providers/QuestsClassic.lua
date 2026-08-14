@@ -3,6 +3,7 @@ local _, ns = ...
 local Entry      = ns:GetModule("Entry")
 local Registry   = ns:GetModule("Registry")
 local QuestItems = ns:GetModule("QuestItems")
+local Focus      = ns:GetModule("Focus")
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 
@@ -190,8 +191,6 @@ local function fullRebuild()
                 e.level     = t[T_LEVEL]
                 e.addedAt   = fs
                 e.state     = questState(t[T_COMPLETE])
-                -- No super-track on this client, so no row can be focused.
-                e.isFocused = false
                 e.isTracked = isWatched(id)
                 if e.isTracked then watchedDuringWalk = watchedDuringWalk + 1 end
                 e.icon.classification = nil
@@ -252,6 +251,17 @@ local function syncWatched()
     end
 end
 
+-- Total rather than written during the walk, so a focus change needs no rebuild and a pooled
+-- entry can never keep a previous quest's focus. This client has no super-track, so the answer
+-- comes from Data/Focus.lua rather than from the game.
+local function syncFocus()
+    local providerID, focusedID = Focus:Get()
+    local mine = providerID == Quests.id
+    for id, e in store:Each() do
+        e.isFocused = mine and focusedID == id
+    end
+end
+
 function Quests:GetEntries()
     if dirtyAll then
         fullRebuild()
@@ -259,6 +269,7 @@ function Quests:GetEntries()
         refreshDynamic()
     end
     syncWatched()
+    syncFocus()
     return store:Out()
 end
 
@@ -296,13 +307,16 @@ function Quests:DebugLine()
         table.concat(sample, " "))
 end
 
+-- The icon half of a left-click lands here and the title half goes to OnEntryOpenLog, which is
+-- retail's layout with focus standing in for super-track. With Split quest click OFF the whole
+-- row lands here, so focus is then the only left-click and the quest log is reached from the
+-- row menu, exactly as it is on retail.
 function Quests:OnEntryClick(entry, button)
     if button == "RightButton" then
         setWatched(entry.id, false)
         return
     end
-    -- There is no super-track to focus, so the useful left-click here is the quest log.
-    self:OnEntryOpenLog(entry)
+    Focus:Toggle(self.id, entry.id)
 end
 
 function Quests:OnEntryOpenLog(entry)
@@ -314,10 +328,10 @@ end
 local menuOut = {}
 local pinShim = {}
 
--- Deliberately shorter than the retail menu. Focus needs super-tracking, which this client
--- does not have. Pop out and Abandon both need a Blizzard popup or detail frame, and Data/
--- may not drive one - the two calls that already do in Quests.lua are recorded debt, not a
--- precedent to copy. Named indirectly so the layering grep's output stays a known set.
+-- Still shorter than the retail menu. Pop out and Abandon both need a Blizzard popup or detail
+-- frame, and Data/ may not drive one - the two calls that already do in Quests.lua are recorded
+-- debt, not a precedent to copy. Named indirectly so the layering grep's output stays a known
+-- set. Focus is here at retail's own order 30 now that this client has a focus concept.
 function Quests:GetEntryMenu(entry)
     local Filter = ns:GetModule("Filter")
     local id = entry.id
@@ -327,6 +341,7 @@ function Quests:GetEntryMenu(entry)
     menuOut[#menuOut + 1] = { kind = "title", text = entry.title, order = 0 }
     menuOut[#menuOut + 1] = { id = Filter:IsPinned(entry) and "unpin" or "pin", order = 10 }
     menuOut[#menuOut + 1] = { id = isWatched(id) and "untrack" or "track",      order = 20 }
+    menuOut[#menuOut + 1] = { id = Focus:Is(self.id, id) and "unfocus" or "focus", order = 30 }
     menuOut[#menuOut + 1] = { id = "openlog", order = 40 }
     menuOut[#menuOut + 1] = { id = "wowhead", order = 60 }
     return menuOut
@@ -340,6 +355,10 @@ function Quests:OnEntryMenuSelect(entryID, itemID)
         setWatched(entryID, true)
     elseif itemID == "untrack" then
         setWatched(entryID, false)
+    elseif itemID == "focus" then
+        Focus:Set(self.id, entryID)
+    elseif itemID == "unfocus" then
+        Focus:Set(nil, nil)
     elseif itemID == "openlog" then
         self:OnEntryOpenLog({ id = entryID })
     end
@@ -349,9 +368,26 @@ end
 function Quests:Enable(notifyDirty)
     local Events = ns:GetModule("Events")
 
+    -- Focus answers to no game event, so the repaint has to come from the store itself.
+    Focus:OnDirty(notifyDirty)
+
     local function markAll()
         dirtyAll = true
         notifyDirty()
+    end
+
+    -- A focused quest can leave the log by being turned in or abandoned, and nothing else would
+    -- ever announce the clear, so a listener's arrow would keep pointing at a quest the player
+    -- no longer has. Checked against the log rather than the store because this runs before the
+    -- rebuild. Focus:Set notifies through OnDirty, so the plain notify is the other branch only.
+    local function markRemoved()
+        dirtyAll = true
+        local providerID, focusedID = Focus:Get()
+        if providerID == Quests.id and focusedID and not logIndex(focusedID) then
+            Focus:Set(nil, nil)
+        else
+            notifyDirty()
+        end
     end
     local function markDynamic()
         if not primed then dirtyAll = true else dirtyObjectives = true end
@@ -359,8 +395,8 @@ function Quests:Enable(notifyDirty)
     end
 
     Events:On("QUEST_ACCEPTED",          markAll)
-    Events:On("QUEST_REMOVED",           markAll)
-    Events:On("QUEST_TURNED_IN",         markAll)
+    Events:On("QUEST_REMOVED",           markRemoved)
+    Events:On("QUEST_TURNED_IN",         markRemoved)
     Events:On("PLAYER_ENTERING_WORLD",   markAll)
     Events:On("QUEST_LOG_UPDATE",        markDynamic)
     Events:On("UNIT_QUEST_LOG_CHANGED",  markDynamic)

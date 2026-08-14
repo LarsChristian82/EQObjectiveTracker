@@ -35,6 +35,12 @@ local SUB_TO_LINES     = 2
 local SUBTITLE_COLOR   = { 0.42, 0.69, 1.00 }
 local DEFAULT_DONE_HEX = "44ff44"
 
+-- A client with super-track marks its focused row with the -SuperTracked atlas, and that art
+-- does not exist anywhere else, so a client without the API gets a title tint instead. Nil is
+-- the off switch: every read below is a plain truth test, so retail takes none of these
+-- branches and is unchanged. Capability, never a flavor or build number.
+local FOCUS_TINT = (not ns.Has.SuperTrack) and { 0.35, 0.90, 1.00 } or nil
+
 -- The width one secure quest-item button needs. Only a row that actually owns an item pays
 -- for it - EQ computes this per block rather than indenting the whole list, so one item
 -- quest indents one row.
@@ -347,9 +353,13 @@ local function onMouseUp(row, button)
     dispatch(row, "OnEntryClick", button)
 end
 
-local function onEnter(row)
-    if row._wasDragging then return end
-    if not row._entry or clickThrough() then return end
+-- Offered only where both halves are really wired: the focus gesture needs a client with no
+-- super-track, and the title half only opens the quest log while Split quest click is on.
+local function splitHintWanted(row)
+    return (FOCUS_TINT and splitClickWanted(row) and overIcon(row)) and true or false
+end
+
+local function paintTooltip(row)
     local Registry = ns:GetModule("Registry")
     local provider = row._providerID and Registry:Get(row._providerID)
     if not provider then return end
@@ -358,7 +368,7 @@ local function onEnter(row)
     -- ilvl comparison, none of which Data/ may build.
     if provider.idSpace == "quest" then
         local RT = ns:GetModule("RewardTooltip")
-        if RT then RT:ShowForEntry(row, row._entry) end
+        if RT then RT:ShowForEntry(row, row._entry, row._hintShown) end
         return
     end
     if not provider.OnEntryTooltip then return end
@@ -368,8 +378,39 @@ local function onEnter(row)
     tip:Show()
 end
 
-local function onLeave()
+-- The cursor crosses between the icon and the title without ever leaving the row, and OnEnter
+-- does not fire again for that, so the half is re-tested while the row is hovered. Installed
+-- only on a row that can actually show the hint, and only one row is hovered at a time.
+local HINT_POLL = 0.1
+local function onUpdateHalf(row, elapsed)
+    row._hintClock = (row._hintClock or 0) + elapsed
+    if row._hintClock < HINT_POLL then return end
+    row._hintClock = 0
+    local want = splitHintWanted(row)
+    if want ~= row._hintShown then
+        row._hintShown = want
+        paintTooltip(row)
+    end
+end
+
+local function onEnter(row)
+    if row._wasDragging then return end
+    if not row._entry or clickThrough() then return end
+    row._hintShown = splitHintWanted(row)
+    paintTooltip(row)
+    if FOCUS_TINT and splitClickWanted(row) then
+        row._hintClock = 0
+        row:SetScript("OnUpdate", onUpdateHalf)
+    end
+end
+
+-- Shared with the group-finder button, which has no icon holder and never polls.
+local function onLeave(frame)
     ns.Util.Tooltip():Hide()
+    if frame and frame.iconHolder then
+        frame:SetScript("OnUpdate", nil)
+        frame._hintShown, frame._hintClock = nil, nil
+    end
 end
 
 function Row:Build()
@@ -444,6 +485,8 @@ end
 function Row:Reset(row)
     row._entry, row._providerID = nil, nil
     row._wasDragging = nil
+    row:SetScript("OnUpdate", nil)
+    row._hintShown, row._hintClock = nil, nil
     row._sTitle, row._sSub, row._sState  = nil, nil, nil
     row._sFocus, row._sWidth, row._sText = nil, nil, nil
     row._sTime, row._sGen, row._sCardBg  = nil, nil, nil
@@ -570,7 +613,11 @@ function Row:Render(row, entry, width, cfg)
     -- Recoloring completed entries needs a color to recolor them TO, so the toggle is
     -- inert until an override or class color is set.
     local recolorComplete = ovR and (not cfg or cfg.overrideCompleteGreen ~= false)
-    if entry.state == STATE.FAILED then
+    if FOCUS_TINT and entry.isFocused then
+        -- Ahead of the state colors deliberately: there is exactly one focused row, it is the
+        -- one the player just picked, and on this client nothing else marks it.
+        row.title:SetTextColor(FOCUS_TINT[1], FOCUS_TINT[2], FOCUS_TINT[3])
+    elseif entry.state == STATE.FAILED then
         row.title:SetTextColor(0.85, 0.27, 0.27)
     elseif entry.state == STATE.COMPLETE and not recolorComplete then
         row.title:SetTextColor(0.27, 0.85, 0.27)

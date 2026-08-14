@@ -160,7 +160,7 @@ Options:RegisterTab({
             function() return DB().textShadowColor end,
             function(v) restyle("textShadowColor", v) end,
             L["Shadow color and opacity."], true)
-        shadowPicker:SetPoint("LEFT", shadowCheck, "RIGHT", 120, 0)
+        self:AlignSatelliteColumn({ shadowCheck, shadowPicker })
 
         local shadowSizeSlider = self:CreateSlider(content, L["Shadow Size"], 1, 6, 0.5,
             function() return DB().textShadowStrength or 2 end,
@@ -181,7 +181,7 @@ Options:RegisterTab({
             function() return DB().scenarioTextShadowColor end,
             function(v) bannerRestyle("scenarioTextShadowColor", v) end,
             L["Color and opacity of the banner's drop shadow."], true)
-        scShadowPicker:SetPoint("LEFT", scShadowCheck, "RIGHT", 120, 0)
+        self:AlignSatelliteColumn({ scShadowCheck, scShadowPicker })
 
         local scShadowSizeSlider = self:CreateSlider(content, L["Shadow Size"], 1, 6, 0.5,
             function() return DB().scenarioTextShadowStrength or 1 end,
@@ -234,7 +234,6 @@ Options:RegisterTab({
             function() return DB().scrollBarBgColor end,
             function(v) relayout("scrollBarBgColor", v) end,
             L["Color and opacity of the scroll bar track."], true)
-        sbPicker:SetPoint("LEFT", sbCheck, "RIGHT", 170, 0)
 
         local thumbSkinCheck = self:CreateCheckbox(content, L["Solid color thumb"],
             function() return DB().skinScrollBar end,
@@ -246,7 +245,7 @@ Options:RegisterTab({
             function() return DB().scrollBarThumbColor end,
             function(v) relayout("scrollBarThumbColor", v) end,
             L["Color and opacity of the draggable block. Only used while Solid color thumb is on."], true)
-        thumbColorPicker:SetPoint("LEFT", thumbSkinCheck, "RIGHT", 170, 0)
+        self:AlignSatelliteColumn({ sbCheck, sbPicker }, { thumbSkinCheck, thumbColorPicker })
         self:AlignPickerColumn(sbPicker, thumbColorPicker)
 
         local thumbWidthSlider = self:CreateSlider(content, L["Thumb Width"], 4, 16, 0.5,
@@ -271,7 +270,6 @@ Options:RegisterTab({
             function() return DB().backgroundColor end,
             function(v) relayout("backgroundColor", v) end,
             L["Background color and opacity."], true)
-        bgPicker:SetPoint("LEFT", bgCheck, "RIGHT", 120, 0)
 
         local borderCheck = self:CreateCheckbox(content, L["Border"],
             function() return DB().showBorder end,
@@ -283,7 +281,6 @@ Options:RegisterTab({
             function() return DB().borderColor end,
             function(v) relayout("borderColor", v) end,
             L["Border color and opacity."], true)
-        borderPicker:SetPoint("LEFT", borderCheck, "RIGHT", 120, 0)
 
         local borderThickSlider = self:CreateSlider(content, L["Border Thickness"], 1, 5, 0.5,
             function() return DB().borderSize or 1 end,
@@ -304,9 +301,11 @@ Options:RegisterTab({
             function() return DB().headerBarColor end,
             function(v) relayout("headerBarColor", v) end,
             L["Brightest end of the bar gradient. The other end is the same color darkened."], true)
-        hbPicker:SetPoint("LEFT", hbCheck, "RIGHT", 120, 0)
         -- Three sections apart, but they share a left edge, so one swatch column reads as
-        -- one column. EQ aligns these together too.
+        -- one column. EQ aligns these together too. "Show header bars" is the widest label of
+        -- the three and the one that used to run under its own swatch.
+        self:AlignSatelliteColumn({ bgCheck, bgPicker }, { borderCheck, borderPicker },
+                                  { hbCheck, hbPicker })
         self:AlignPickerColumn(bgPicker, borderPicker, hbPicker)
 
         local hbStyleDD = self:CreateDropdown(content, L["Bar Style"],
@@ -524,7 +523,6 @@ Options:RegisterTab({
             function(v) zbSet("backgroundColor", v) end,
             L["Background color and opacity for the floating bar. While this is unset the bar uses a plain black fill that fades slightly once locked."], true,
             function() zbSet("backgroundColor", nil) end)
-        zbBgPicker:SetPoint("LEFT", zbBgCheck, "LEFT", 90, 0)
 
         local zbBorderCheck = self:CreateCheckbox(content, L["Border"],
             function() local st = zbState(); return not (st and st.showBorder == false) end,
@@ -536,7 +534,7 @@ Options:RegisterTab({
             function() local st = zbState(); return st and st.borderColor end,
             function(v) zbSet("borderColor", v) end,
             L["Border color and opacity for the floating bar."], true)
-        zbBorderPicker:SetPoint("LEFT", zbBorderCheck, "LEFT", 90, 0)
+        self:AlignSatelliteColumn({ zbBgCheck, zbBgPicker }, { zbBorderCheck, zbBorderPicker })
         self:AlignPickerColumn(zbBgPicker, zbBorderPicker)
 
         local zbScaleSlider = self:CreateSlider(content, L["Zone Bar Scale"], 0.5, 2.0, 0.05,

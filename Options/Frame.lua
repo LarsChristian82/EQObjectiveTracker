@@ -752,6 +752,41 @@ function Options:SetDependent(control, on)
     if control then control:SetAlpha(on and 1 or 0.4) end
 end
 
+-- A checkbox frame is a fixed 22x22 and its label hangs OUTSIDE it. SetHitRectInsets widens
+-- the mouse rect and never GetWidth, so the frame's right edge says nothing about where its
+-- text ends, and anything placed beside one at a hardcoded offset collides the moment a label
+-- outruns the number that was guessed. A translation does that on every flavor - "Show header
+-- bars" is about half again as wide in French and Russian as in English.
+--
+-- Each argument is a { checkbox, satellite } pair. They land in ONE column past the widest
+-- label in the group, so a short label does not pull its own satellite left out of line.
+local SATELLITE_GAP = 16
+
+function Options:AlignSatelliteColumn(...)
+    local rows = { ... }
+    local reach = 0
+    for _, row in ipairs(rows) do
+        local cb  = row[1]
+        local lbl = cb and cb.label
+        local w   = (lbl and lbl:GetStringWidth()) or 0
+        -- The 4 is CreateCheckbox's own label inset, and the box width is read off the frame
+        -- rather than written here again so the two cannot drift apart.
+        if w > 0 then
+            local r = (cb:GetWidth() or 0) + 4 + w
+            if r > reach then reach = r end
+        end
+    end
+    -- A string that has not been laid out answers 0, and 0 is truthy, so this has to test the
+    -- value. The floor is the widest reach any of these groups used before they were measured
+    -- (22 + 170), so a failed measure cannot land a satellite further left than it already sat.
+    if reach <= 0 then reach = 192 end
+
+    for _, row in ipairs(rows) do
+        row[2]:ClearAllPoints()
+        row[2]:SetPoint("LEFT", row[1], "LEFT", reach + SATELLITE_GAP, 0)
+    end
+end
+
 -- Lines a run of pickers up as a table: labels flush left, every swatch in one column just
 -- past the widest label. EQ instead right-aligns each label off its own swatch, which
 -- straightens the swatches but leaves the labels ragged - its Border Color reads indented

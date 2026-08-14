@@ -116,10 +116,13 @@ function RT:Show(owner, questID)
 end
 
 -- The tracker row tooltip, mirroring EQ: title, objectives and rewards on a quest row, plus
--- a faction line and a color-coded countdown on a world quest row. EQ has no click hint on
--- either and neither does this - with Split quest click on, "left-click to super-track"
--- describes only half the row and is wrong for the other half.
-function RT:ShowForEntry(owner, entry)
+-- a faction line and a color-coded countdown on a world quest row. There is no click hint on
+-- the row as a whole - with Split quest click on, one sentence describes only half of it,
+-- which is why the caller asks for the hint by hovering the icon and not before.
+--
+-- The hint names focus rather than an arrow because a standalone tracker has no coordinates
+-- and cannot place one. The arrow belongs to whatever registered a focus listener.
+function RT:ShowForEntry(owner, entry, clickHint)
     if not (owner and entry and entry.id) then return end
     local QR = ns:GetModule("QuestRewards")
     if not QR then return end
@@ -146,6 +149,13 @@ function RT:ShowForEntry(owner, entry)
             tip:AddLine(L["Time Left: "] .. Util.FmtDuration(mins * 60),
                         Util.TimeColor(mins))
         end
+    end
+
+    if clickHint then
+        tip:AddLine(" ")
+        tip:AddLine(L["Click the icon to focus this quest, or again to clear it."],
+                    0.7, 0.7, 0.7, true)
+        tip:AddLine(L["Click the title to open the quest log."], 0.7, 0.7, 0.7, true)
     end
 
     tip:Show()

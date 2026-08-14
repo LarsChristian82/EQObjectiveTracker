@@ -8,8 +8,9 @@ local _, ns = ...
 -- invalid by the time it is read.
 local API = ns:RegisterModule("API", {})
 
-API.headerIcons = {}
-API.menuItems   = {}
+API.headerIcons    = {}
+API.menuItems      = {}
+API.focusListeners = {}
 
 local function slotFor(list, id)
     for i = 1, #list do
@@ -98,7 +99,50 @@ function API:MenuItemsFor(providerID, entryID, out)
     return out
 end
 
+-- Announced when the tracker's focused row changes, for a client with no super-track: EQOT
+-- owns the focus, a listener owns whatever it points at. Only Data/Focus.lua fires this and
+-- only the Classic TOCs list that file, so a retail listener is registered and never called.
+-- Registering here on every flavor is deliberate - a call that exists on one flavor and is nil
+-- on another is the trap, not the courtesy.
+function API:AddFocusListener(spec)
+    if type(spec) ~= "table" or type(spec.id) ~= "string" then return false end
+    if type(spec.onFocus) ~= "function" then return false end
+    self.focusListeners[slotFor(self.focusListeners, spec.id)] = {
+        id = spec.id, onFocus = spec.onFocus,
+    }
+    return true
+end
+
+function API:RemoveFocusListener(id)
+    for i = #self.focusListeners, 1, -1 do
+        if self.focusListeners[i].id == id then table.remove(self.focusListeners, i) end
+    end
+end
+
+-- entryID is nil when focus was CLEARED, and providerID still names the provider that lost it.
+-- pcall'd because this runs from inside the click that set the focus, so a foreign addon
+-- erroring here would otherwise take the row handler down with it.
+--
+-- Walked backwards because a one-shot listener unregistering itself from its own callback is an
+-- ordinary thing to write, and table.remove would shift an unvisited entry into a slot the
+-- forward loop had already passed - silently skipping it.
+function API:NotifyFocus(providerID, entryID)
+    local list = self.focusListeners
+    for i = #list, 1, -1 do
+        local it = list[i]
+        if it then pcall(it.onFocus, providerID, entryID) end
+    end
+end
+
+function API:GetFocus()
+    local Focus = ns:GetModule("Focus")
+    if not Focus then return nil, nil end
+    return Focus:Get()
+end
+
 function API:DebugLine()
-    return ("api: %d header icon(s), %d menu item(s)")
-        :format(#self.headerIcons, #self.menuItems)
+    local providerID, entryID = self:GetFocus()
+    return ("api: %d header icon(s), %d menu item(s), %d focus listener(s) | focus %s:%s")
+        :format(#self.headerIcons, #self.menuItems, #self.focusListeners,
+                tostring(providerID), tostring(entryID))
 end

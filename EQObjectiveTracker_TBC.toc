@@ -2,7 +2,7 @@
 ## Title: EQ Objective Tracker
 ## Notes: Standalone replacement for the default objective tracker.
 ## Author: Wheelbarrel00
-## Version: 1.5.2
+## Version: 1.6.0
 ## SavedVariables: EQObjectiveTrackerDB
 ## X-Curse-Project-ID: 1637002
 ## X-Website: https://github.com/wheelbarrel00/EQObjectiveTracker
@@ -36,6 +36,7 @@ Core\Changelog.lua
 # Data layer. Operates on normalized entries and game APIs, never on frames.
 Data\Entry.lua
 Data\Registry.lua
+Data\Focus.lua
 Data\Filter.lua
 Data\Sort.lua
 Data\ManualOrder.lua

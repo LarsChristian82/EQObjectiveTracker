@@ -416,6 +416,8 @@ L["ilvl %d"] = true
 L["%d XP"] = true
 L["Choose one:"] = true
 L["Time Left: "] = true
+L["Click the icon to focus this quest, or again to clear it."] = true
+L["Click the title to open the quest log."] = true
 
 -- UI/Row.lua
 L["Find Group"] = true
