@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-08-13
+
+A fix for the tracker coming up empty on Classic Era and TBC Anniversary.
+
+### Bug Fixes
+
+- Classic Era and TBC Anniversary: the tracker could come up completely empty after logging in
+  or reloading, and stay that way until you changed any setting or ran a command. The game
+  reports every quest as untracked for a moment during login, and with "Show only tracked
+  quests" on, which is the default, that hid the entire quest log. Nothing asked again
+  afterwards, so it stayed hidden. The tracker now re-reads the watch list a second later when
+  it sees a full quest log with nothing tracked in it, which is not a state this game version
+  produces on its own. A quest whose tracked state cannot be read yet is also shown rather than
+  hidden, instead of being treated as untracked.
+
 ## [1.6.0] - 2026-08-13
 
 Focus a quest on Classic Era and TBC Anniversary, and a fix for overlapping controls on the

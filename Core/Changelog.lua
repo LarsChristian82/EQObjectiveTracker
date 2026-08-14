@@ -9,6 +9,15 @@ local _, ns = ...
 -- edit CHANGELOG.md and re-run the generator.
 ns.Changelog = {
     {
+        version = "1.6.1", date = "2026-08-13",
+        summary = "A fix for the tracker coming up empty on Classic Era and TBC Anniversary.",
+        sections = {
+            { head = "Bug Fixes", items = {
+                "Classic Era and TBC Anniversary: the tracker could come up completely empty after logging in or reloading, and stay that way until you changed any setting or ran a command. The game reports every quest as untracked for a moment during login, and with \"Show only tracked quests\" on, which is the default, that hid the entire quest log. Nothing asked again afterwards, so it stayed hidden. The tracker now re-reads the watch list a second later when it sees a full quest log with nothing tracked in it, which is not a state this game version produces on its own. A quest whose tracked state cannot be read yet is also shown rather than hidden, instead of being treated as untracked.",
+            } },
+        },
+    },
+    {
         version = "1.6.0", date = "2026-08-13",
         summary = "Focus a quest on Classic Era and TBC Anniversary, and a fix for overlapping controls on the Appearance tab.",
         sections = {

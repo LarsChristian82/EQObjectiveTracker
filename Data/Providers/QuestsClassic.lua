@@ -56,6 +56,29 @@ local baselined       = false
 -- inside the GetQuestLogTitle walk than outside it. Status read 0 cached against 9 live.
 local lastFullAt, lastDynAt, lastFullWatched = 0, 0, 0
 
+-- File scoped rather than an upvalue of Enable, because scheduleWatchRecheck is declared above
+-- it and needs the same notifier.
+local notifyDirty
+
+local WATCH_RECHECK_DELAY = 1
+local watchRecheckPending = false
+
+-- Measured on TBC 2.5.6 at login: the rebuild walk saw 0 of 19 quests watched while a read
+-- seconds later saw 17. Every quest is watched by default on 1.15.9 and 2.5.6, so zero across a
+-- non-empty log is not a state the player can reach, which makes it a safe trigger. With Show
+-- only tracked quests on, which is the default, that first pass rejected the whole log and
+-- nothing asked again. One delayed re-read, and it does not matter which of the two candidate
+-- causes it was.
+local function scheduleWatchRecheck()
+    if watchRecheckPending then return end
+    watchRecheckPending = true
+    C_Timer.After(WATCH_RECHECK_DELAY, function()
+        watchRecheckPending = false
+        dirtyAll = true
+        if notifyDirty then notifyDirty() end
+    end)
+end
+
 local tagIDCache = {}
 
 local function logIndex(id)
@@ -84,9 +107,12 @@ local function questState(isComplete)
     return STATE.ACTIVE
 end
 
+-- nil, never false, when there is no index to read. Filter tests isTracked == false explicitly,
+-- so "cannot tell" fails open there the way IsCurrentZone's nil already does.
 local function isWatched(id)
+    if type(IsQuestWatched) ~= "function" then return nil end
     local i = logIndex(id)
-    if not i or type(IsQuestWatched) ~= "function" then return false end
+    if not i then return nil end
     return IsQuestWatched(i) and true or false
 end
 
@@ -217,6 +243,10 @@ local function fullRebuild()
     lastFullAt, lastFullWatched = time(), watchedDuringWalk
     dirtyAll        = false
     dirtyObjectives = false
+
+    if watchedDuringWalk == 0 and next(store:Out()) ~= nil then
+        scheduleWatchRecheck()
+    end
 end
 
 local function refreshDynamic()
@@ -365,8 +395,10 @@ function Quests:OnEntryMenuSelect(entryID, itemID)
     if self._notifyDirty then self._notifyDirty() end
 end
 
-function Quests:Enable(notifyDirty)
+function Quests:Enable(notify)
     local Events = ns:GetModule("Events")
+
+    notifyDirty = notify
 
     -- Focus answers to no game event, so the repaint has to come from the store itself.
     Focus:OnDirty(notifyDirty)
