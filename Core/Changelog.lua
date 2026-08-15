@@ -9,6 +9,15 @@ local _, ns = ...
 -- edit CHANGELOG.md and re-run the generator.
 ns.Changelog = {
     {
+        version = "1.7.0", date = "2026-08-15",
+        summary = "Simplified Chinese.",
+        sections = {
+            { head = "New Features", items = {
+                "Simplified Chinese. The tracker and its options panel now read in Chinese on a zhCN client, covering 380 of the addon's 387 phrases. The seven still in English are the Questie coexistence strings and the two Classic focus hints, which are untranslated in every language. Contributed by a player from the Discord.",
+            } },
+        },
+    },
+    {
         version = "1.6.1", date = "2026-08-13",
         summary = "A fix for the tracker coming up empty on Classic Era and TBC Anniversary.",
         sections = {

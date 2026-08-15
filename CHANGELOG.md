@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-08-15
+
+Simplified Chinese.
+
+### New Features
+
+- Simplified Chinese. The tracker and its options panel now read in Chinese on a zhCN client,
+  covering 380 of the addon's 387 phrases. The seven still in English are the Questie
+  coexistence strings and the two Classic focus hints, which are untranslated in every
+  language. Contributed by a player from the Discord.
+
 ## [1.6.1] - 2026-08-13
 
 A fix for the tracker coming up empty on Classic Era and TBC Anniversary.

@@ -47,3 +47,19 @@ jobs:
 
       - name: Check TOC coverage
         run: python3 docs/check_toc.py
+
+  # Its own job for the same reason `toc` is: a locale failure and a TOC failure are
+  # different work and should not share a red X. Release-only until 2026-08-15, which
+  # meant a look-alike or an orphan sat on main until a tag went up.
+  # Note this job can redden main on store drift alone, because _verify_locale.py fails
+  # on orphans - so a two-repo change committed in the wrong order (addon before
+  # EverythingLocales) shows up here rather than at release time. That is the intent.
+  locale:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check locale manifest and translations
+        run: python3 docs/_verify_locale.py
