@@ -41,9 +41,16 @@ focusing a quest also points a TomTom arrow at it.
   too, so on the tracker alone a focused quest is the tint and nothing more.
 - World quests, scenarios, achievements, endeavors and tracked recipes have no section.
   Most need APIs these clients do not have.
+- **These clients only let you watch five quests at a time, and they cannot track a quest
+  automatically when you accept it.** So "Show only tracked quests" hides most of your log,
+  and "Auto-track accepted quests" does nothing. Turn the first one off if your tracker looks
+  emptier than your quest log.
+- **Usable quest items get no button on the tracker.**
+- **Timed quests show no countdown**, and Blizzard's own timer box is left on screen.
 - The zone progress bar stays empty. Its zone routing data covers Midnight only.
 - Distance sorting does nothing, because the distance API is retail-only.
 - Some options still appear that cannot do anything on Classic, for the same reasons.
+- Tracking a quest from Blizzard's own quest log may not show up until you reload.
 
 ### Questie
 

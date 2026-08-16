@@ -245,6 +245,13 @@ function DB:OnInitialize()
     -- data loss. Must be read BEFORE AceDB:New, which creates the table.
     local freshInstall = (_G.EQObjectiveTrackerDB == nil)
 
+    -- Blizzard caps Classic at five watched quests and the auto-track API is absent there,
+    -- so only-watched would pin the tracker to five of a twenty quest log. Written before
+    -- AceDB:New, which takes this table by reference.
+    if not ns.Has.QuestWatchAPI then
+        self.defaults.profile.tracker.showOnlyWatched = false
+    end
+
     self.db = LibStub("AceDB-3.0"):New("EQObjectiveTrackerDB", self.defaults, true)
     ns.db = self.db
 

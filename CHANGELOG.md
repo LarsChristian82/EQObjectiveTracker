@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Classic Era and TBC Anniversary: "Show only tracked quests" now ships turned off. This game
+  version cannot track a quest automatically when you accept it, and Blizzard only lets you watch
+  five quests at a time, so leaving the setting on meant the tracker showed at most five of your
+  quests and on a new character usually none at all. If you had deliberately left this setting on,
+  it will be off once after this update and you can simply turn it back on. Retail is unchanged:
+  accepting a quest tracks it there, and there is no five quest limit.
+
 ## [1.7.0] - 2026-08-15
 
 Simplified Chinese.
