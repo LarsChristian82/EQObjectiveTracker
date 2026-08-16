@@ -20,8 +20,12 @@ Has.QuestWatchAPI       = method(C_QuestLog, "AddQuestWatch") and method(C_Quest
 Has.QuestIsComplete     = method(C_QuestLog, "IsComplete")
 Has.QuestIsFailed       = method(C_QuestLog, "IsFailed")
 Has.QuestTagInfo        = method(C_QuestLog, "GetQuestTagInfo")
+-- The index resolver is either/or, not both. GetLogIndexForQuestID is retail only, so ANDing it
+-- in read false on Era and TBC and left the whole secure button pipeline inert there, while
+-- GetQuestLogSpecialItemInfo is present on those clients and answers correctly.
 Has.QuestSpecialItem    = global("GetQuestLogSpecialItemInfo")
-                          and method(C_QuestLog, "GetLogIndexForQuestID")
+                          and (method(C_QuestLog, "GetLogIndexForQuestID")
+                               or global("GetQuestLogIndexByID"))
 Has.AutoQuestPopUp      = global("GetNumAutoQuestPopUps") and global("GetAutoQuestPopUp")
 Has.QuestDistance       = method(C_QuestLog, "GetDistanceSqToQuest")
 Has.QuestsOnMap         = method(C_QuestLog, "GetQuestsOnMap")

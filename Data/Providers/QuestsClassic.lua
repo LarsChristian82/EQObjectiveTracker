@@ -61,17 +61,20 @@ local lastFullAt, lastDynAt, lastFullWatched = 0, 0, 0
 local notifyDirty
 
 local WATCH_RECHECK_DELAY = 1
+local WATCH_RECHECK_MAX   = 3
 local watchRecheckPending = false
+local watchRechecksDone   = 0
 
 -- Measured on TBC 2.5.6 at login: the rebuild walk saw 0 of 19 quests watched while a read
--- seconds later saw 17. Every quest is watched by default on 1.15.9 and 2.5.6, so zero across a
--- non-empty log is not a state the player can reach, which makes it a safe trigger. With Show
--- only tracked quests on, which is the default, that first pass rejected the whole log and
--- nothing asked again. One delayed re-read, and it does not matter which of the two candidate
--- causes it was.
+-- seconds later saw 17, and one delayed re-read recovers that. Capped because zero watched IS a
+-- state the player reaches by ordinary play - measured 1 of 12 on 1.15.9 - so an uncapped retry
+-- re-arms itself into a permanent one second walk plus render for the rest of the session. The
+-- budget refills only after a walk that saw some, which bounds it per transition rather than per
+-- session.
 local function scheduleWatchRecheck()
-    if watchRecheckPending then return end
+    if watchRecheckPending or watchRechecksDone >= WATCH_RECHECK_MAX then return end
     watchRecheckPending = true
+    watchRechecksDone   = watchRechecksDone + 1
     C_Timer.After(WATCH_RECHECK_DELAY, function()
         watchRecheckPending = false
         dirtyAll = true
@@ -244,7 +247,9 @@ local function fullRebuild()
     dirtyAll        = false
     dirtyObjectives = false
 
-    if watchedDuringWalk == 0 and next(store:Out()) ~= nil then
+    if watchedDuringWalk > 0 then
+        watchRechecksDone = 0
+    elseif next(store:Out()) ~= nil then
         scheduleWatchRecheck()
     end
 end
@@ -327,12 +332,13 @@ function Quests:DebugLine()
     end
 
     local now = time()
-    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, refresh %ds ago | id:cached/live %s"):format(
+    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, recheck %d/%d, refresh %ds ago | id:cached/live %s"):format(
         n, cached, live,
         tostring(numQuests),
         tostring(numEntries),
         tostring(GetZoneText and GetZoneText()),
         lastFullAt > 0 and (now - lastFullAt) or -1, lastFullWatched,
+        watchRechecksDone, WATCH_RECHECK_MAX,
         lastDynAt > 0 and (now - lastDynAt) or -1,
         table.concat(sample, " "))
 end
@@ -426,6 +432,18 @@ function Quests:Enable(notify)
         notifyDirty()
     end
 
+    -- No event announces a watch-list change on this client, so shift-clicking a quest in
+    -- Blizzard's own quest log left the tracker unrepainted until a reload. A plain repaint is
+    -- enough rather than a rebuild, because syncWatched re-reads every entry on each GetEntries.
+    -- hooksecurefunc chains, so another addon hooking the same two globals is unaffected.
+    local function hookWatch(name)
+        if type(_G[name]) == "function" then
+            hooksecurefunc(name, function() notifyDirty() end)
+        end
+    end
+    hookWatch("AddQuestWatch")
+    hookWatch("RemoveQuestWatch")
+
     Events:On("QUEST_ACCEPTED",          markAll)
     Events:On("QUEST_REMOVED",           markRemoved)
     Events:On("QUEST_TURNED_IN",         markRemoved)
@@ -434,6 +452,18 @@ function Quests:Enable(notify)
     Events:On("UNIT_QUEST_LOG_CHANGED",  markDynamic)
     Events:On("QUEST_WATCH_UPDATE",      markDynamic)
     Events:On("ZONE_CHANGED_NEW_AREA",   markAll)
+
+    -- Blizzard fires nothing when a quest item arrives by any route other than looting, so
+    -- withdrawing 5 of 8 from the bank leaves the row reading 3/8 until an unrelated quest event
+    -- happens by. The interaction manager covers every such window at once where it exists, and
+    -- the per-frame events are the fallback for a client that does not know it.
+    if not Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic) then
+        Events:On("BANKFRAME_CLOSED",     markDynamic)
+        Events:On("MAIL_CLOSED",          markDynamic)
+        Events:On("MERCHANT_CLOSED",      markDynamic)
+        Events:On("TRADE_CLOSED",         markDynamic)
+        Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
+    end
 end
 
 Registry:Register(Quests)

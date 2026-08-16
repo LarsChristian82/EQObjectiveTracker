@@ -15,6 +15,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quests and on a new character usually none at all. If you had deliberately left this setting on,
   it will be off once after this update and you can simply turn it back on. Retail is unchanged:
   accepting a quest tracks it there, and there is no five quest limit.
+- Classic Era and TBC Anniversary: a quest that comes with a usable item now puts that item on
+  the tracker as a button, so you can use it without digging through your bags. The button, its
+  cooldown and its range check were all there already, switched off by a check for a function
+  that only exists on retail.
+- Classic Era and TBC Anniversary: tracking or untracking a quest in Blizzard's own quest log now
+  updates the tracker straight away. It used to take a reload, because this game version
+  announces nothing at all when the watch list changes.
+- "Search on Wowhead" now opens the site for the game version you are playing, and in your own
+  language where Wowhead has one. On Classic Era and TBC it was opening the retail page, where
+  the same quest number is a different quest or nothing at all.
+- Quest progress now refreshes when you close a bank, mailbox, vendor, trade or auction window.
+  The game only announces a quest item arriving when you loot it, so taking five of eight out of
+  the bank left the tracker reading three of eight until something unrelated came along.
+
+### Improvements
+
+- Classic Era and TBC Anniversary: a check that runs at login could re-arm itself once a second
+  for the rest of the session, walking the whole quest log and redrawing the tracker every time.
+  It now runs at most three times. It only started when nothing at all was tracked, which is an
+  ordinary thing to happen on these game versions.
 
 ## [1.7.0] - 2026-08-15
 

@@ -35,6 +35,8 @@ read_globals = {
     "UnitClass", "UnitName", "GetRealmName", "GetZoneText", "PlaySound", "ReloadUI",
     -- Locales/*.lua gate on the client language before touching ns.L
     "GetLocale",
+    -- Picks which Classic Wowhead site a row menu link opens
+    "GetExpansionLevel",
 
     -- Everything Quests' saved variable, read one way for the config import. Never its
     -- addon table: EQ depends on EQOT, so EQOT loads first and that table is always nil.

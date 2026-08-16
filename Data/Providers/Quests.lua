@@ -495,6 +495,18 @@ function Quests:Enable(notifyDirty)
     Events:On("QUEST_WATCH_LIST_CHANGED", markDynamic)
     Events:On("SUPER_TRACKING_CHANGED",   markDynamic)
     Events:On("ZONE_CHANGED_NEW_AREA",    markZone)
+
+    -- Blizzard fires nothing when a quest item arrives by any route other than looting, so
+    -- withdrawing 5 of 8 from the bank leaves the row reading 3/8 until an unrelated quest event
+    -- happens by. The interaction manager covers every such window at once where it exists, and
+    -- the per-frame events are the fallback for a client that does not know it.
+    if not Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic) then
+        Events:On("BANKFRAME_CLOSED",     markDynamic)
+        Events:On("MAIL_CLOSED",          markDynamic)
+        Events:On("MERCHANT_CLOSED",      markDynamic)
+        Events:On("TRADE_CLOSED",         markDynamic)
+        Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
+    end
 end
 
 Registry:Register(Quests)
