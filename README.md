@@ -55,9 +55,12 @@ focusing a quest also points a TomTom arrow at it.
 ### Questie
 
 If Questie is loaded, EQ Objective Tracker offers once to hide Questie's own tracker, and
-that choice becomes a permanent toggle on the General tab. It only hides the frame -
-Questie's settings and its tracked quests are left alone, and Questie's own disable path
-is never called.
+that choice becomes a permanent toggle on the General tab. It only hides the frame, and
+Questie's own disable path is never called.
+
+One thing it does not leave alone: untracking a quest from this tracker's row menu goes
+through the game's own watch functions, which Questie hooks, so Questie records that quest
+as untracked in its own saved data too.
 
 ### Everything Quests, the companion addon
 

@@ -34,10 +34,12 @@ local MAX_LOG_INDEX = 75
 -- emptied the tracker whenever the Daily filter was unticked.
 local DAILY_FREQ, WEEKLY_FREQ = 2, 3
 
+-- Fallback ids read off Enum.QuestTag on 1.15.9: Dungeon 81, Raid 62, Raid10 88, Raid25 89.
+-- 85 is Heroic and was wrong here for both raid sizes.
 local TAG_DUNGEON = (Enum and Enum.QuestTag and Enum.QuestTag.Dungeon) or 81
 local TAG_RAID    = (Enum and Enum.QuestTag and Enum.QuestTag.Raid)    or 62
-local TAG_RAID10  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid10)  or 85
-local TAG_RAID25  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid25)  or 88
+local TAG_RAID10  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid10)  or 88
+local TAG_RAID25  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid25)  or 89
 
 local store = Entry.NewStore({
     groupID = "quests",
@@ -56,31 +58,31 @@ local baselined       = false
 -- inside the GetQuestLogTitle walk than outside it. Status read 0 cached against 9 live.
 local lastFullAt, lastDynAt, lastFullWatched = 0, 0, 0
 
--- File scoped rather than an upvalue of Enable, because scheduleWatchRecheck is declared above
--- it and needs the same notifier.
+-- File scoped rather than an upvalue of Enable, because the watch poll is declared above it and
+-- needs the same notifier.
 local notifyDirty
 
-local WATCH_RECHECK_DELAY = 1
-local WATCH_RECHECK_MAX   = 3
-local watchRecheckPending = false
-local watchRechecksDone   = 0
+-- Another quest addon can replace IsQuestWatched from its own init coroutine well after login,
+-- and nothing announces that. Measured on 1.15.9 with one loaded: three rebuilds inside the first
+-- four seconds all read 0 of 18 watched, while a read at forty seconds read 18 of 18.
+--
+-- Two earlier shapes set dirtyAll on a timer and asked for a repaint. Neither survived the trip:
+-- the walk log showed the retries arming and no rebuild following them, so the signal was being
+-- dropped somewhere between the timer and the render. This one re-reads the answer on a bounded
+-- ticker and writes it into the entries itself, which makes the repaint a courtesy rather than
+-- the mechanism - the next render from any source is already correct even if the notify is lost.
+local WATCH_POLL_INTERVAL = 1
+local WATCH_POLL_TICKS    = 45
+local watchPollTicker, watchPollTicks, watchPollSeen = nil, 0, -1
 
--- Measured on TBC 2.5.6 at login: the rebuild walk saw 0 of 19 quests watched while a read
--- seconds later saw 17, and one delayed re-read recovers that. Capped because zero watched IS a
--- state the player reaches by ordinary play - measured 1 of 12 on 1.15.9 - so an uncapped retry
--- re-arms itself into a permanent one second walk plus render for the rest of the session. The
--- budget refills only after a walk that saw some, which bounds it per transition rather than per
--- session.
-local function scheduleWatchRecheck()
-    if watchRecheckPending or watchRechecksDone >= WATCH_RECHECK_MAX then return end
-    watchRecheckPending = true
-    watchRechecksDone   = watchRechecksDone + 1
-    C_Timer.After(WATCH_RECHECK_DELAY, function()
-        watchRecheckPending = false
-        dirtyAll = true
-        if notifyDirty then notifyDirty() end
-    end)
-end
+-- Assigned below syncWatched, which it calls.
+local startWatchPoll
+
+-- Every rebuild for the first stretch after login, recorded as elapsed:watched/entries, because
+-- the window where the tracker looks empty cannot be read while it is happening - /eqot status
+-- builds the feed itself and cures the symptom, so the last entry here is usually that command.
+local WALK_LOG_MAX = 10
+local walkLog, walkLogN, loadedAt = {}, 0, GetTime()
 
 local tagIDCache = {}
 
@@ -247,10 +249,14 @@ local function fullRebuild()
     dirtyAll        = false
     dirtyObjectives = false
 
-    if watchedDuringWalk > 0 then
-        watchRechecksDone = 0
-    elseif next(store:Out()) ~= nil then
-        scheduleWatchRecheck()
+    if walkLogN < WALK_LOG_MAX then
+        walkLogN = walkLogN + 1
+        walkLog[walkLogN] = ("%.1fs:%d/%d"):format(GetTime() - loadedAt,
+                                                  watchedDuringWalk, #store:Out())
+    end
+
+    if watchedDuringWalk == 0 and next(store:Out()) ~= nil then
+        startWatchPoll()
     end
 end
 
@@ -284,6 +290,30 @@ local function syncWatched()
     for id, e in store:Each() do
         e.isTracked = isWatched(id)
     end
+end
+
+-- Runs only when a rebuild found a non-empty log with nothing watched, and stops the moment
+-- anything reads watched, so a normal login pays one tick and a player who really has nothing
+-- tracked pays the full run of cheap index reads and no repaints.
+startWatchPoll = function()
+    if watchPollTicker then return end
+    watchPollTicks, watchPollSeen = 0, -1
+    watchPollTicker = C_Timer.NewTicker(WATCH_POLL_INTERVAL, function(ticker)
+        watchPollTicks = watchPollTicks + 1
+        local n = 0
+        for id in store:Each() do
+            if isWatched(id) then n = n + 1 end
+        end
+        if n ~= watchPollSeen then
+            watchPollSeen = n
+            syncWatched()
+            if notifyDirty then notifyDirty() end
+        end
+        if n > 0 or watchPollTicks >= WATCH_POLL_TICKS then
+            ticker:Cancel()
+            watchPollTicker = nil
+        end
+    end)
 end
 
 -- Total rather than written during the walk, so a focus change needs no rebuild and a pooled
@@ -331,15 +361,19 @@ function Quests:DebugLine()
         numEntries, numQuests = GetNumQuestLogEntries()
     end
 
+    local poll = watchPollTicker and ("running %d/%d"):format(watchPollTicks, WATCH_POLL_TICKS)
+                 or (watchPollTicks > 0 and ("stopped at %d"):format(watchPollTicks) or "never armed")
+
     local now = time()
-    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, recheck %d/%d, refresh %ds ago | id:cached/live %s"):format(
+    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, watch poll %s, refresh %ds ago | walks %s | id:cached/live %s"):format(
         n, cached, live,
         tostring(numQuests),
         tostring(numEntries),
         tostring(GetZoneText and GetZoneText()),
         lastFullAt > 0 and (now - lastFullAt) or -1, lastFullWatched,
-        watchRechecksDone, WATCH_RECHECK_MAX,
+        poll,
         lastDynAt > 0 and (now - lastDynAt) or -1,
+        table.concat(walkLog, " ", 1, walkLogN),
         table.concat(sample, " "))
 end
 

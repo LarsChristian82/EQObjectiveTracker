@@ -29,12 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The game only announces a quest item arriving when you loot it, so taking five of eight out of
   the bank left the tracker reading three of eight until something unrelated came along.
 
+- Classic Era and TBC Anniversary: with another quest addon loaded, the tracker could come up
+  empty after logging in and stay that way until you ran a command or changed a setting. That
+  addon replaces one of the game's own quest tracking functions a few seconds into login, so the
+  tracker was still reading the old answer and saw nothing as tracked. It now re-checks for a
+  short while after logging in and fills itself in as soon as the answer changes.
+
 ### Improvements
 
 - Classic Era and TBC Anniversary: a check that runs at login could re-arm itself once a second
   for the rest of the session, walking the whole quest log and redrawing the tracker every time.
-  It now runs at most three times. It only started when nothing at all was tracked, which is an
-  ordinary thing to happen on these game versions.
+  It is now a short check that stops as soon as it has an answer, and it only starts when nothing
+  at all is tracked.
 
 ## [1.7.0] - 2026-08-15
 
