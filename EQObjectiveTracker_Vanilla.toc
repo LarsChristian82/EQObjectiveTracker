@@ -38,6 +38,7 @@ Core\Changelog.lua
 Data\Entry.lua
 Data\Registry.lua
 Data\Focus.lua
+Data\TrackedSet.lua
 Data\Filter.lua
 Data\Sort.lua
 Data\ManualOrder.lua
@@ -63,6 +64,7 @@ Data\Providers\QuestsClassic.lua
 # Display layer. Operates on frames, never on a quest API.
 UI\Blizzard.lua
 UI\QuestieCoexist.lua
+UI\QuestLogChecks.lua
 UI\RowPool.lua
 UI\Card.lua
 UI\DragDrop.lua

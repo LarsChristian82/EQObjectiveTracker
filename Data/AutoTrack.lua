@@ -11,6 +11,16 @@ local function onQuestAccepted(_, questID)
     -- World quest watches are their own system with their own cap and persistence
     if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then return end
 
+    -- Classic owns its tracked set rather than Blizzard's watch list, so this works there now.
+    -- It could not before: the flat AddQuestWatch is capped at five and throws a red error on the
+    -- sixth, which made auto-tracking every accepted quest a dead end rather than a missing wire.
+    -- The module is absent on retail, where the C_QuestLog path below is correct.
+    local TrackedSet = ns:GetModule("TrackedSet")
+    if TrackedSet then
+        TrackedSet:Set(questID, cfg.autoTrackAccepted ~= false)
+        return
+    end
+
     if cfg.autoTrackAccepted == false then
         local watched = ns.Has.QuestWatchType and C_QuestLog.GetQuestWatchType(questID) ~= nil
         if watched and ns.Has.QuestWatchAPI then

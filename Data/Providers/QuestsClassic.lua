@@ -4,6 +4,7 @@ local Entry      = ns:GetModule("Entry")
 local Registry   = ns:GetModule("Registry")
 local QuestItems = ns:GetModule("QuestItems")
 local Focus      = ns:GetModule("Focus")
+local TrackedSet = ns:GetModule("TrackedSet")
 
 local STATE, LINE, ICON = Entry.STATE, Entry.LINE, Entry.ICON
 
@@ -62,21 +63,14 @@ local lastFullAt, lastDynAt, lastFullWatched = 0, 0, 0
 -- needs the same notifier.
 local notifyDirty
 
--- Another quest addon can replace IsQuestWatched from its own init coroutine well after login,
--- and nothing announces that. Measured on 1.15.9 with one loaded: three rebuilds inside the first
--- four seconds all read 0 of 18 watched, while a read at forty seconds read 18 of 18.
---
--- Two earlier shapes set dirtyAll on a timer and asked for a repaint. Neither survived the trip:
--- the walk log showed the retries arming and no rebuild following them, so the signal was being
--- dropped somewhere between the timer and the render. This one re-reads the answer on a bounded
--- ticker and writes it into the entries itself, which makes the repaint a courtesy rather than
--- the mechanism - the next render from any source is already correct even if the notify is lost.
-local WATCH_POLL_INTERVAL = 1
-local WATCH_POLL_TICKS    = 45
-local watchPollTicker, watchPollTicks, watchPollSeen = nil, 0, -1
+-- Guards the watch hooks against the RemoveQuestWatch this file issues itself to keep Blizzard's
+-- list empty, which would otherwise read as the player untracking what they just tracked.
+local suppressWatchHook = false
 
--- Assigned below syncWatched, which it calls.
-local startWatchPoll
+-- The watch poll that used to live here is GONE, and owning the tracked set is why. It existed
+-- because another addon replaces IsQuestWatched seconds after login, so the first walks read a
+-- watch list that was not ours and not yet correct. Nothing reads that global any more, so there
+-- is no longer an answer that arrives late. Do not reintroduce a retry here for that reason.
 
 -- Every rebuild for the first stretch after login, recorded as elapsed:watched/entries, because
 -- the window where the tracker looks empty cannot be read while it is happening - /eqot status
@@ -112,23 +106,27 @@ local function questState(isComplete)
     return STATE.ACTIVE
 end
 
--- nil, never false, when there is no index to read. Filter tests isTracked == false explicitly,
--- so "cannot tell" fails open there the way IsCurrentZone's nil already does.
+-- EQOT owns the tracked set on this flavor rather than mirroring Blizzard's watch list, and
+-- that is the whole point. Blizzard caps its list at FIVE and throws a red error on the sixth, it
+-- auto-tracks nothing on accept, and another quest addon commonly replaces IsQuestWatched and
+-- empties the list underneath it. Reading our own table removes all three at once, and it is why
+-- nothing here calls AddQuestWatch or RemoveQuestWatch any more - which also stops an untrack
+-- from writing into that other addon's saved variables.
+--
+-- nil, never false, until the player has made a first explicit choice, so Filter's
+-- `isTracked == false` test fails open exactly as IsCurrentZone's nil already does.
 local function isWatched(id)
-    if type(IsQuestWatched) ~= "function" then return nil end
-    local i = logIndex(id)
-    if not i then return nil end
-    return IsQuestWatched(i) and true or false
+    return TrackedSet:IsTracked(id)
 end
 
 local function setWatched(id, watch)
-    local i = logIndex(id)
-    if not i then return end
-    if watch then
-        if type(AddQuestWatch) == "function" then AddQuestWatch(i) end
-    elseif type(RemoveQuestWatch) == "function" then
-        RemoveQuestWatch(i)
-    end
+    TrackedSet:Set(id, watch)
+end
+
+-- Hoisted rather than written inline at the Prune call, which runs on the rebuild path and would
+-- allocate a fresh closure every time.
+local function stillInLog(id)
+    return store:Get(id) ~= nil
 end
 
 local function fillLines(e, id, index)
@@ -255,8 +253,22 @@ local function fullRebuild()
                                                   watchedDuringWalk, #store:Out())
     end
 
-    if watchedDuringWalk == 0 and next(store:Out()) ~= nil then
-        startWatchPoll()
+    -- An absent set means every quest shows, and that only holds until the FIRST write. Auto
+    -- track on accept would otherwise create the set holding one quest, which silently demotes
+    -- every other quest in the log from showing to hidden - the exact empty tracker this work
+    -- exists to remove. So the first rebuild that sees a real log writes the set out in full,
+    -- turning "nothing decided yet" into "everything tracked" before anything else can touch it.
+    -- Safe against ordering: this runs at PLAYER_ENTERING_WORLD, and a quest cannot be accepted
+    -- before login.
+    --
+    -- After that it only prunes, because nothing else drops ids and the set would otherwise
+    -- accumulate every quest the character ever tracked.
+    if next(store:Out()) ~= nil then
+        if TrackedSet:Count() == nil then
+            for id in store:Each() do TrackedSet:Set(id, true) end
+        else
+            TrackedSet:Prune(stillInLog)
+        end
     end
 end
 
@@ -290,30 +302,6 @@ local function syncWatched()
     for id, e in store:Each() do
         e.isTracked = isWatched(id)
     end
-end
-
--- Runs only when a rebuild found a non-empty log with nothing watched, and stops the moment
--- anything reads watched, so a normal login pays one tick and a player who really has nothing
--- tracked pays the full run of cheap index reads and no repaints.
-startWatchPoll = function()
-    if watchPollTicker then return end
-    watchPollTicks, watchPollSeen = 0, -1
-    watchPollTicker = C_Timer.NewTicker(WATCH_POLL_INTERVAL, function(ticker)
-        watchPollTicks = watchPollTicks + 1
-        local n = 0
-        for id in store:Each() do
-            if isWatched(id) then n = n + 1 end
-        end
-        if n ~= watchPollSeen then
-            watchPollSeen = n
-            syncWatched()
-            if notifyDirty then notifyDirty() end
-        end
-        if n > 0 or watchPollTicks >= WATCH_POLL_TICKS then
-            ticker:Cancel()
-            watchPollTicker = nil
-        end
-    end)
 end
 
 -- Total rather than written during the walk, so a focus change needs no rebuild and a pooled
@@ -361,17 +349,18 @@ function Quests:DebugLine()
         numEntries, numQuests = GetNumQuestLogEntries()
     end
 
-    local poll = watchPollTicker and ("running %d/%d"):format(watchPollTicks, WATCH_POLL_TICKS)
-                 or (watchPollTicks > 0 and ("stopped at %d"):format(watchPollTicks) or "never armed")
+    -- nil means the player has never made an explicit choice, which is NOT the same as zero and
+    -- is why the whole log shows rather than none of it.
+    local owned = TrackedSet:Count()
 
     local now = time()
-    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, watch poll %s, refresh %ds ago | walks %s | id:cached/live %s"):format(
+    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, tracked set %s, refresh %ds ago | walks %s | id:cached/live %s"):format(
         n, cached, live,
         tostring(numQuests),
         tostring(numEntries),
         tostring(GetZoneText and GetZoneText()),
         lastFullAt > 0 and (now - lastFullAt) or -1, lastFullWatched,
-        poll,
+        owned and tostring(owned) or "none stored yet",
         lastDynAt > 0 and (now - lastDynAt) or -1,
         table.concat(walkLog, " ", 1, walkLogN),
         table.concat(sample, " "))
@@ -466,17 +455,24 @@ function Quests:Enable(notify)
         notifyDirty()
     end
 
-    -- No event announces a watch-list change on this client, so shift-clicking a quest in
-    -- Blizzard's own quest log left the tracker unrepainted until a reload. A plain repaint is
-    -- enough rather than a rebuild, because syncWatched re-reads every entry on each GetEntries.
-    -- hooksecurefunc chains, so another addon hooking the same two globals is unaffected.
-    local function hookWatch(name)
-        if type(_G[name]) == "function" then
-            hooksecurefunc(name, function() notifyDirty() end)
-        end
+    -- The tracked set answers to no game event, so the repaint comes from the set itself. This
+    -- covers every route into it at once: the row menu, auto-track on accept, and the quest log
+    -- click that UI/QuestLogChecks.lua owns.
+    TrackedSet:OnDirty(notifyDirty)
+
+    -- The ONLY thing left on Blizzard's watch functions, and it no longer carries the gesture:
+    -- emptying its list behind every add is what keeps its five-quest cap from ever being
+    -- reached. Measured after: GetNumQuestWatches() reads 0, so its own handler can never take
+    -- the too-many-quests branch. The toggle used to hang off this hook and could not stay -
+    -- shift-clicking a row calls neither watch function on 1.15.9, so it silently never fired.
+    if type(AddQuestWatch) == "function" and type(RemoveQuestWatch) == "function" then
+        hooksecurefunc("AddQuestWatch", function(index)
+            if suppressWatchHook then return end
+            suppressWatchHook = true
+            RemoveQuestWatch(index)
+            suppressWatchHook = false
+        end)
     end
-    hookWatch("AddQuestWatch")
-    hookWatch("RemoveQuestWatch")
 
     Events:On("QUEST_ACCEPTED",          markAll)
     Events:On("QUEST_REMOVED",           markRemoved)

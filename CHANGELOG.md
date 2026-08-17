@@ -25,22 +25,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Search on Wowhead" now opens the site for the game version you are playing, and in your own
   language where Wowhead has one. On Classic Era and TBC it was opening the retail page, where
   the same quest number is a different quest or nothing at all.
+- Scrolling the tracker with the mouse wheel during combat could put a blocked action error on
+  screen, on any game version, whenever a quest with a usable item was on the tracker. The wheel
+  now does nothing until combat ends, which is as much as the game permits there.
 - Quest progress now refreshes when you close a bank, mailbox, vendor, trade or auction window.
   The game only announces a quest item arriving when you loot it, so taking five of eight out of
   the bank left the tracker reading three of eight until something unrelated came along.
-
+- Classic Era and TBC Anniversary: the tracker now keeps its own list of which quests you are
+  tracking, rather than using the game's. The game only lets you watch five quests at a time and
+  puts a red error on screen for the sixth, so "Show only tracked quests" could never show more
+  than five of your log however you set it. There is no limit now, and shift clicking in the
+  game's own quest log still tracks and untracks exactly as it did, with its checkmarks showing
+  the tracker's list rather than the game's shorter one.
+- Classic Era and TBC Anniversary: "Auto-track accepted quests" works. It had been shipping turned
+  on and doing nothing at all, because this game version has no function for it and the five quest
+  limit made the obvious substitute worse than useless.
 - Classic Era and TBC Anniversary: with another quest addon loaded, the tracker could come up
   empty after logging in and stay that way until you ran a command or changed a setting. That
-  addon replaces one of the game's own quest tracking functions a few seconds into login, so the
-  tracker was still reading the old answer and saw nothing as tracked. It now re-checks for a
-  short while after logging in and fills itself in as soon as the answer changes.
+  addon replaces one of the game's own quest tracking functions a few seconds into login, and the
+  tracker was still reading the old answer. It no longer reads that function at all.
+- Classic Era and TBC Anniversary: untracking a quest no longer writes into another quest addon's
+  saved data. The tracker no longer calls the game's own tracking functions, so nothing hooking
+  them is affected by what you do here.
 
 ### Improvements
 
-- Classic Era and TBC Anniversary: a check that runs at login could re-arm itself once a second
-  for the rest of the session, walking the whole quest log and redrawing the tracker every time.
-  It is now a short check that stops as soon as it has an answer, and it only starts when nothing
-  at all is tracked.
+- Section headers now always show both numbers when "Show the visible / total count on section
+  headers" is on, so a section with nothing filtered out reads 14/14 rather than dropping to a
+  bare 14. The count no longer changes shape depending on what is hidden.
 
 ## [1.7.0] - 2026-08-15
 
