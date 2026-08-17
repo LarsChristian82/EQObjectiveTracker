@@ -16,9 +16,10 @@ lands in both places at once.
 
 ## Status
 
-**Retail is released and stable. Classic Era (1.15.9) and TBC Anniversary (2.5.6) support
-is EARLY and a WORK IN PROGRESS - expect rough edges and things that do not work yet.**
-Please report anything you find rather than assuming it is known.
+**Retail is released and stable. Classic Era (1.15.9) and TBC Anniversary (2.5.6) are
+supported.** That support is newer than the retail support and has had several rounds of
+fixes, so the gaps listed below are real ones rather than a disclaimer. Please report anything
+you find rather than assuming it is known.
 
 On retail it tracks quests and campaign quests, world quests, scenarios and delves,
 achievements, professions, and Traveler's Log endeavors.
@@ -58,8 +59,9 @@ If Questie is loaded, EQ Objective Tracker offers once to hide Questie's own tra
 that choice becomes a permanent toggle on the General tab. It only hides the frame, and
 Questie's own disable path is never called.
 
-Tracking and untracking from this tracker's row menu no longer touch the game's own watch
-functions, so Questie's own tracked quests are left alone.
+Tracking and untracking from this tracker's row menu go through its own list rather than the
+game's watch functions, so the hooks Questie places on those do not fire for anything you do
+here.
 
 ### Everything Quests, the companion addon
 
