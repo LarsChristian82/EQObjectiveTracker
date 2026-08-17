@@ -133,6 +133,9 @@ handlers.status = function()
     local BZ = ns:GetModule("Blizzard")
     if BZ and BZ.DebugLine then ns:Print(BZ:DebugLine()) end
 
+    local AT = ns:GetModule("AutoTrack")
+    if AT and AT.DebugLine then ns:Print(AT:DebugLine()) end
+
     local QC = ns:GetModule("QuestieCoexist")
     if QC and QC.DebugLine then ns:Print(QC:DebugLine()) end
 

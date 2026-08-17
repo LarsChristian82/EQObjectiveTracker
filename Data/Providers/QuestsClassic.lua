@@ -332,12 +332,19 @@ end
 -- stale cache from a watch list that really did empty.
 function Quests:DebugLine()
     local n, cached, live = 0, 0, 0
+    local stamped, newest = 0, nil
     local sample = {}
     for id, e in store:Each() do
         n = n + 1
         local now = isWatched(id)
         if e.isTracked then cached = cached + 1 end
         if now then live = live + 1 end
+        -- Whatever the whole log was baselined to reads 0 here, so a nonzero stamp is a quest
+        -- accepted since login and is exactly what the NEW tag draws off.
+        if e.addedAt and e.addedAt > 0 then
+            stamped = stamped + 1
+            if not newest or e.addedAt > newest then newest = e.addedAt end
+        end
         if #sample < 6 then
             sample[#sample + 1] = ("%s:%d/%d"):format(id, e.isTracked and 1 or 0, now and 1 or 0)
         end
@@ -354,7 +361,7 @@ function Quests:DebugLine()
     local owned = TrackedSet:Count()
 
     local now = time()
-    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, tracked set %s, refresh %ds ago | walks %s | id:cached/live %s"):format(
+    return ("quests: classic quest log, %d entries (%d cached watched, %d live) | log %s/%s | zone %s | rebuild %ds ago saw %d watched, tracked set %s, refresh %ds ago | new tag: baselined %s, %d stamped, newest %s | walks %s | id:cached/live %s"):format(
         n, cached, live,
         tostring(numQuests),
         tostring(numEntries),
@@ -362,6 +369,8 @@ function Quests:DebugLine()
         lastFullAt > 0 and (now - lastFullAt) or -1, lastFullWatched,
         owned and tostring(owned) or "none stored yet",
         lastDynAt > 0 and (now - lastDynAt) or -1,
+        tostring(baselined), stamped,
+        newest and ((now - newest) .. "s ago") or "none",
         table.concat(walkLog, " ", 1, walkLogN),
         table.concat(sample, " "))
 end

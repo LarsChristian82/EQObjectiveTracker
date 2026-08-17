@@ -4,8 +4,15 @@ local AutoTrack = ns:RegisterModule("AutoTrack", {})
 
 -- EQ keeps this in its Visibility.lua, but that file is pure frame work in EQOT and calls
 -- no quest API. Storage keys and labels still match EQ, only the file differs.
-local function onQuestAccepted(_, questID)
+-- Classic fires (questLogIndex, questID) where retail fires (questID) on its own, so the id is
+-- read off the LAST argument rather than a fixed slot - correct under either signature without
+-- having to know which client sends which. Reading slot one auto-tracked the LOG INDEX on
+-- Classic, which is itself a valid quest id belonging to some unrelated quest.
+local function onQuestAccepted(_, a, b)
     local cfg = ns:GetModule("DB"):General()
+    local questID = b or a
+    AutoTrack._lastPayload = ("%s,%s"):format(tostring(a), tostring(b))
+    AutoTrack._lastID      = questID
     if not (cfg and questID) then return end
 
     -- World quest watches are their own system with their own cap and persistence
@@ -39,4 +46,15 @@ end
 
 function AutoTrack:OnEnable()
     ns:GetModule("Events"):On("QUEST_ACCEPTED", onQuestAccepted)
+end
+
+-- The payload is printed raw. Which slot carries the quest id differs by flavor and is the
+-- kind of thing that gets re-derived wrongly from memory, so one accept settles it on screen.
+function AutoTrack:DebugLine()
+    local cfg = ns:GetModule("DB"):General()
+    return ("auto track: %s, set owned %s | last accept payload (%s) -> id %s"):format(
+        (cfg and cfg.autoTrackAccepted ~= false) and "on" or "off",
+        tostring(ns:GetModule("TrackedSet") ~= nil),
+        self._lastPayload or "none this session",
+        tostring(self._lastID))
 end

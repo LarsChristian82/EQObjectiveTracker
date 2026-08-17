@@ -21,8 +21,17 @@ end
 -- tracked quests and reloads, which is data loss in another addon's saved variables.
 function Coexist:Apply()
     local f = trackerFrame()
-    if not f then return end
     local c = cfg()
+    -- Recorded on the first sighting rather than read back later: by the time anyone runs
+    -- /eqot status the poll chain is long dead, so only a stamp says when that frame
+    -- appeared and what the setting read at that moment.
+    -- Stored as elapsed rather than as a timestamp: a later loading screen restarts the
+    -- poll, and reading this against the newer start would print a negative age.
+    if f and not self._frameSeenIn then
+        self._frameSeenIn      = GetTime() - (self._pollStart or GetTime())
+        self._frameSeenSetting = c and c.hideQuestieTracker
+    end
+    if not f then return end
     if not (c and c.hideQuestieTracker) then return end
 
     f:Hide()
@@ -83,14 +92,17 @@ local function retryDelay(tries)
     if tries <= 20 then return 0.15 end
     if tries <= 34 then return 0.5 end
     if tries <= 44 then return 2 end
+    -- Nothing on this side bounds when that frame is built, so the tail is slow and long
+    -- rather than stopping at the half minute the three bands above add up to.
+    if tries <= 104 then return 5 end
     return nil
 end
 
 function Coexist:OnEnable()
-    local generation, tries = 0, 0
+    self._gen, self._tries = 0, 0
     local poll
     poll = function(gen)
-        if gen ~= generation then return end
+        if gen ~= self._gen then return end
         self:Apply()
         self:MaybePrompt()
         -- What counts as done depends on the setting, and conflating the two broke this
@@ -106,33 +118,58 @@ function Coexist:OnEnable()
         else
             settled = ns.db and ns.db.global and ns.db.global.questieTrackerPrompted
         end
-        if not settled then
-            tries = tries + 1
-            local delay = retryDelay(tries)
-            if delay then
-                C_Timer.After(delay, function() poll(gen) end)
-            end
+        if settled then
+            self._outcome = "settled"
+            return
+        end
+        self._tries      = self._tries + 1
+        self._lastTickAt = GetTime()
+        local delay = retryDelay(self._tries)
+        if delay then
+            C_Timer.After(delay, function() poll(gen) end)
+        else
+            self._outcome = "expired"
         end
     end
 
     -- Without this gate the full retry chain runs on every loading screen on retail, where
     -- that addon can never be present, for a feature that can never apply there.
     local function restart()
-        if not self:QuestiePresent() then return end
-        generation = generation + 1
-        tries = 0
-        poll(generation)
+        self._present = self:QuestiePresent()
+        if not self._present then return end
+        self._restarts = (self._restarts or 0) + 1
+        self._pollStart = GetTime()
+        self._outcome = "polling"
+        self._gen   = self._gen + 1
+        self._tries = 0
+        poll(self._gen)
     end
 
-    ns:GetModule("Events"):On("PLAYER_ENTERING_WORLD", restart)
+    local Events = ns:GetModule("Events")
+    Events:On("PLAYER_ENTERING_WORLD", restart)
+    -- A second channel that answers to no timer. The retry chain above is bounded by
+    -- construction, and was measured stopping at tick 8 with that frame still absent, so the
+    -- hide cannot depend on it alone. This also covers the other tracker being switched on
+    -- mid session, which the chain is long finished for. Apply is two global reads once the
+    -- setting is off, and a Hide on an already hidden frame once it is on.
+    Events:On("QUEST_LOG_UPDATE", function() self:Apply() end)
     restart()
 end
 
 function Coexist:DebugLine()
     local f = trackerFrame()
     local c = cfg()
-    return ("questie: base frame %s | hide setting %s | hook %s"):format(
+    local seen = "never"
+    if self._frameSeenIn then
+        seen = ("%.1fs in, setting %s"):format(
+            self._frameSeenIn, tostring(self._frameSeenSetting))
+    end
+    return ("questie: base frame %s | hide setting %s | hook %s | present %s, restarts %d, %d ticks %s, last tick %s | frame first seen %s"):format(
         f and (f:IsShown() and "shown" or "hidden") or "absent",
         tostring(c and c.hideQuestieTracker),
-        self._hookedFrame and "installed" or "missing")
+        self._hookedFrame and "installed" or "missing",
+        tostring(self._present), self._restarts or 0,
+        self._tries or 0, self._outcome or "never started",
+        self._lastTickAt and ("%.0fs ago"):format(GetTime() - self._lastTickAt) or "none",
+        seen)
 end
