@@ -5,16 +5,26 @@ All notable changes to EQ Objective Tracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.8.0] - 2026-08-16
+
+Classic Era and TBC Anniversary now keep their own tracked quest list.
 
 ### Bug Fixes
 
-- Classic Era and TBC Anniversary: "Show only tracked quests" now ships turned off. This game
-  version cannot track a quest automatically when you accept it, and Blizzard only lets you watch
-  five quests at a time, so leaving the setting on meant the tracker showed at most five of your
-  quests and on a new character usually none at all. If you had deliberately left this setting on,
-  it will be off once after this update and you can simply turn it back on. Retail is unchanged:
-  accepting a quest tracks it there, and there is no five quest limit.
+- Classic Era and TBC Anniversary: the tracker now keeps its own list of which quests you are
+  tracking, rather than using the game's. The game only lets you watch five quests at a time and
+  puts a red error on screen for the sixth, so "Show only tracked quests" could never show more
+  than five of your log however you set it. There is no limit now, and shift clicking in the
+  game's own quest log still tracks and untracks exactly as it did, with its checkmarks showing
+  the tracker's list rather than the game's shorter one.
+- Classic Era and TBC Anniversary: "Auto-track accepted quests" works. It had been shipping turned
+  on and doing nothing at all, because this game version has no function for it and the five quest
+  limit made the obvious substitute worse than useless.
+- Classic Era and TBC Anniversary: "Show only tracked quests" now ships turned off. Until this
+  update no character on these game versions had a tracked list of their own, so switching the
+  filter on by default would hide a quest log nobody had chosen to filter. If you had deliberately
+  left the setting on, it will be off once after this update and you can simply turn it back on.
+  Retail is unchanged.
 - Classic Era and TBC Anniversary: a quest that comes with a usable item now puts that item on
   the tracker as a button, so you can use it without digging through your bags. The button, its
   cooldown and its range check were all there already, switched off by a check for a function
@@ -31,15 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quest progress now refreshes when you close a bank, mailbox, vendor, trade or auction window.
   The game only announces a quest item arriving when you loot it, so taking five of eight out of
   the bank left the tracker reading three of eight until something unrelated came along.
-- Classic Era and TBC Anniversary: the tracker now keeps its own list of which quests you are
-  tracking, rather than using the game's. The game only lets you watch five quests at a time and
-  puts a red error on screen for the sixth, so "Show only tracked quests" could never show more
-  than five of your log however you set it. There is no limit now, and shift clicking in the
-  game's own quest log still tracks and untracks exactly as it did, with its checkmarks showing
-  the tracker's list rather than the game's shorter one.
-- Classic Era and TBC Anniversary: "Auto-track accepted quests" works. It had been shipping turned
-  on and doing nothing at all, because this game version has no function for it and the five quest
-  limit made the obvious substitute worse than useless.
 - Classic Era and TBC Anniversary: with another quest addon loaded, the tracker could come up
   empty after logging in and stay that way until you ran a command or changed a setting. That
   addon replaces one of the game's own quest tracking functions a few seconds into login, and the
