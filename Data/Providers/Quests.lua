@@ -15,11 +15,15 @@ local Quests = {
     filterCategories = true,
 }
 
-local DAILY_FREQ  = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Daily)  or 2
-local WEEKLY_FREQ = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Weekly) or 3
+-- Compared against info.frequency from C_QuestLog.GetInfo, which is Enum.QuestFrequency, so the
+-- fallbacks are the ENUM values read off a live dump: Default 0, Daily 1, Weekly 2. They used to
+-- read 2 and 3, which is the LEGACY numbering the flat GetQuestLogTitle uses - correct in
+-- QuestsClassic.lua, wrong here, and dead code either way while the enum is present.
+local DAILY_FREQ  = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Daily)  or 1
+local WEEKLY_FREQ = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Weekly) or 2
 
 -- Fallback ids read off Enum.QuestTag on 1.15.9: Dungeon 81, Raid 62, Raid10 88, Raid25 89.
--- 85 is Heroic and was wrong here for both raid sizes.
+-- Raid10 used to read 85, which is Heroic, and Raid25 used to read 88, which is Raid10.
 local TAG_DUNGEON = (Enum and Enum.QuestTag and Enum.QuestTag.Dungeon) or 81
 local TAG_RAID    = (Enum and Enum.QuestTag and Enum.QuestTag.Raid)    or 62
 local TAG_RAID10  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid10)  or 88
@@ -309,7 +313,7 @@ function Quests:DebugLine()
     table.sort(parts)
 
     -- Cached against live, separately, because one number cannot tell a stale cache from a
-    -- watch list that really is empty. The cached answer is what the rows were filtered on;
+    -- watch list that really is empty. The cached answer is what the rows were filtered on, and
     -- the live one re-reads outside the GetInfo walk that fullRebuild writes it from.
     local cached, live = 0, 0
     for id, e in store:Each() do
@@ -500,15 +504,17 @@ function Quests:Enable(notifyDirty)
 
     -- Blizzard fires nothing when a quest item arrives by any route other than looting, so
     -- withdrawing 5 of 8 from the bank leaves the row reading 3/8 until an unrelated quest event
-    -- happens by. The interaction manager covers every such window at once where it exists, and
-    -- the per-frame events are the fallback for a client that does not know it.
-    if not Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic) then
-        Events:On("BANKFRAME_CLOSED",     markDynamic)
-        Events:On("MAIL_CLOSED",          markDynamic)
-        Events:On("MERCHANT_CLOSED",      markDynamic)
-        Events:On("TRADE_CLOSED",         markDynamic)
-        Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
-    end
+    -- happens by. All six are registered rather than treating the interaction manager as an
+    -- either/or: Events:On answers whether the client knows the event NAME, which is not whether
+    -- it FIRES for these windows, and a client that accepts the registration without firing it
+    -- would have had its own fallback suppressed. markDynamic only sets a dirty flag and the
+    -- notify is throttled, so a doubled event costs nothing.
+    Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic)
+    Events:On("BANKFRAME_CLOSED",     markDynamic)
+    Events:On("MAIL_CLOSED",          markDynamic)
+    Events:On("MERCHANT_CLOSED",      markDynamic)
+    Events:On("TRADE_CLOSED",         markDynamic)
+    Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
 end
 
 Registry:Register(Quests)

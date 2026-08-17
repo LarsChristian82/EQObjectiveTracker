@@ -36,10 +36,50 @@ function TrackedSet:IsTracked(questID)
     return set[questID] and true or false
 end
 
-function TrackedSet:Set(questID, on)
+local MAX_LOG_INDEX = 75
+
+-- Absence means every quest is tracked, so the FIRST write that removes one has to turn that
+-- into a real set holding the whole log before applying itself. This is the only place the
+-- table is created, and it is never created empty.
+--
+-- Bounded by a ceiling and stopped at the first nil title, never by GetNumQuestLogEntries,
+-- which counts only the rows visible with the player's headers expanded.
+local function materialize()
+    if type(GetQuestLogTitle) ~= "function" then return nil end
+    local found, n = {}, 0
+    for i = 1, MAX_LOG_INDEX do
+        local title, _, _, isHeader, _, _, _, questID = GetQuestLogTitle(i)
+        if not title then break end
+        if not isHeader and questID and questID ~= 0 then
+            found[questID] = true
+            n = n + 1
+        end
+    end
+    -- A walk that found nothing is a log that has not loaded, not a player who tracks nothing.
+    -- Writing it out would demote the whole character, so absence is left in place instead.
+    if n == 0 then return nil end
     local set = writeSet()
-    if not (set and questID) then return end
+    if not set then return nil end
+    for questID in pairs(found) do set[questID] = true end
+    return set
+end
+
+-- Never call writeSet from here. It creates the table, and the table's ABSENCE is the flag:
+-- absent means every quest is tracked, whereas an EMPTY table means none of them are. So a
+-- Set(id, false) that stores nothing must not create one, or turning auto-track off and
+-- accepting a single quest would silently untrack the whole character for good. Tracking a
+-- quest that an absent set already reports as tracked is a real no-op for the same reason.
+function TrackedSet:Set(questID, on)
+    if not questID then return end
     local want = on and true or nil
+    local set = readSet()
+
+    if not set then
+        if want then return end
+        set = materialize()
+        if not set then return end
+    end
+
     if set[questID] == want then return end
     set[questID] = want
     self:_FireDirty()

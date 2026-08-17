@@ -3,8 +3,8 @@ local _, ns = ...
 local Options = ns:GetModule("Options")
 local L       = ns.L
 
--- Wrapped at the table, never as L[SORT_OPTIONS[i].tip] - a computed index is invisible to
--- docs/_gen_enus.py, so the phrase would never reach the manifest.
+-- Wrapped at the table, never as L[SORT_OPTIONS[i].tip] - the scanner matches the literal
+-- L["..."] only, so a computed index never reaches the manifest and can never be translated.
 local SORT_OPTIONS = {
     { value = "zone",     label = L["Zone"],
       tip = L["Groups entries under the heading they sit under in your quest log."] },
@@ -466,7 +466,9 @@ Options:RegisterTab({
         -- controls on the Appearance tab. They live together under Appearance's Zone
         -- Progress Bar heading now - one feature, one place.
 
-        -- Gated so the controls are absent rather than dead on a flavor with no bonus steps
+        -- A capability probe, so this reads true on Classic where the system does not exist and
+        -- the controls appear there with nothing behind them. The real gate is whether the
+        -- provider registered, which the TOC already decides. Recorded, not fixed.
         if ns.Has.ScenarioBonus then
             local sbHeader = self:CreateHeading(content, L["Scenario Bonus Objectives"])
             sbHeader:SetPoint("TOPLEFT", soundDD, "BOTTOMLEFT", 0, self.GAP.aboveHead)

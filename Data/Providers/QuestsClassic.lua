@@ -59,12 +59,12 @@ local baselined       = false
 -- inside the GetQuestLogTitle walk than outside it. Status read 0 cached against 9 live.
 local lastFullAt, lastDynAt, lastFullWatched = 0, 0, 0
 
--- File scoped rather than an upvalue of Enable, because the watch poll is declared above it and
--- needs the same notifier.
 local notifyDirty
 
--- Guards the watch hooks against the RemoveQuestWatch this file issues itself to keep Blizzard's
--- list empty, which would otherwise read as the player untracking what they just tracked.
+-- Re-entrancy guard for the AddQuestWatch hook below, which answers by calling RemoveQuestWatch.
+-- Nothing in this file hooks RemoveQuestWatch, so it does not guard against ourselves - it
+-- guards against another addon hooking RemoveQuestWatch and calling AddQuestWatch back, which
+-- would otherwise bounce between the two hooks without end.
 local suppressWatchHook = false
 
 -- The watch poll that used to live here is GONE, and owning the tracked set is why. It existed
@@ -110,8 +110,9 @@ end
 -- that is the whole point. Blizzard caps its list at FIVE and throws a red error on the sixth, it
 -- auto-tracks nothing on accept, and another quest addon commonly replaces IsQuestWatched and
 -- empties the list underneath it. Reading our own table removes all three at once, and it is why
--- nothing here calls AddQuestWatch or RemoveQuestWatch any more - which also stops an untrack
--- from writing into that other addon's saved variables.
+-- no TRACKING path here calls AddQuestWatch or RemoveQuestWatch any more - which is what stops
+-- an untrack from the row menu writing into that other addon's saved variables. The hook in
+-- Enable is the one remaining caller and it runs on Blizzard's own adds, not on ours.
 --
 -- nil, never false, until the player has made a first explicit choice, so Filter's
 -- `isTracked == false` test fails open exactly as IsCurrentZone's nil already does.
@@ -253,22 +254,13 @@ local function fullRebuild()
                                                   watchedDuringWalk, #store:Out())
     end
 
-    -- An absent set means every quest shows, and that only holds until the FIRST write. Auto
-    -- track on accept would otherwise create the set holding one quest, which silently demotes
-    -- every other quest in the log from showing to hidden - the exact empty tracker this work
-    -- exists to remove. So the first rebuild that sees a real log writes the set out in full,
-    -- turning "nothing decided yet" into "everything tracked" before anything else can touch it.
-    -- Safe against ordering: this runs at PLAYER_ENTERING_WORLD, and a quest cannot be accepted
-    -- before login.
-    --
-    -- After that it only prunes, because nothing else drops ids and the set would otherwise
-    -- accumulate every quest the character ever tracked.
+    -- Prune only. Materializing the set is TrackedSet's own job now, done on the first write
+    -- that removes a quest, because this rebuild is NOT a reliable first-write barrier: it runs
+    -- from Tracker:Render, which returns early while the tracker is hidden, so a quest accepted
+    -- behind a visibility rule reached the set before any rebuild did. Prune no-ops while the
+    -- set is absent, so nothing here has to know which state it is in.
     if next(store:Out()) ~= nil then
-        if TrackedSet:Count() == nil then
-            for id in store:Each() do TrackedSet:Set(id, true) end
-        else
-            TrackedSet:Prune(stillInLog)
-        end
+        TrackedSet:Prune(stillInLog)
     end
 end
 
@@ -494,15 +486,17 @@ function Quests:Enable(notify)
 
     -- Blizzard fires nothing when a quest item arrives by any route other than looting, so
     -- withdrawing 5 of 8 from the bank leaves the row reading 3/8 until an unrelated quest event
-    -- happens by. The interaction manager covers every such window at once where it exists, and
-    -- the per-frame events are the fallback for a client that does not know it.
-    if not Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic) then
-        Events:On("BANKFRAME_CLOSED",     markDynamic)
-        Events:On("MAIL_CLOSED",          markDynamic)
-        Events:On("MERCHANT_CLOSED",      markDynamic)
-        Events:On("TRADE_CLOSED",         markDynamic)
-        Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
-    end
+    -- happens by. All six are registered rather than treating the interaction manager as an
+    -- either/or: Events:On answers whether the client knows the event NAME, which is not whether
+    -- it FIRES for these windows, and a client that accepts the registration without firing it
+    -- would have had its own fallback suppressed. markDynamic only sets a dirty flag and the
+    -- notify is throttled, so a doubled event costs nothing.
+    Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic)
+    Events:On("BANKFRAME_CLOSED",     markDynamic)
+    Events:On("MAIL_CLOSED",          markDynamic)
+    Events:On("MERCHANT_CLOSED",      markDynamic)
+    Events:On("TRADE_CLOSED",         markDynamic)
+    Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
 end
 
 Registry:Register(Quests)

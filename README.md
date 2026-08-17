@@ -30,6 +30,12 @@ pinning, filters, section visibility and ordering, the card layout, fonts and co
 profiles, row tooltips, and the row right-click menu. Blizzard's own quest watch frame is
 suppressed so you do not get two trackers.
 
+The tracker keeps its own list of which quests you are tracking rather than using the game's,
+which on these versions is capped at five quests and cannot track a quest automatically when
+you accept it. So "Auto-track accepted quests" works, "Show only tracked quests" can show more
+than five, and shift-clicking a row in the game's own quest log tracks and untracks exactly as
+it always did, with its checkmarks showing this tracker's list.
+
 You can also focus a quest, which these clients have no super-tracking for. Click a row's
 icon to focus it and click the icon again to clear it, or use Focus in the right-click menu.
 The focused quest's title is tinted. If Everything Quests and TomTom are both installed,
@@ -41,16 +47,10 @@ focusing a quest also points a TomTom arrow at it.
   too, so on the tracker alone a focused quest is the tint and nothing more.
 - World quests, scenarios, achievements, endeavors and tracked recipes have no section.
   Most need APIs these clients do not have.
-- **These clients only let you watch five quests at a time, and they cannot track a quest
-  automatically when you accept it.** So "Show only tracked quests" hides most of your log,
-  and "Auto-track accepted quests" does nothing. Turn the first one off if your tracker looks
-  emptier than your quest log.
-- **Usable quest items get no button on the tracker.**
 - **Timed quests show no countdown**, and Blizzard's own timer box is left on screen.
 - The zone progress bar stays empty. Its zone routing data covers Midnight only.
 - Distance sorting does nothing, because the distance API is retail-only.
 - Some options still appear that cannot do anything on Classic, for the same reasons.
-- Tracking a quest from Blizzard's own quest log may not show up until you reload.
 
 ### Questie
 
@@ -58,9 +58,8 @@ If Questie is loaded, EQ Objective Tracker offers once to hide Questie's own tra
 that choice becomes a permanent toggle on the General tab. It only hides the frame, and
 Questie's own disable path is never called.
 
-One thing it does not leave alone: untracking a quest from this tracker's row menu goes
-through the game's own watch functions, which Questie hooks, so Questie records that quest
-as untracked in its own saved data too.
+Tracking and untracking from this tracker's row menu no longer touch the game's own watch
+functions, so Questie's own tracked quests are left alone.
 
 ### Everything Quests, the companion addon
 

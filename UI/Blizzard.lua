@@ -39,12 +39,12 @@ function Blizzard:Suppress()
     silence(tracker)
 
     -- The sub-modules are deliberately NOT silenced, and must not be. Unregistering their
-    -- events is an insecure write to eleven Blizzard frames that feed the quest POI system,
-    -- and it is the ONE thing EQOT did here that EQ does not - EQ touches only the parent.
-    -- EQ has never produced the SetPassThroughButtons taint that EQOT did on 2026-07-30.
-    -- Leaving them registered costs a little idle work on an invisible frame, which is what
-    -- EQ has always paid. Hiding the parent hides them, and the OnShow hook below catches
-    -- any attempt to re-show it.
+    -- events is an insecure write to eleven Blizzard frames that feed the quest POI system.
+    -- It is not known to have caused anything: the 2026-07-30 blocked action was bisected to
+    -- a quest API call in the world quest provider, and silencing these was ruled out. The
+    -- reason to leave them alone is the insecure write itself, not a bug it is credited with.
+    -- Leaving them registered costs a little idle work on an invisible frame. Hiding the
+    -- parent hides them, and the OnShow hook below catches any attempt to re-show it.
 
     -- Hooking is the one part that must happen once, or every Suppress stacks another.
     -- Keyed on the frame rather than a boolean: only one of the two globals exists per

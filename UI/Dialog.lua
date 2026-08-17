@@ -6,8 +6,9 @@ local L      = ns.L
 -- Own frame rather than StaticPopup: that system recycles a small shared pool, so an
 -- insecure handler here could taint the frame the logout or quit dialog later reuses.
 
--- The options window's own border and title color. This dialog is only ever spawned from
--- that window, so it carries the same red rather than a second scheme of its own.
+-- The options window's own border and title color, carried here rather than a second scheme of
+-- its own. Most callers are that window, though the Questie prompt and /eqot importeq both
+-- reach this with it closed.
 local BRAND_R, BRAND_G, BRAND_B = 0.635, 0.000, 0.039
 
 local function makeButton(parent)
@@ -85,8 +86,8 @@ function Dialog:Build()
             frame:SetPropagateKeyboardInput(false)
             Dialog:_finish(false)
         elseif (key == "ENTER" or key == "NUMPADENTER") and not frame.editBox:IsShown() then
-            -- Swallowed, never bound to accept: two of the three confirms that reach here
-            -- reload the UI, so a stray keypress must not be able to trigger one. Without
+            -- Swallowed, never bound to accept: most of the confirms that reach here reload
+            -- the UI, so a stray keypress must not be able to trigger one. Without
             -- this it opens the chat box behind a dialog that looks modal.
             frame:SetPropagateKeyboardInput(false)
         else

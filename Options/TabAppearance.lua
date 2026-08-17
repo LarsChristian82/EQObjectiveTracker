@@ -650,9 +650,9 @@ Options:RegisterTab({
         content._syncDependents = syncDependents
     end,
 
-    -- Every master is on this tab now, so the setters keep the sweep current on their own.
-    -- Re-running it per view is what would cover a master that ever moves off this tab
-    -- again, and it costs one pass over ~30 SetAlpha calls.
+    -- This sweep covers THIS tab's masters only. Options/TabTracker.lua owns a second,
+    -- independent pair of its own, so two files hold dependency state and neither one is the
+    -- whole picture. Re-running per view costs one pass over ~30 SetAlpha calls.
     refresh = function(_, content)
         if content._syncDependents then content._syncDependents() end
     end,

@@ -44,9 +44,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty after logging in and stay that way until you ran a command or changed a setting. That
   addon replaces one of the game's own quest tracking functions a few seconds into login, and the
   tracker was still reading the old answer. It no longer reads that function at all.
-- Classic Era and TBC Anniversary: untracking a quest no longer writes into another quest addon's
-  saved data. The tracker no longer calls the game's own tracking functions, so nothing hooking
-  them is affected by what you do here.
+- Classic Era and TBC Anniversary: tracking and untracking from the tracker's own row menu no
+  longer write into another quest addon's saved data, because neither one calls the game's
+  tracking functions any more.
+- Classic Era and TBC Anniversary: turning "Auto-track accepted quests" off and then accepting a
+  quest could quietly switch every other quest in your log to untracked, for good. If you then
+  turned "Show only tracked quests" on, the tracker came up empty with no way back but tracking
+  each quest by hand. The same thing could happen if you accepted a quest while the tracker was
+  hidden by one of the visibility rules.
+- Hiding another quest addon's tracker now takes effect on its own. It could need the setting
+  toggled off and on again, because the tracker gave up looking for that addon's frame before
+  the addon had built it.
+- Retail: daily and weekly quests could have been tagged as the wrong kind on a client that
+  reports quest frequency the older way. No live client does, so nothing was mis-tagged in
+  practice.
 
 ### Improvements
 

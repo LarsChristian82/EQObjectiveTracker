@@ -5,6 +5,7 @@ local QuestItems = ns:RegisterModule("QuestItems", {})
 -- The layering seam for the secure quest-item buttons, the same shape as
 -- Scenarios:GetBanner. UI/ItemButtons.lua owns the frame and calls no quest API of its
 -- own, and this file touches no frame.
+
 -- Ceiling for the Classic quest log walk, matching the provider. GetNumQuestLogEntries counts
 -- only the visible rows there, so it drops to the header count when the player collapses one.
 local MAX_LOG_INDEX = 75
@@ -57,7 +58,7 @@ function QuestItems:CountInLog()
                 if link and icon then n = n + 1 end
             end
         end
-    else
+    elseif type(GetQuestLogTitle) == "function" then
         for i = 1, MAX_LOG_INDEX do
             local title, _, _, isHeader = GetQuestLogTitle(i)
             if not title then break end

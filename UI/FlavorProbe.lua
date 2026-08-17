@@ -401,9 +401,10 @@ function Probe:Dump()
         ns:Print(("  %s -> %s"):format(path, resolves(path)))
     end
 
-    -- An inline escape is not a texture object, so no call here can report whether one DREW.
-    -- Copying these lines out of chat drops the art, so a blank in a pasted log says nothing
-    -- and only the atlas result above and the screen itself answer this.
+    -- An inline escape is not a texture object, so no call here can report whether one DREW -
+    -- and the atlas result above does not either, since it answers whether GetAtlasInfo knows
+    -- the atlas, not whether the markup renders inside a FontString. Copying these lines out of
+    -- chat drops the art too, so a blank in a pasted log says nothing. Only the screen answers.
     ns:Print("inline escapes (READ THESE ON SCREEN, a paste drops the art):")
     ns:Print("  |A:common-icon-checkmark:12:12|a <- atlas escape, the one Row.lua ships")
     ns:Print("  |TInterface\\Buttons\\UI-CheckBox-Check:12:12|t <- UI-CheckBox-Check")

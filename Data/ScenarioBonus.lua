@@ -394,8 +394,10 @@ function Bonus:DumpLines(out)
 end
 
 function Bonus:OnEnable()
-    -- RegisterEvent throws on an event the client does not know, so a flavor without bonus
-    -- steps must never reach the delve and scenario registrations below.
+    -- A CAPABILITY probe, so it reads true on Classic where the functions are hollow stubs and
+    -- this does NOT return. Events:On pcalls each registration and records the refusal, which is
+    -- what actually absorbs ACTIVE_DELVE_DATA_UPDATE there - see the events: line in /eqot
+    -- status. This gate only covers a client missing the functions outright.
     if not ns.Has.ScenarioBonus then return end
     local Events = ns:GetModule("Events")
     local function refresh()

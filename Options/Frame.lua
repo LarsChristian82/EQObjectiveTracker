@@ -277,10 +277,11 @@ end
 
 -- Escape-to-close WITHOUT UISpecialFrames, and it must stay that way. Blizzard's panel
 -- manager walks that list by NAME and does _G[name], so an addon frame in it taints
--- UIParentPanelManager on every single Escape press. That taint reaches the panel manager's
--- own state, and from there the world map and its data providers - which on 2026-07-30
--- blocked Button:SetPassThroughButtons() on map pins in combat and was blamed on EQOT. The
--- taint log named EQOTOptionsFrame at UIParentPanelManager.lua:1044 as the only source.
+-- UIParentPanelManager on every single Escape press. That taint reaches the panel manager's own
+-- state and from there the panels it owns, the world map among them. The taint log named
+-- EQOTOptionsFrame at UIParentPanelManager.lua:1044, which is what this closes. It did NOT cause
+-- the 2026-07-30 map pin blocked action - that reproduced with this already fixed - so do not
+-- read it as the cause of anything else. The rule stands on the taint vector alone.
 -- SetPropagateKeyboardInput is itself protected in combat, so the handler stands down there
 -- and Escape just falls through to the default UI.
 local function closeOnEscape(frame)

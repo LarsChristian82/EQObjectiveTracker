@@ -18,7 +18,12 @@ local CHECK_PAD = 4
 local function hookRow(row)
     if row._eqotClickHooked then return end
     row._eqotClickHooked = true
-    row:HookScript("OnClick", function(self)
+    row:HookScript("OnClick", function(self, button)
+        if button and button ~= "LeftButton" then return end
+        -- The IsShiftKeyDown fallback overrides a rebound QUESTWATCHTOGGLE, so a player who has
+        -- moved that modifier to Ctrl still gets shift toggling. Kept because the gesture is
+        -- confirmed working in game this way and QUESTWATCHTOGGLE's presence on 1.15.9 has not
+        -- been measured, so dropping it risks removing the gesture entirely.
         local wantsToggle = (IsModifiedClick and IsModifiedClick("QUESTWATCHTOGGLE"))
                             or (IsShiftKeyDown and IsShiftKeyDown())
         if not wantsToggle then return end

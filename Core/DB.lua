@@ -223,6 +223,11 @@ end
 -- display state and the one global key behind - both of which a user reads as "a setting".
 -- trackedWorldQuests is deliberately spared: it mirrors the player's own manual world quest
 -- watches, so clearing it untracks their quests rather than restoring a default.
+--
+-- trackedQuests IS cleared, and to nil rather than to an empty table, because on Classic its
+-- ABSENCE is the flag for "nothing decided yet" and absence fails open to every quest tracked.
+-- An empty table is the opposite state and would hide the whole log. It clears where
+-- trackedWorldQuests does not because the two fail in opposite directions.
 function DB:ResetAll()
     if not self.db then return end
     if self.db.ResetProfile then self.db:ResetProfile() end
@@ -235,6 +240,7 @@ function DB:ResetAll()
         c.sectionsCollapsed = {}
         c.hidden            = {}
         c.pinned            = {}
+        c.trackedQuests     = nil
     end
 end
 
@@ -245,9 +251,12 @@ function DB:OnInitialize()
     -- data loss. Must be read BEFORE AceDB:New, which creates the table.
     local freshInstall = (_G.EQObjectiveTrackerDB == nil)
 
-    -- Blizzard caps Classic at five watched quests and the auto-track API is absent there,
-    -- so only-watched would pin the tracker to five of a twenty quest log. Written before
-    -- AceDB:New, which takes this table by reference.
+    -- Ships off on Classic by the author's decision. The original reason has since been removed
+    -- by the addon owning its own tracked set: there is no five-quest cap any more and auto-track
+    -- works there. What remains is that an existing Classic character has never had a tracked set
+    -- of their own, so defaulting the filter ON would hide a log nobody had opted into.
+    -- Capability gated rather than flavor gated, and written before AceDB:New, which takes this
+    -- table by reference.
     if not ns.Has.QuestWatchAPI then
         self.defaults.profile.tracker.showOnlyWatched = false
     end

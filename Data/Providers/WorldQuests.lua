@@ -215,11 +215,12 @@ end
 -- Asking QuestUtil.CanCreateQuestGroup from inside the render taints the execution context,
 -- and opening the world map in combat then blocks protected mouse calls on Blizzard's map POI
 -- pins - ADDON_ACTION_BLOCKED on SetPassThroughButtons and SetPropagateMouseClicks, blamed on
--- EQOT. Bisected over eight rounds on 2026-07-31: the call is at fault, the eye button is not,
--- and call volume is irrelevant - EQ makes the same calls and is clean because it makes them
--- straight from its own render function, while EQOT reaches this from a provider nested in
--- Feed:Build inside Tracker:Render inside an event handler. Draining from a fresh timer puts
--- nothing of ours above the call and is verified clean.
+-- EQOT. Bisected over eight rounds on 2026-07-31: the call is at fault and the eye button is
+-- not, and caching to one call per quest still blocked, so volume is not the axis either. WHY
+-- the timer helps was never proven - a timer callback is still insecure execution, so it may
+-- have changed when the taint lands rather than whether it lands. The bisection is the evidence
+-- here, so treat any explanation of it as a guess and do not move the call back on the strength
+-- of one. Draining from a fresh timer is verified clean.
 local function drainGroupQueue()
     groupQueued = false
     local changed = false
@@ -418,8 +419,9 @@ function WorldQuests:Enable(notifyDirty)
     Events:On("QUEST_ACCEPTED",            notifyDirty)
     Events:On("ZONE_CHANGED_NEW_AREA",     notifyDirty)
     Events:On("PLAYER_ENTERING_WORLD",     notifyDirty)
-    -- The map lists go stale during a fight because taskQuestsForMap refuses to touch the
-    -- map APIs there, so re-read them the moment the lockdown lifts
+    -- Re-read once a fight ends. Combat is where the tracker is most often hidden by a
+    -- visibility rule and where renders are skipped, so the map lists are most likely stale
+    -- exactly then.
     Events:On("PLAYER_REGEN_ENABLED",      notifyDirty)
 end
 
