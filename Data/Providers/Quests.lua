@@ -191,21 +191,19 @@ local function currentZoneSet()
     return zoneSet
 end
 
--- Zone membership comes from map POIs. Quest-log headers are campaign groupings that
--- rarely equal GetZoneText(), so comparing those would hide almost everything.
--- Returning nil means "cannot tell", and the filter must then fail open.
+-- Zone membership comes from map POIs. Quest-log headers are campaign groupings that rarely
+-- equal GetZoneText(), so comparing those would hide almost everything. nil means "cannot
+-- tell" and the filter fails open on it; absent from the map counts as elsewhere.
+--
+-- That last part replaces a fallback answering false only for a quest GetNextWaypoint could
+-- place, which on a 16 quest log in The Coiled Isle rejected 2 and showed 14 that were not in
+-- the zone - 7 resolving to another map, 7 with no position anywhere. GetInfo's own isOnMap
+-- picked the same 2 quests as GetQuestsOnMap there, so it is not a second opinion to fall back
+-- to. Read /eqot zoneprobe before changing this.
 function Quests:IsCurrentZone(entry)
     local set = currentZoneSet()
     if not set then return nil end
-    if set[entry.id] then return true end
-    -- Absent from this map is not the same as being somewhere else, and answering false for a
-    -- quest with no location hid every category quest - GetQuestsOnMap measured 1 against a
-    -- sixteen-quest log. All three returns are required: a mapID with no coordinates is an
-    -- unresolved POI, guarded the same way in UI/TaxiHighlight.lua.
-    if not ns.Has.NextWaypoint then return nil end
-    local wm, wx, wy = C_QuestLog.GetNextWaypoint(entry.id)
-    if wm and wx and wy then return false end
-    return nil
+    return set[entry.id] == true
 end
 
 -- Unlike 1.15.9, this bound is safe: on retail the count read 50 with every quest log header
@@ -333,6 +331,81 @@ function Quests:DebugLine()
         tostring(QC.Meta), tostring(QC.Important), table.concat(parts, " "),
         walkEntries, apiNow, walkQuests, cached, live, tostring(map),
         list and tostring(#list) or "nil")
+end
+
+-- Undocumented, like /eqot flavorprobe. IsCurrentZone can only answer false for a quest
+-- GetNextWaypoint places, so a quest that API cannot place is shown whatever zone it is
+-- really in. This prints every candidate signal beside the live verdict, so the one that
+-- separates "here" from "elsewhere" is picked from a reading rather than a guess.
+function Quests:ZoneProbeLines()
+    local out  = {}
+    local map  = ns.Has.Map and C_Map.GetBestMapForUnit("player") or nil
+    local mi   = (map and C_Map.GetMapInfo) and C_Map.GetMapInfo(map) or nil
+    local par  = mi and mi.parentMapID
+    local pmi  = (par and par > 0 and C_Map.GetMapInfo) and C_Map.GetMapInfo(par) or nil
+
+    local function idsOn(m)
+        local set, list = {}, (m and ns.Has.QuestsOnMap) and C_QuestLog.GetQuestsOnMap(m) or nil
+        if list then
+            for i = 1, #list do
+                local q = list[i]
+                if q and q.questID then set[q.questID] = true end
+            end
+        end
+        return set, list and #list or -1
+    end
+
+    local onMap, nMap = idsOn(map)
+    local onPar, nPar = idsOn(par)
+
+    out[#out + 1] = ("zone probe: map %s %s (%d on map) | parent %s %s (%d on map)"):format(
+        tostring(map), mi and mi.name or "?", nMap,
+        tostring(par), pmi and pmi.name or "?", nPar)
+    out[#out + 1] = "  id     set par iOM POI wp          dist         tz   verdict | header | title"
+
+    local header
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() or 0 do
+        local info = C_QuestLog.GetInfo(i)
+        if info then
+            if info.isHeader then
+                header = info.title
+            elseif not info.isHidden and info.questID then
+                local id = info.questID
+
+                local wp = "-"
+                if ns.Has.NextWaypoint then
+                    local wm, wx, wy = C_QuestLog.GetNextWaypoint(id)
+                    wp = ("%s/%s"):format(tostring(wm), (wx and wy) and "xy" or "noxy")
+                end
+
+                local dist = "-"
+                if ns.Has.QuestDistance then
+                    -- distSq ~= distSq is the NaN the API returns for an unplaceable quest
+                    local sq, cont = C_QuestLog.GetDistanceSqToQuest(id)
+                    dist = ("%s/%s"):format(
+                        (sq == nil and "nil") or (sq ~= sq and "nan") or ("%.0f"):format(sq),
+                        tostring(cont))
+                end
+
+                local tz = "-"
+                if C_TaskQuest and C_TaskQuest.GetQuestZoneID then
+                    -- Assigned before it is printed: this returns ZERO values for a quest
+                    -- that is not a task quest, and tostring() with no argument raises.
+                    local z = C_TaskQuest.GetQuestZoneID(id)
+                    tz = tostring(z)
+                end
+
+                local verdict = self:IsCurrentZone({ id = id })
+
+                out[#out + 1] = ("  %-6d %-3s %-3s %-3s %-3s %-11s %-12s %-4s %-7s | %s | %s"):format(
+                    id, onMap[id] and "YES" or "no", onPar[id] and "YES" or "no",
+                    info.isOnMap and "YES" or "no", info.hasLocalPOI and "YES" or "no",
+                    wp, dist, tz, tostring(verdict),
+                    tostring(header):sub(1, 16), tostring(info.title):sub(1, 30))
+            end
+        end
+    end
+    return out
 end
 
 function Quests:OnEntryClick(entry, button)

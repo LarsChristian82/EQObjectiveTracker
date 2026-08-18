@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Retail: "Show only quests in current zone" now hides the quests that are not in your zone.
+  It had been hiding a quest only when the game could hand back a map pin for it, so on a
+  sixteen quest log standing in The Coiled Isle it removed one quest and left fourteen that
+  were somewhere else. Quests that have no location at all, such as profession, battleground
+  and meta quests, are hidden by this filter now as well, since they are not in your zone
+  either. The setting is off by default and is unchanged on Classic Era and TBC Anniversary,
+  which decide this a different way.
+
 ### New Features
 
 - Traditional Chinese. The tracker and its options panel now read in Chinese on a zhTW client,

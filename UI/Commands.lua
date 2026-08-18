@@ -276,6 +276,14 @@ function Commands:OnEnable()
             if P then
                 if strtrim(rest or ""):lower() == "watch" then P:WatchTest() else P:Dump() end
             end
+        elseif cmd == "zoneprobe" then
+            -- Undocumented for the same reason flavorprobe is: a measurement, not a feature.
+            local QP = ns:GetModule("Registry"):Get("quests")
+            if QP and QP.ZoneProbeLines then
+                for _, l in ipairs(QP:ZoneProbeLines()) do ns:Print(l) end
+            else
+                ns:Print("zoneprobe: the quests provider is not loaded")
+            end
         elseif fn then
             fn()
         elseif cmd == "" then
