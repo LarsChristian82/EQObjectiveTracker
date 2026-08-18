@@ -95,7 +95,7 @@ Options:RegisterTab({
                         f:Show()
                     end
                 end,
-                L["Hides Questie's tracker frame while EQ Objective Tracker is running. Questie's own settings and tracked quests are not touched."])
+                L["Hides Questie's tracker frame while EQ Objective Tracker is running. It only hides the frame, and Questie's own disable path is never called."])
             questie:SetPoint("TOPLEFT", restore, "BOTTOMLEFT", 0, -2)
             prev2 = questie
         end

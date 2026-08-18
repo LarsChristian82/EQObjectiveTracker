@@ -333,10 +333,9 @@ function Quests:DebugLine()
         list and tostring(#list) or "nil")
 end
 
--- Undocumented, like /eqot flavorprobe. IsCurrentZone can only answer false for a quest
--- GetNextWaypoint places, so a quest that API cannot place is shown whatever zone it is
--- really in. This prints every candidate signal beside the live verdict, so the one that
--- separates "here" from "elsewhere" is picked from a reading rather than a guess.
+-- Undocumented, like /eqot flavorprobe. Prints every signal that could place a quest beside
+-- the verdict IsCurrentZone actually returned, which is what the zone rule was chosen from and
+-- what to read before changing it again.
 function Quests:ZoneProbeLines()
     local out  = {}
     local map  = ns.Has.Map and C_Map.GetBestMapForUnit("player") or nil
@@ -380,7 +379,8 @@ function Quests:ZoneProbeLines()
 
                 local dist = "-"
                 if ns.Has.QuestDistance then
-                    -- distSq ~= distSq is the NaN the API returns for an unplaceable quest
+                    -- Distance.lua reports this API returning NaN for an unplaceable quest, so
+                    -- the self-comparison catches it. The Coiled Isle reading saw nil, not NaN.
                     local sq, cont = C_QuestLog.GetDistanceSqToQuest(id)
                     dist = ("%s/%s"):format(
                         (sq == nil and "nil") or (sq ~= sq and "nan") or ("%.0f"):format(sq),
@@ -397,7 +397,7 @@ function Quests:ZoneProbeLines()
 
                 local verdict = self:IsCurrentZone({ id = id })
 
-                out[#out + 1] = ("  %-6d %-3s %-3s %-3s %-3s %-11s %-12s %-4s %-7s | %s | %s"):format(
+                out[#out + 1] = ("  %-6d %-3s %-3s %-3s %-3s %-11s %-14s %-4s %-7s | %s | %s"):format(
                     id, onMap[id] and "YES" or "no", onPar[id] and "YES" or "no",
                     info.isOnMap and "YES" or "no", info.hasLocalPOI and "YES" or "no",
                     wp, dist, tz, tostring(verdict),

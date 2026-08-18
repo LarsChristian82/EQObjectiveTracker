@@ -145,8 +145,9 @@ and so that a phrase moving between addons keeps its translation.
 **To add or correct a translation, edit `store/<language>.lua` there and open a pull request
 against that repository.** A change made in this repo is overwritten the next time the files
 are built. GitHub will not accept a `.lua` file as a comment attachment, so put it in a `.zip`
-first or paste it into a code block. If you cannot use GitHub at all, the Discord works too -
-both Chinese translations arrived that way.
+first or paste it into a code block. If you cannot use GitHub at all, the Discord and the
+CurseForge comments both work - the Simplified Chinese arrived over Discord and the Traditional
+Chinese over CurseForge.
 
 A phrase that has not been translated yet falls back to English on its own, so a partial
 translation is never a broken one, and there is no need to finish a language.

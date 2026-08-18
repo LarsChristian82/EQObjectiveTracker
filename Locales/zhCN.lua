@@ -315,6 +315,7 @@ L["Special thanks to %s for the many features, fixes, and reports that keep shap
 L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into French."] = "特别感谢 %s，投入大量时间完成EQ Objective Tracker法语翻译。"
 L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Russian."] = "特别感谢 %s，投入大量时间完成EQ Objective Tracker俄语翻译。"
 L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Korean."] = "特别感谢 %s，投入大量时间完成EQ Objective Tracker韩语翻译。"
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Simplified Chinese."] = "特别感谢 %s，投入大量时间完成EQ Objective Tracker简体中文翻译。"
 L["About"] = "关于"
 L["Version %s"] = "版本 %s"
 L["by Wheelbarrel00"] = "作者 Wheelbarrel00"

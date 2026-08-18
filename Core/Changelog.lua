@@ -9,6 +9,22 @@ local _, ns = ...
 -- edit CHANGELOG.md and re-run the generator.
 ns.Changelog = {
     {
+        version = "1.9.0", date = "2026-08-17",
+        summary = "Traditional Chinese, and the zone filter hides what it says it hides.",
+        sections = {
+            { head = "New Features", items = {
+                "Traditional Chinese. The tracker and its options panel now read in Chinese on a zhTW client, covering 385 of the addon's 389 phrases, which is the most complete translation the addon has. Contributed by BNS333.",
+            } },
+            { head = "Bug Fixes", items = {
+                "Retail: \"Show only quests in current zone\" now hides the quests that are not in your zone. It had been hiding a quest only when the game could hand back a map pin for it, so on a sixteen quest log standing in The Coiled Isle it removed two quests and left fourteen, only two of which were actually in the zone. Quests that have no location at all, such as profession, battleground and meta quests, are hidden by this filter now as well, since they are not in your zone either. In a place that has no quests of its own, such as a capital city or inside a dungeon, the tracker reads empty while this setting is on. The setting is off by default and is unchanged on Classic Era and TBC Anniversary, which decide this a different way.",
+            } },
+            { head = "Improvements", items = {
+                "The About tab credits Keriaovo for the Simplified Chinese translation and BNS333 for the Traditional Chinese.",
+                "The description under the Questie option is more precise about what hiding Questie's tracker does and does not change.",
+            } },
+        },
+    },
+    {
         version = "1.8.0", date = "2026-08-16",
         summary = "Classic Era and TBC Anniversary now keep their own tracked quest list.",
         sections = {
@@ -37,7 +53,7 @@ ns.Changelog = {
         summary = "Simplified Chinese.",
         sections = {
             { head = "New Features", items = {
-                "Simplified Chinese. The tracker and its options panel now read in Chinese on a zhCN client, covering 380 of the addon's 387 phrases. The seven still in English are the Questie coexistence strings and the two Classic focus hints, which are untranslated in every language. Contributed by a player from the Discord.",
+                "Simplified Chinese. The tracker and its options panel now read in Chinese on a zhCN client, covering 380 of the addon's 387 phrases. The seven still in English are the Questie coexistence strings and the two Classic focus hints, which are untranslated in every language. Contributed by Keriaovo, over the Discord.",
             } },
         },
     },

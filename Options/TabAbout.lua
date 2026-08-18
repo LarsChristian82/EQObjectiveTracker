@@ -38,6 +38,8 @@ local THANKS = {
     { name = "Zox",         line = L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into French."] },
     { name = "Malevi4",     line = L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Russian."] },
     { name = "labrie75",    line = L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Korean."] },
+    { name = "Keriaovo",    line = L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Simplified Chinese."] },
+    { name = "BNS333",      line = L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Traditional Chinese."] },
 }
 
 -- A tab-local cursor, the way EQ's own About tab does it. This is the one tab that wants

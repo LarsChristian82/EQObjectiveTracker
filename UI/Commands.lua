@@ -282,7 +282,7 @@ function Commands:OnEnable()
             if QP and QP.ZoneProbeLines then
                 for _, l in ipairs(QP:ZoneProbeLines()) do ns:Print(l) end
             else
-                ns:Print("zoneprobe: the quests provider is not loaded")
+                ns:Print("zoneprobe: not available on this flavor")
             end
         elseif fn then
             fn()
