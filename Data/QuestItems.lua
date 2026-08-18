@@ -5,9 +5,23 @@ local QuestItems = ns:RegisterModule("QuestItems", {})
 -- The layering seam for the secure quest-item buttons, the same shape as
 -- Scenarios:GetBanner. UI/ItemButtons.lua owns the frame and calls no quest API of its
 -- own, and this file touches no frame.
+
+-- Ceiling for the Classic quest log walk, matching the provider. GetNumQuestLogEntries counts
+-- only the visible rows there, so it drops to the header count when the player collapses one.
+local MAX_LOG_INDEX = 75
+
+-- Whichever resolver this client has. The Classic global answers 0 rather than nil for a quest
+-- that is not in the log.
 local function logIndex(questID)
     if not (questID and ns.Has.QuestSpecialItem) then return nil end
-    return C_QuestLog.GetLogIndexForQuestID(questID)
+    local i
+    if C_QuestLog and C_QuestLog.GetLogIndexForQuestID then
+        i = C_QuestLog.GetLogIndexForQuestID(questID)
+    else
+        i = GetQuestLogIndexByID(questID)
+    end
+    if not i or i == 0 then return nil end
+    return i
 end
 
 function QuestItems:Available()
@@ -31,16 +45,27 @@ end
 -- whatever the tracker is currently showing, so a zero tells "no quest has one" apart from
 -- "the one that does is filtered out". The loop index IS the log index the API wants.
 function QuestItems:CountInLog()
-    if not (ns.Has.QuestSpecialItem and ns.Has.QuestLog) then return 0 end
+    if not ns.Has.QuestSpecialItem then return 0 end
     local n = 0
-    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-        local info = C_QuestLog.GetInfo(i)
-        -- World quests are skipped: they render in their own region, which gets no buttons,
-        -- so counting them would read as a filter problem rather than correct behavior.
-        if info and not info.isHeader and not info.isHidden
-           and not (C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)) then
-            local link, icon = GetQuestLogSpecialItemInfo(i)
-            if link and icon then n = n + 1 end
+    if ns.Has.QuestLog then
+        for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+            local info = C_QuestLog.GetInfo(i)
+            -- World quests are skipped: they render in their own region, which gets no buttons,
+            -- so counting them would read as a filter problem rather than correct behavior.
+            if info and not info.isHeader and not info.isHidden
+               and not (C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)) then
+                local link, icon = GetQuestLogSpecialItemInfo(i)
+                if link and icon then n = n + 1 end
+            end
+        end
+    elseif type(GetQuestLogTitle) == "function" then
+        for i = 1, MAX_LOG_INDEX do
+            local title, _, _, isHeader = GetQuestLogTitle(i)
+            if not title then break end
+            if not isHeader then
+                local link, icon = GetQuestLogSpecialItemInfo(i)
+                if link and icon then n = n + 1 end
+            end
         end
     end
     return n

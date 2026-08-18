@@ -29,10 +29,29 @@ local function byOrder(a, b)
     return a.order < b.order
 end
 
+-- Wowhead serves a separate site per game version, and a Classic quest id is a different quest
+-- on the retail site, or a 404. Retail is read as a capability rather than a flavor test, and
+-- GetExpansionLevel then names which Classic site - nothing in the 60+ probed values separates
+-- Era from TBC. Only the two shipped Classic flavors are listed, so a new TOC adds its row here.
+local WOWHEAD_GAME = { [0] = "classic/", [1] = "tbc/" }
+
+-- Wowhead's own locale paths, which are not the client's locale codes. An unlisted client
+-- language falls through to the English site rather than to a URL that does not resolve.
+local WOWHEAD_LANG = {
+    frFR = "fr/", deDE = "de/", esES = "es/", esMX = "es/", itIT = "it/",
+    ptBR = "pt/", ptPT = "pt/", ruRU = "ru/", koKR = "ko/", zhCN = "cn/",
+}
+
 -- Handled here rather than dispatched: opening a link needs the ID and nothing else, so
 -- routing it through a provider would be Data/ reaching into UI/ for no gain.
 local function wowhead(entryID)
-    ns:ShowURL("https://www.wowhead.com/quest=" .. tostring(entryID))
+    local game = ""
+    if not ns.Has.QuestLog then
+        local level = type(GetExpansionLevel) == "function" and GetExpansionLevel() or 0
+        game = WOWHEAD_GAME[level] or "classic/"
+    end
+    local lang = WOWHEAD_LANG[GetLocale()] or ""
+    ns:ShowURL("https://www.wowhead.com/" .. game .. lang .. "quest=" .. tostring(entryID))
 end
 
 -- Dispatched against the entry ID rather than the entry table: the menu outlives the render

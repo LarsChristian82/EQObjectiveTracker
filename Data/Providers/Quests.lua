@@ -15,13 +15,19 @@ local Quests = {
     filterCategories = true,
 }
 
-local DAILY_FREQ  = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Daily)  or 2
-local WEEKLY_FREQ = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Weekly) or 3
+-- Compared against info.frequency from C_QuestLog.GetInfo, which is Enum.QuestFrequency, so the
+-- fallbacks are the ENUM values read off a live dump: Default 0, Daily 1, Weekly 2. They used to
+-- read 2 and 3, which is the LEGACY numbering the flat GetQuestLogTitle uses - correct in
+-- QuestsClassic.lua, wrong here, and dead code either way while the enum is present.
+local DAILY_FREQ  = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Daily)  or 1
+local WEEKLY_FREQ = (Enum and Enum.QuestFrequency and Enum.QuestFrequency.Weekly) or 2
 
+-- Fallback ids read off Enum.QuestTag on 1.15.9: Dungeon 81, Raid 62, Raid10 88, Raid25 89.
+-- Raid10 used to read 85, which is Heroic, and Raid25 used to read 88, which is Raid10.
 local TAG_DUNGEON = (Enum and Enum.QuestTag and Enum.QuestTag.Dungeon) or 81
 local TAG_RAID    = (Enum and Enum.QuestTag and Enum.QuestTag.Raid)    or 62
-local TAG_RAID10  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid10)  or 85
-local TAG_RAID25  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid25)  or 88
+local TAG_RAID10  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid10)  or 88
+local TAG_RAID25  = (Enum and Enum.QuestTag and Enum.QuestTag.Raid25)  or 89
 
 local CLASS_LEGENDARY = Enum and Enum.QuestClassification and Enum.QuestClassification.Legendary
 
@@ -185,21 +191,19 @@ local function currentZoneSet()
     return zoneSet
 end
 
--- Zone membership comes from map POIs. Quest-log headers are campaign groupings that
--- rarely equal GetZoneText(), so comparing those would hide almost everything.
--- Returning nil means "cannot tell", and the filter must then fail open.
+-- Zone membership comes from map POIs. Quest-log headers are campaign groupings that rarely
+-- equal GetZoneText(), so comparing those would hide almost everything. nil means "cannot
+-- tell" and the filter fails open on it; absent from the map counts as elsewhere.
+--
+-- That last part replaces a fallback answering false only for a quest GetNextWaypoint could
+-- place, which on a 16 quest log in The Coiled Isle rejected 2 and showed 14 that were not in
+-- the zone - 7 resolving to another map, 7 with no position anywhere. GetInfo's own isOnMap
+-- picked the same 2 quests as GetQuestsOnMap there, so it is not a second opinion to fall back
+-- to. Read /eqot zoneprobe before changing this.
 function Quests:IsCurrentZone(entry)
     local set = currentZoneSet()
     if not set then return nil end
-    if set[entry.id] then return true end
-    -- Absent from this map is not the same as being somewhere else, and answering false for a
-    -- quest with no location hid every category quest - GetQuestsOnMap measured 1 against a
-    -- sixteen-quest log. All three returns are required: a mapID with no coordinates is an
-    -- unresolved POI, guarded the same way in UI/TaxiHighlight.lua.
-    if not ns.Has.NextWaypoint then return nil end
-    local wm, wx, wy = C_QuestLog.GetNextWaypoint(entry.id)
-    if wm and wx and wy then return false end
-    return nil
+    return set[entry.id] == true
 end
 
 -- Unlike 1.15.9, this bound is safe: on retail the count read 50 with every quest log header
@@ -307,7 +311,7 @@ function Quests:DebugLine()
     table.sort(parts)
 
     -- Cached against live, separately, because one number cannot tell a stale cache from a
-    -- watch list that really is empty. The cached answer is what the rows were filtered on;
+    -- watch list that really is empty. The cached answer is what the rows were filtered on, and
     -- the live one re-reads outside the GetInfo walk that fullRebuild writes it from.
     local cached, live = 0, 0
     for id, e in store:Each() do
@@ -327,6 +331,81 @@ function Quests:DebugLine()
         tostring(QC.Meta), tostring(QC.Important), table.concat(parts, " "),
         walkEntries, apiNow, walkQuests, cached, live, tostring(map),
         list and tostring(#list) or "nil")
+end
+
+-- Undocumented, like /eqot flavorprobe. Prints every signal that could place a quest beside
+-- the verdict IsCurrentZone actually returned, which is what the zone rule was chosen from and
+-- what to read before changing it again.
+function Quests:ZoneProbeLines()
+    local out  = {}
+    local map  = ns.Has.Map and C_Map.GetBestMapForUnit("player") or nil
+    local mi   = (map and C_Map.GetMapInfo) and C_Map.GetMapInfo(map) or nil
+    local par  = mi and mi.parentMapID
+    local pmi  = (par and par > 0 and C_Map.GetMapInfo) and C_Map.GetMapInfo(par) or nil
+
+    local function idsOn(m)
+        local set, list = {}, (m and ns.Has.QuestsOnMap) and C_QuestLog.GetQuestsOnMap(m) or nil
+        if list then
+            for i = 1, #list do
+                local q = list[i]
+                if q and q.questID then set[q.questID] = true end
+            end
+        end
+        return set, list and #list or -1
+    end
+
+    local onMap, nMap = idsOn(map)
+    local onPar, nPar = idsOn(par)
+
+    out[#out + 1] = ("zone probe: map %s %s (%d on map) | parent %s %s (%d on map)"):format(
+        tostring(map), mi and mi.name or "?", nMap,
+        tostring(par), pmi and pmi.name or "?", nPar)
+    out[#out + 1] = "  id     set par iOM POI wp          dist         tz   verdict | header | title"
+
+    local header
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() or 0 do
+        local info = C_QuestLog.GetInfo(i)
+        if info then
+            if info.isHeader then
+                header = info.title
+            elseif not info.isHidden and info.questID then
+                local id = info.questID
+
+                local wp = "-"
+                if ns.Has.NextWaypoint then
+                    local wm, wx, wy = C_QuestLog.GetNextWaypoint(id)
+                    wp = ("%s/%s"):format(tostring(wm), (wx and wy) and "xy" or "noxy")
+                end
+
+                local dist = "-"
+                if ns.Has.QuestDistance then
+                    -- Distance.lua reports this API returning NaN for an unplaceable quest, so
+                    -- the self-comparison catches it. The Coiled Isle reading saw nil, not NaN.
+                    local sq, cont = C_QuestLog.GetDistanceSqToQuest(id)
+                    dist = ("%s/%s"):format(
+                        (sq == nil and "nil") or (sq ~= sq and "nan") or ("%.0f"):format(sq),
+                        tostring(cont))
+                end
+
+                local tz = "-"
+                if C_TaskQuest and C_TaskQuest.GetQuestZoneID then
+                    -- Assigned before it is printed: this returns ZERO values for a quest
+                    -- that is not a task quest, and tostring() with no argument raises.
+                    local z = C_TaskQuest.GetQuestZoneID(id)
+                    tz = tostring(z)
+                end
+
+                local verdict = self:IsCurrentZone({ id = id })
+
+                out[#out + 1] = ("  %-6d %-3s %-3s %-3s %-3s %-11s %-14s %-4s %-7s | %s | %s"):format(
+                    id, onMap[id] and "YES" or "no", onPar[id] and "YES" or "no",
+                    info.isOnMap and "YES" or "no", info.hasLocalPOI and "YES" or "no",
+                    wp, dist, tz, tostring(verdict),
+                    tostring(header):sub(1, 16), tostring(info.title):sub(1, 30))
+            end
+        end
+    end
+    return out
 end
 
 function Quests:OnEntryClick(entry, button)
@@ -495,6 +574,20 @@ function Quests:Enable(notifyDirty)
     Events:On("QUEST_WATCH_LIST_CHANGED", markDynamic)
     Events:On("SUPER_TRACKING_CHANGED",   markDynamic)
     Events:On("ZONE_CHANGED_NEW_AREA",    markZone)
+
+    -- Blizzard fires nothing when a quest item arrives by any route other than looting, so
+    -- withdrawing 5 of 8 from the bank leaves the row reading 3/8 until an unrelated quest event
+    -- happens by. All six are registered rather than treating the interaction manager as an
+    -- either/or: Events:On answers whether the client knows the event NAME, which is not whether
+    -- it FIRES for these windows, and a client that accepts the registration without firing it
+    -- would have had its own fallback suppressed. markDynamic only sets a dirty flag and the
+    -- notify is throttled, so a doubled event costs nothing.
+    Events:On("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", markDynamic)
+    Events:On("BANKFRAME_CLOSED",     markDynamic)
+    Events:On("MAIL_CLOSED",          markDynamic)
+    Events:On("MERCHANT_CLOSED",      markDynamic)
+    Events:On("TRADE_CLOSED",         markDynamic)
+    Events:On("AUCTION_HOUSE_CLOSED", markDynamic)
 end
 
 Registry:Register(Quests)

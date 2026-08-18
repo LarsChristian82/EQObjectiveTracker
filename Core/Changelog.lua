@@ -9,11 +9,51 @@ local _, ns = ...
 -- edit CHANGELOG.md and re-run the generator.
 ns.Changelog = {
     {
+        version = "1.9.0", date = "2026-08-17",
+        summary = "Traditional Chinese, and the zone filter hides what it says it hides.",
+        sections = {
+            { head = "New Features", items = {
+                "Traditional Chinese. The tracker and its options panel now read in Chinese on a zhTW client, covering 385 of the addon's 389 phrases, which is the most complete translation the addon has. Contributed by BNS333.",
+            } },
+            { head = "Bug Fixes", items = {
+                "Retail: \"Show only quests in current zone\" now hides the quests that are not in your zone. It had been hiding a quest only when the game could hand back a map pin for it, so on a sixteen quest log standing in The Coiled Isle it removed two quests and left fourteen, only two of which were actually in the zone. Quests that have no location at all, such as profession, battleground and meta quests, are hidden by this filter now as well, since they are not in your zone either. In a place that has no quests of its own, such as a capital city or inside a dungeon, the tracker reads empty while this setting is on. The setting is off by default and is unchanged on Classic Era and TBC Anniversary, which decide this a different way.",
+            } },
+            { head = "Improvements", items = {
+                "The About tab credits Keriaovo for the Simplified Chinese translation and BNS333 for the Traditional Chinese.",
+                "The description under the Questie option is more precise about what hiding Questie's tracker does and does not change.",
+            } },
+        },
+    },
+    {
+        version = "1.8.0", date = "2026-08-16",
+        summary = "Classic Era and TBC Anniversary now keep their own tracked quest list.",
+        sections = {
+            { head = "Bug Fixes", items = {
+                "Classic Era and TBC Anniversary: the tracker now keeps its own list of which quests you are tracking, rather than using the game's. The game only lets you watch five quests at a time and puts a red error on screen for the sixth, so \"Show only tracked quests\" could never show more than five of your log however you set it. There is no limit now, and shift clicking in the game's own quest log still tracks and untracks exactly as it did, with its checkmarks showing the tracker's list rather than the game's shorter one.",
+                "Classic Era and TBC Anniversary: \"Auto-track accepted quests\" works. It had been shipping turned on and doing nothing at all, because this game version has no function for it and the five quest limit made the obvious substitute worse than useless.",
+                "Classic Era and TBC Anniversary: \"Show only tracked quests\" now ships turned off. Until this update no character on these game versions had a tracked list of their own, so switching the filter on by default would hide a quest log nobody had chosen to filter. If you had deliberately left the setting on, it will be off once after this update and you can simply turn it back on. Retail is unchanged.",
+                "Classic Era and TBC Anniversary: a quest that comes with a usable item now puts that item on the tracker as a button, so you can use it without digging through your bags. The button, its cooldown and its range check were all there already, switched off by a check for a function that only exists on retail.",
+                "Classic Era and TBC Anniversary: tracking or untracking a quest in Blizzard's own quest log now updates the tracker straight away. It used to take a reload, because this game version announces nothing at all when the watch list changes.",
+                "\"Search on Wowhead\" now opens the site for the game version you are playing, and in your own language where Wowhead has one. On Classic Era and TBC it was opening the retail page, where the same quest number is a different quest or nothing at all.",
+                "Scrolling the tracker with the mouse wheel during combat could put a blocked action error on screen, on any game version, whenever a quest with a usable item was on the tracker. The wheel now does nothing until combat ends, which is as much as the game permits there.",
+                "Quest progress now refreshes when you close a bank, mailbox, vendor, trade or auction window. The game only announces a quest item arriving when you loot it, so taking five of eight out of the bank left the tracker reading three of eight until something unrelated came along.",
+                "Classic Era and TBC Anniversary: with another quest addon loaded, the tracker could come up empty after logging in and stay that way until you ran a command or changed a setting. That addon replaces one of the game's own quest tracking functions a few seconds into login, and the tracker was still reading the old answer. It no longer reads that function at all.",
+                "Classic Era and TBC Anniversary: tracking and untracking from the tracker's own row menu no longer write into another quest addon's saved data, because neither one calls the game's tracking functions any more.",
+                "Classic Era and TBC Anniversary: turning \"Auto-track accepted quests\" off and then accepting a quest could quietly switch every other quest in your log to untracked, for good. If you then turned \"Show only tracked quests\" on, the tracker came up empty with no way back but tracking each quest by hand. The same thing could happen if you accepted a quest while the tracker was hidden by one of the visibility rules.",
+                "Hiding another quest addon's tracker now takes effect on its own. It could need the setting toggled off and on again, because the tracker gave up looking for that addon's frame before the addon had built it.",
+                "Retail: daily and weekly quests could have been tagged as the wrong kind on a client that reports quest frequency the older way. No live client does, so nothing was mis-tagged in practice.",
+            } },
+            { head = "Improvements", items = {
+                "Section headers now always show both numbers when \"Show the visible / total count on section headers\" is on, so a section with nothing filtered out reads 14/14 rather than dropping to a bare 14. The count no longer changes shape depending on what is hidden.",
+            } },
+        },
+    },
+    {
         version = "1.7.0", date = "2026-08-15",
         summary = "Simplified Chinese.",
         sections = {
             { head = "New Features", items = {
-                "Simplified Chinese. The tracker and its options panel now read in Chinese on a zhCN client, covering 380 of the addon's 387 phrases. The seven still in English are the Questie coexistence strings and the two Classic focus hints, which are untranslated in every language. Contributed by a player from the Discord.",
+                "Simplified Chinese. The tracker and its options panel now read in Chinese on a zhCN client, covering 380 of the addon's 387 phrases. The seven still in English are the Questie coexistence strings and the two Classic focus hints, which are untranslated in every language. Contributed by Keriaovo, over the Discord.",
             } },
         },
     },

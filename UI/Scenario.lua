@@ -131,7 +131,12 @@ function Scenario:Build(container)
     banner.ThemeOverlay:SetBlendMode("ADD")
     banner.FinalBG      = banner:CreateTexture(nil, "BORDER")
 
-    banner.Stage = banner:CreateFontString(nil, "ARTWORK", "Game18Font")
+    -- Chosen rather than corrected, the same way subHeader.text above is: CreateFontString
+    -- RAISES on an absent font object, Build runs from Render on every flavor, and a raise here
+    -- aborts the whole tracker. Game18Font resolves on all four shipping TOCs, so the guard is
+    -- for the next one.
+    banner.Stage = banner:CreateFontString(nil, "ARTWORK",
+        _G.Game18Font and "Game18Font" or "GameFontNormal")
     banner.Stage:SetSize(172, 18)
     banner.Stage:SetJustifyH("CENTER")
     banner.Stage:SetTextColor(1, 0.914, 0.682)
@@ -208,7 +213,8 @@ function Scenario:ApplyHeaderFont()
         h = subHeader.cat:GetStringHeight() + CAT_GAP
             + subHeader.text:GetStringHeight() + 6
     end
-    -- Render reads subHeaderH for the banner anchor, so keep it in step after a re-font
+    -- Render reads subHeaderH for the first criteria row and the container height, so keep it
+    -- in step after a re-font
     if h ~= self.subHeaderH then
         self.subHeaderH = h
         subHeader:SetHeight(h)

@@ -42,7 +42,7 @@ L["Matches Blizzard's default."] = true
 L["Keep focused quest after relog"] = true
 L["Restores the waypoint arrow."] = true
 L["Hide Questie's quest tracker"] = true
-L["Hides Questie's tracker frame while EQ Objective Tracker is running. Questie's own settings and tracked quests are not touched."] = true
+L["Hides Questie's tracker frame while EQ Objective Tracker is running. It only hides the frame, and Questie's own disable path is never called."] = true
 L["Options Window Scale"] = true
 L["Resizes this EQ Objective Tracker options window only. It does not change the quest tracker or anything shown in the game world. The new size applies when you let go of the slider."] = true
 L["Reset position and size"] = true
@@ -314,6 +314,8 @@ L["Special thanks to %s for the many features, fixes, and reports that keep shap
 L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into French."] = true
 L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Russian."] = true
 L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Korean."] = true
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Simplified Chinese."] = true
+L["Special thanks to %s for the many hours spent translating EQ Objective Tracker into Traditional Chinese."] = true
 L["About"] = true
 L["Version %s"] = true
 L["by Wheelbarrel00"] = true

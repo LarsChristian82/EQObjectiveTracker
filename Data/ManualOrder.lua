@@ -28,9 +28,10 @@ function ManualOrder:Get()
     return map()
 end
 
--- The quest log is this addon's stand-in for EQ's quest Cache: it decides whether an
--- off-screen rank is worth carrying forward, and it is the only thing keeping the saved
--- map from growing for every quest ever dragged.
+-- The quest log is this addon's stand-in for EQ's quest Cache: it decides whether an off-screen
+-- rank is worth carrying forward, and it is the only thing keeping the saved map from growing
+-- for every quest ever dragged. On Classic it returns true unconditionally, so nothing is
+-- pruned there at all - GetQuestLogIndexByID is the resolver that would fix it.
 function ManualOrder:IsLive(questID)
     if not (C_QuestLog and C_QuestLog.GetLogIndexForQuestID) then return true end
     return C_QuestLog.GetLogIndexForQuestID(questID) ~= nil

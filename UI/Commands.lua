@@ -133,6 +133,9 @@ handlers.status = function()
     local BZ = ns:GetModule("Blizzard")
     if BZ and BZ.DebugLine then ns:Print(BZ:DebugLine()) end
 
+    local AT = ns:GetModule("AutoTrack")
+    if AT and AT.DebugLine then ns:Print(AT:DebugLine()) end
+
     local QC = ns:GetModule("QuestieCoexist")
     if QC and QC.DebugLine then ns:Print(QC:DebugLine()) end
 
@@ -272,6 +275,14 @@ function Commands:OnEnable()
             -- toggles one quest's watch state and toggles it back to whatever it found.
             if P then
                 if strtrim(rest or ""):lower() == "watch" then P:WatchTest() else P:Dump() end
+            end
+        elseif cmd == "zoneprobe" then
+            -- Undocumented for the same reason flavorprobe is: a measurement, not a feature.
+            local QP = ns:GetModule("Registry"):Get("quests")
+            if QP and QP.ZoneProbeLines then
+                for _, l in ipairs(QP:ZoneProbeLines()) do ns:Print(l) end
+            else
+                ns:Print("zoneprobe: not available on this flavor")
             end
         elseif fn then
             fn()

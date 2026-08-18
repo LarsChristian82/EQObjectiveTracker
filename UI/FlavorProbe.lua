@@ -45,12 +45,17 @@ local ATLASES = {
     "UI-QuestPoi-QuestNumber-SuperTracked", "UI-QuestPoiCampaign-OuterGlow",
     "UI-QuestPoiCampaign-QuestNumber", "UI-QuestIcon-TurnIn-Normal",
     "Quest-In-Progress-Icon-yellow", "Worldquest-icon",
+    -- UI/Row.lua writes this one as an inline |A:...|a escape on every completed objective
+    "common-icon-checkmark",
 }
 
 local TEXTURES = {
     "Interface/WorldMap/UI-QuestPoi-NumberIcons",
     "Interface/GossipFrame/AvailableQuestIcon",
     "Interface/GossipFrame/ActiveQuestIcon",
+    -- Candidate replacements for the checkmark atlas, both older than the atlas system
+    "Interface/Buttons/UI-CheckBox-Check",
+    "Interface/RaidFrame/ReadyCheck-Ready",
 }
 
 local function resolve(path)
@@ -395,6 +400,15 @@ function Probe:Dump()
     for _, path in ipairs(TEXTURES) do
         ns:Print(("  %s -> %s"):format(path, resolves(path)))
     end
+
+    -- An inline escape is not a texture object, so no call here can report whether one DREW -
+    -- and the atlas result above does not either, since it answers whether GetAtlasInfo knows
+    -- the atlas, not whether the markup renders inside a FontString. Copying these lines out of
+    -- chat drops the art too, so a blank in a pasted log says nothing. Only the screen answers.
+    ns:Print("inline escapes (READ THESE ON SCREEN, a paste drops the art):")
+    ns:Print("  |A:common-icon-checkmark:12:12|a <- atlas escape, the one Row.lua ships")
+    ns:Print("  |TInterface\\Buttons\\UI-CheckBox-Check:12:12|t <- UI-CheckBox-Check")
+    ns:Print("  |TInterface\\RaidFrame\\ReadyCheck-Ready:12:12|t <- ReadyCheck-Ready")
 
     self:DumpQuestLog()
     self:DumpWatchState()

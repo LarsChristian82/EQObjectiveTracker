@@ -386,6 +386,11 @@ function Tracker:BuildFrame()
 
     local function wheelScroll(sf, delta)
         if Tracker:IsClickThrough() then return end
+        -- The seventh protected site, and the only one that must REFUSE rather than defer: this
+        -- frame hosts the secure item buttons, so the call is blocked in combat, and running a
+        -- wheel turn minutes later when combat drops is worse than not scrolling. Reachable on
+        -- every flavor, not just the one that surfaced it.
+        if secureLocked() then return end
         local range = sf:GetVerticalScrollRange() or 0
         if range <= 0 then return end
         local new = (sf:GetVerticalScroll() or 0) - delta * 24

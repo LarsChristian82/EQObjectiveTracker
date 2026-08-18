@@ -299,7 +299,7 @@ function Sections:Place(header, content, y, group, collapsed, showTotal, extra)
 
     extra = extra or 0
     local visible, total = group.visibleCount + extra, group.totalCount + extra
-    if showTotal and total ~= visible then
+    if showTotal then
         header.count:SetText(visible .. "/" .. total)
     else
         header.count:SetText(tostring(visible))

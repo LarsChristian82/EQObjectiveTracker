@@ -16,9 +16,10 @@ lands in both places at once.
 
 ## Status
 
-**Retail is released and stable. Classic Era (1.15.9) and TBC Anniversary (2.5.6) support
-is EARLY and a WORK IN PROGRESS - expect rough edges and things that do not work yet.**
-Please report anything you find rather than assuming it is known.
+**Retail is released and stable. Classic Era (1.15.9) and TBC Anniversary (2.5.6) are
+supported.** That support is newer than the retail support and has had several rounds of
+fixes, so the gaps listed below are real ones rather than a disclaimer. Please report anything
+you find rather than assuming it is known.
 
 On retail it tracks quests and campaign quests, world quests, scenarios and delves,
 achievements, professions, and Traveler's Log endeavors.
@@ -29,6 +30,12 @@ Quest tracking and the customization around it: sorting, manual drag ordering, p
 pinning, filters, section visibility and ordering, the card layout, fonts and colours,
 profiles, row tooltips, and the row right-click menu. Blizzard's own quest watch frame is
 suppressed so you do not get two trackers.
+
+The tracker keeps its own list of which quests you are tracking rather than using the game's,
+which on these versions is capped at five quests and cannot track a quest automatically when
+you accept it. So "Auto-track accepted quests" works, "Show only tracked quests" can show more
+than five, and shift-clicking a row in the game's own quest log tracks and untracks exactly as
+it always did, with its checkmarks showing this tracker's list.
 
 You can also focus a quest, which these clients have no super-tracking for. Click a row's
 icon to focus it and click the icon again to clear it, or use Focus in the right-click menu.
@@ -41,6 +48,7 @@ focusing a quest also points a TomTom arrow at it.
   too, so on the tracker alone a focused quest is the tint and nothing more.
 - World quests, scenarios, achievements, endeavors and tracked recipes have no section.
   Most need APIs these clients do not have.
+- **Timed quests show no countdown**, and Blizzard's own timer box is left on screen.
 - The zone progress bar stays empty. Its zone routing data covers Midnight only.
 - Distance sorting does nothing, because the distance API is retail-only.
 - Some options still appear that cannot do anything on Classic, for the same reasons.
@@ -48,9 +56,12 @@ focusing a quest also points a TomTom arrow at it.
 ### Questie
 
 If Questie is loaded, EQ Objective Tracker offers once to hide Questie's own tracker, and
-that choice becomes a permanent toggle on the General tab. It only hides the frame -
-Questie's settings and its tracked quests are left alone, and Questie's own disable path
-is never called.
+that choice becomes a permanent toggle on the General tab. It only hides the frame, and
+Questie's own disable path is never called.
+
+Tracking and untracking from this tracker's row menu go through its own list rather than the
+game's watch functions, so the hooks Questie places on those do not fire for anything you do
+here.
 
 ### Everything Quests, the companion addon
 
@@ -118,23 +129,27 @@ or while the world map is open. Each is its own toggle, and all are off by defau
 Almost everything is configurable: fonts (42 bundled, plus anything from
 LibSharedMedia, each shown in its own typeface in the picker), sizes, spacing, colours, a
 card layout, section order and visibility, filters by quest type, and eight sort modes
-including by distance and by hand.
+including by distance and by hand. The current-zone filter shows only quests with an objective
+on the map you are standing on, so somewhere with no quests of its own, such as a capital city,
+reads empty while that filter is on.
 
 Settings live in profiles, so you can keep separate setups and switch between them.
 Profiles are shared across all your characters.
 
 ## Translations
 
-`Locales/frFR.lua`, `ruRU.lua`, `koKR.lua` and `zhCN.lua` are generated, and so is the
-`enUS.lua` phrase list. The translations live in
+`Locales/frFR.lua`, `ruRU.lua`, `koKR.lua`, `zhCN.lua` and `zhTW.lua` are generated, and so
+is the `enUS.lua` phrase list. The translations live in
 [EverythingLocales](https://github.com/wheelbarrel00/EverythingLocales), shared across all of
 this author's addons so that a phrase more than one of them uses is only ever translated once,
 and so that a phrase moving between addons keeps its translation.
 
 **To add or correct a translation, edit `store/<language>.lua` there and open a pull request
 against that repository.** A change made in this repo is overwritten the next time the files
-are built. If you cannot use GitHub, the Discord works too - Simplified Chinese arrived that
-way.
+are built. GitHub will not accept a `.lua` file as a comment attachment, so put it in a `.zip`
+first or paste it into a code block. If you cannot use GitHub at all, the Discord and the
+CurseForge comments both work - the Simplified Chinese arrived over Discord and the Traditional
+Chinese over CurseForge.
 
 A phrase that has not been translated yet falls back to English on its own, so a partial
 translation is never a broken one, and there is no need to finish a language.
@@ -143,8 +158,8 @@ A new language needs adding to that repo's language list, and its `Locales/<code
 in all four `.toc` files here.
 
 Every non-English string in this addon is somebody else's work. Thanks to **Zox** for the
-French, **Malevi4** for the Russian, **labrie75** for the Korean, and **失眠啤酒** for the
-Simplified Chinese.
+French, **Malevi4** for the Russian, **labrie75** for the Korean, **失眠啤酒** for the
+Simplified Chinese, and **BNS333** for the Traditional Chinese.
 
 ## Building
 

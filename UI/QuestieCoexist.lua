@@ -23,6 +23,14 @@ function Coexist:Apply()
     local f = trackerFrame()
     if not f then return end
     local c = cfg()
+    -- Recorded on the first sighting rather than read back later: by the time anyone runs
+    -- /eqot status the poll chain is long dead, so only a stamp says when that frame appeared
+    -- and what the setting read then. Elapsed rather than a timestamp, because a later loading
+    -- screen restarts the poll and reading this against the newer start would print a negative.
+    if not self._frameSeenIn then
+        self._frameSeenIn      = GetTime() - (self._pollStart or GetTime())
+        self._frameSeenSetting = c and c.hideQuestieTracker
+    end
     if not (c and c.hideQuestieTracker) then return end
 
     f:Hide()
@@ -87,12 +95,19 @@ local function retryDelay(tries)
 end
 
 function Coexist:OnEnable()
-    local generation, tries = 0, 0
+    self._gen, self._tries = 0, 0
     local poll
     poll = function(gen)
-        if gen ~= generation then return end
-        self:Apply()
-        self:MaybePrompt()
+        if gen ~= self._gen then return end
+        -- Both calls are pcall'd because the reschedule is the LAST statement in this function,
+        -- so a raise in either one would end the chain with nothing left to run and nothing on
+        -- screen to say so - the recorded outcome would sit on "polling" describing a chain that
+        -- no longer exists. Called by method reference rather than through a wrapper closure, so
+        -- a tick allocates nothing. The first error is kept and surfaced by DebugLine.
+        local ok, err = pcall(self.Apply, self)
+        if not ok then self._applyError = self._applyError or tostring(err) end
+        ok, err = pcall(self.MaybePrompt, self)
+        if not ok then self._applyError = self._applyError or tostring(err) end
         -- What counts as done depends on the setting, and conflating the two broke this
         -- once: while hiding is ON the chain must run until the hook is actually installed,
         -- because "the player has already been asked" says nothing about whether that frame
@@ -106,33 +121,62 @@ function Coexist:OnEnable()
         else
             settled = ns.db and ns.db.global and ns.db.global.questieTrackerPrompted
         end
-        if not settled then
-            tries = tries + 1
-            local delay = retryDelay(tries)
-            if delay then
-                C_Timer.After(delay, function() poll(gen) end)
-            end
+        if settled then
+            self._outcome = "settled"
+            return
+        end
+        self._tries      = self._tries + 1
+        self._lastTickAt = GetTime()
+        local delay = retryDelay(self._tries)
+        if delay then
+            C_Timer.After(delay, function() poll(gen) end)
+        else
+            self._outcome = "expired"
         end
     end
 
     -- Without this gate the full retry chain runs on every loading screen on retail, where
     -- that addon can never be present, for a feature that can never apply there.
     local function restart()
-        if not self:QuestiePresent() then return end
-        generation = generation + 1
-        tries = 0
-        poll(generation)
+        self._present = self:QuestiePresent()
+        if not self._present then return end
+        self._restarts   = (self._restarts or 0) + 1
+        self._pollStart  = GetTime()
+        self._outcome    = "polling"
+        self._lastTickAt = nil
+        self._gen   = self._gen + 1
+        self._tries = 0
+        poll(self._gen)
     end
 
-    ns:GetModule("Events"):On("PLAYER_ENTERING_WORLD", restart)
+    local Events = ns:GetModule("Events")
+    Events:On("PLAYER_ENTERING_WORLD", restart)
+    -- A second channel that answers to no timer. The chain above is bounded by construction and
+    -- was measured stopping at tick 8 with that frame still absent, so the hide cannot depend on
+    -- it alone. This also covers the other tracker being switched on mid session, which the
+    -- chain is long finished for. Gated on the same presence answer the chain uses, so a retail
+    -- client does no work for a feature that can never apply there.
+    Events:On("QUEST_LOG_UPDATE", function()
+        if self._present then self:Apply() end
+    end)
     restart()
 end
 
 function Coexist:DebugLine()
     local f = trackerFrame()
     local c = cfg()
-    return ("questie: base frame %s | hide setting %s | hook %s"):format(
+    local seen = "never"
+    if self._frameSeenIn then
+        seen = ("%.1fs in, setting %s"):format(
+            self._frameSeenIn, tostring(self._frameSeenSetting))
+    end
+    return ("questie: base frame %s | hide setting %s | hook %s | present %s, restarts %d, %d ticks %s, last tick %s | frame first seen %s | apply error %s"):format(
         f and (f:IsShown() and "shown" or "hidden") or "absent",
         tostring(c and c.hideQuestieTracker),
-        self._hookedFrame and "installed" or "missing")
+        self._hookedFrame and "installed" or "missing",
+        tostring(self._present), self._restarts or 0,
+        self._tries or 0, self._outcome or "never started",
+        self._lastTickAt and ("%.0fs ago"):format(GetTime() - self._lastTickAt) or "none",
+        seen,
+        self._applyError or "none")
 end

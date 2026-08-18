@@ -6,8 +6,10 @@ local frame     = CreateFrame("Frame")
 local listeners = {}
 local unknown   = {}
 
+-- Answers whether the listener was installed, so a caller can fall back to older events on a
+-- client that does not know a newer one.
 function Events:On(event, fn)
-    if unknown[event] then return end
+    if unknown[event] then return false end
     local list = listeners[event]
     if not list then
         -- RegisterEvent raises on an event the client does not know, and non-provider
@@ -16,12 +18,13 @@ function Events:On(event, fn)
         -- swallowed, or a whole subsystem goes quiet with nothing on screen to say why.
         if not pcall(frame.RegisterEvent, frame, event) then
             unknown[event] = true
-            return
+            return false
         end
         list = {}
         listeners[event] = list
     end
     list[#list + 1] = fn
+    return true
 end
 
 function Events:DebugLine()
