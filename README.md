@@ -129,7 +129,9 @@ or while the world map is open. Each is its own toggle, and all are off by defau
 Almost everything is configurable: fonts (42 bundled, plus anything from
 LibSharedMedia, each shown in its own typeface in the picker), sizes, spacing, colours, a
 card layout, section order and visibility, filters by quest type, and eight sort modes
-including by distance and by hand.
+including by distance and by hand. The current-zone filter shows only quests with an objective
+on the map you are standing on, so somewhere with no quests of its own, such as a capital city,
+reads empty while that filter is on.
 
 Settings live in profiles, so you can keep separate setups and switch between them.
 Profiles are shared across all your characters.
