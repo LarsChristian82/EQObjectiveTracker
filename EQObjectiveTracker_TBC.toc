@@ -22,6 +22,7 @@ Locales\frFR.lua
 Locales\ruRU.lua
 Locales\koKR.lua
 Locales\zhCN.lua
+Locales\zhTW.lua
 
 # Core. Init defines RegisterModule and must load first, Compat second.
 Core\Init.lua
